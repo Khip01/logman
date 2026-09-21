@@ -56,17 +56,24 @@ test.describe('navigasi bulan dan minggu', () => {
     await page.getByRole('tab', { name: /31 Agu/ }).click()
 
     // 31 Agustus milik Agustus, 1 September milik September.
-    await expect(page.getByTestId('day-row-2026-08-31')).toHaveAttribute('data-disabled', 'false')
-    await expect(page.getByTestId('day-row-2026-09-01')).toHaveAttribute('data-disabled', 'true')
-    await expect(page.getByTestId('day-row-2026-09-01').getByText('Bulan lain')).toBeVisible()
+    await expect(page.getByTestId('editor-row-2026-08-31')).toHaveAttribute(
+      'data-disabled',
+      'false',
+    )
+    await expect(page.getByTestId('editor-row-2026-09-01')).toHaveAttribute('data-disabled', 'true')
+    // Baris disabled tidak punya kontrol yang dapat difokus.
+    await expect(page.getByLabel('Kegiatan Selasa 1 September 2026')).toHaveCount(0)
 
     // Buka grup September 2026 dan minggu yang sama.
     await page.getByRole('button', { name: 'Bulan berikutnya' }).click()
     await expect(bulan).toHaveText('September 2026')
     await page.getByRole('tab', { name: /31 Agu/ }).click()
 
-    await expect(page.getByTestId('day-row-2026-09-01')).toHaveAttribute('data-disabled', 'false')
-    await expect(page.getByTestId('day-row-2026-08-31')).toHaveAttribute('data-disabled', 'true')
+    await expect(page.getByTestId('editor-row-2026-09-01')).toHaveAttribute(
+      'data-disabled',
+      'false',
+    )
+    await expect(page.getByTestId('editor-row-2026-08-31')).toHaveAttribute('data-disabled', 'true')
   })
 
   test('hari setelah magang selesai disabled dengan alasan yang tepat', async ({ page }) => {
@@ -74,7 +81,10 @@ test.describe('navigasi bulan dan minggu', () => {
     await page.getByRole('tab', { name: /7 Sep/ }).click()
 
     // Rentang selesai 2026-09-12, jadi 7 Sep masih aktif.
-    await expect(page.getByTestId('day-row-2026-09-07')).toHaveAttribute('data-disabled', 'false')
+    await expect(page.getByTestId('editor-row-2026-09-07')).toHaveAttribute(
+      'data-disabled',
+      'false',
+    )
 
     // Minggu 14 Sep tidak ada di rentang, jadi tidak muncul sebagai tab. Cek bahwa
     // minggu terakhir yang tersedia tetap bisa dibuka.

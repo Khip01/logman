@@ -720,8 +720,7 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 5 (navigasi bulan dan minggu) selesai. Berikutnya fase 6 (editor A4:
-  edit inline, auto-grow, navigasi keyboard).
+- Fase saat ini: 6 (editor A4) selesai. Berikutnya fase 7 (ekspor PDF).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -811,10 +810,43 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (137 test), Playwright (36 test),
     audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle
     (JS awal 141.6 KB gzip).
+  - Fase 6 editor A4:
+    - `src/lib/domain/editor.ts`: logika murni editor (statusFromAlasan, displayJam,
+      patchAlasan, patchKegiatan, validateDay, collectIncompleteDates) plus unit test.
+    - `src/features/editor/AutoGrowTextarea.tsx`: textarea borderless yang tumbuh
+      mengikuti isi tanpa scrollbar. Tinggi diukur ulang setiap nilai berubah.
+    - `src/features/editor/EditorRow.tsx`: satu baris hari dengan sel jam (normalisasi
+      titik saat commit), textarea kegiatan, dan pemilih alasan. Setiap baris membaca
+      data sendiri dari store lewat selector per tanggal, sehingga satu ketikan hanya
+      me-render ulang baris itu.
+    - `src/features/editor/ReasonPicker.tsx`: menahan draft alasan lokal, hanya commit
+      saat user memilih atau blur, supaya combobox tidak hilang di tengah pengetikan.
+    - `src/features/editor/WeekEditorTable.tsx`: tabel dokumen enam baris dengan kelas
+      CSS `doc-table`.
+    - `src/features/editor/ValidationBanner.tsx`: menghitung hari belum lengkap.
+    - `src/components/shared/WeekProgress.tsx`: penghitung hari terisi per minggu,
+      terpisah agar tidak memicu re-render tabel.
+    - `src/components/ui/Combobox.tsx`: ditulis ulang tanpa Radix Portal (dropdown
+      absolut dalam DOM tabel). Ditambah `onSelect`, `onInputBlur`, dan
+      `onMouseDown preventDefault` pada opsi.
+    - `src/styles/globals.css`: kelas `.doc-table`, `.doc-cell-fit`
+      (`field-sizing: content`), `.doc-cell-wrap`.
+    - `src/lib/domain/date.ts`: ditambah `formatTanggalTanpaHari`.
+    - `src/lib/domain/schema.ts`: `normalizeJam` kini memad jam satu digit dan
+      menerima jam bulat tanpa menit.
+    - `src/app/useAppData.ts`: `useDeriveMonths` tidak lagi bergantung pada data hari,
+      sehingga ketikan tidak membangun ulang seluruh struktur bulan.
+    - `LogbookPage.tsx`: menampilkan `WeekEditorTable` dan `ValidationBanner`.
+    - E2E baru `e2e/editor.spec.ts` (8 test): baris disabled, ketik langsung, Enter
+      tambah baris, auto-grow, normalisasi jam, strip Sakit/Izin, hapus alasan, alasan
+      bebas, banner validasi.
+  - Verifikasi lulus: lint, typecheck, Vitest (165 test), Playwright (44 test),
+    audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle
+    (JS awal 141.5 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 5 tuntas).
+  - tidak ada (fase 6 tuntas).
 - Berikutnya:
-  - Fase 6 editor A4: edit inline, auto-grow, navigasi keyboard.
+  - Fase 7 ekspor PDF.
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.

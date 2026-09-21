@@ -151,6 +151,20 @@ export function formatTanggalId(iso: string): string {
   return `${dayNameId(iso)}, ${d} ${BULAN_ID[m - 1] ?? ''} ${y}`
 }
 
+/**
+ * Tanggal bahasa Indonesia TANPA nama hari, misal "5 Januari 2026".
+ *
+ * Dipakai bersama nama hari yang terpisah, agar tabel dokumen tidak mengulang nama
+ * hari (kolom sudah punya baris nama hari sendiri).
+ */
+export function formatTanggalTanpaHari(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) {
+    throw new Error(`Tanggal tidak valid: ${iso}`)
+  }
+  return `${d} ${BULAN_ID[m - 1] ?? ''} ${y}`
+}
+
 /** Format tanggal pendek, misal "5 Jan 2026". */
 export function formatTanggalPendek(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)

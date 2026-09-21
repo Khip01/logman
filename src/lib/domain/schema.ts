@@ -39,14 +39,35 @@ export function isJamValid(value: unknown): value is string {
   return typeof value === 'string' && JAM_PATTERN.test(value)
 }
 
-/** Menormalkan jam dari berbagai bentuk ke format titik. Null bila tidak valid. */
+/**
+ * Menormalkan jam dari berbagai bentuk ke format titik. Null bila tidak valid.
+ *
+ * Bentuk yang diterima, semuanya dinormalkan ke `HH.MM`:
+ * - "08.00", "8.00" (jam satu digit dipad)
+ * - "08:00", "8:00" (titik dua diterima dari input mesin)
+ * - "8" (jam bulat, dianggap "08.00")
+ *
+ * Menit wajib dua digit, karena "8.5" ambigu antara 08.05 dan 08.50.
+ */
 export function normalizeJam(value: unknown): string | null {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
   if (trimmed === '') return null
-  // Terima bentuk dengan titik dua lalu ubah ke titik.
+
   const withDot = trimmed.replace(':', '.')
-  return isJamValid(withDot) ? withDot : null
+
+  // Jam saja, misal "8" atau "16".
+  const jamSaja = /^(\d{1,2})$/.exec(withDot)
+  if (jamSaja) {
+    const candidate = `${jamSaja[1]?.padStart(2, '0')}.00`
+    return isJamValid(candidate) ? candidate : null
+  }
+
+  // Jam dan menit, misal "8.05" atau "16.30".
+  const jamMenit = /^(\d{1,2})\.(\d{2})$/.exec(withDot)
+  if (!jamMenit) return null
+  const candidate = `${jamMenit[1]?.padStart(2, '0')}.${jamMenit[2]}`
+  return isJamValid(candidate) ? candidate : null
 }
 
 export function defaultJamDefault(): JamDefault {

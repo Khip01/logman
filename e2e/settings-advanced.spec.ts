@@ -20,11 +20,11 @@ test.describe('settings lanjutan', () => {
     await page.goto('/settings')
 
     const seninMasuk = page.getByLabel('Jam masuk Senin')
-    await seninMasuk.fill('9.30')
+    // Format menit satu digit ditolak (ambigu antara 08.05 dan 08.50).
+    await seninMasuk.fill('9.5')
     await seninMasuk.blur()
     await expect(page.getByText('Format jam HH.MM', { exact: false })).toBeVisible()
-    // Nilai lama tetap, tidak tersimpan.
-    await expect(seninMasuk).toHaveValue('9.30')
+    await expect(seninMasuk).toHaveValue('9.5')
 
     // Bentuk dengan titik dua dinormalkan ke titik.
     await seninMasuk.fill('07:15')

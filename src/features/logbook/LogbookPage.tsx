@@ -1,29 +1,23 @@
 import { CalendarRange, ChevronLeft, ChevronRight, FileText, Ruler, UserRound } from 'lucide-react'
 import { navigate } from '@/app/router'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
-import {
-  disabledReasonFor,
-  disabledReasonText,
-  formatWeekRange,
-  type MagangRange,
-} from '@/lib/domain/calendar'
-import { dayNameId, formatTanggalPendek } from '@/lib/domain/date'
-import type { DayEntry, MonthGroup, WeekEntry } from '@/lib/domain/types'
+import { ValidationBanner } from '@/features/editor/ValidationBanner'
+import { WeekEditorTable } from '@/features/editor/WeekEditorTable'
+import { formatWeekRange, type MagangRange } from '@/lib/domain/calendar'
+import type { MonthGroup } from '@/lib/domain/types'
 import { cn } from '@/lib/utils/cn'
 import { useConfigStore } from '@/stores/config'
 import { useLogbookStore } from '@/stores/logbook'
 import { useLogsStore } from '@/stores/logs'
 
 /**
- * Halaman Log Book: navigasi bulan dan minggu plus tampilan kepemilikan baris
- * (AGENTS.md bagian 6 dan 11.4).
+ * Halaman Log Book: navigasi bulan dan minggu plus editor langsung per sel
+ * (AGENTS.md bagian 6, 11.2, dan 11.4).
  *
  * Baris hari yang bukan milik bulan yang sedang dibuka, atau di luar rentang magang,
- * tetap ditampilkan namun diredupkan dan ditandai alasannya. Editor langsung per sel
- * menyusul pada fase berikutnya.
+ * tetap ditampilkan namun diredupkan dan tidak dapat diisi.
  */
 export function LogbookPage() {
   const magang = useConfigStore((s) => s.config.magang)
@@ -119,11 +113,11 @@ export function LogbookPage() {
             activeWeekId={activeWeek?.id ?? null}
           />
 
-          {activeWeek ? <WeekTable week={activeWeek} month={activeMonth} range={range} /> : null}
+          <ValidationBanner month={activeMonth} range={range} />
 
-          <p className="mt-8 text-[12px] text-text-dim">
-            Editor langsung per sel akan tersedia pada fase berikutnya.
-          </p>
+          {activeWeek ? (
+            <WeekEditorTable week={activeWeek} monthKey={activeMonth.key} range={range} />
+          ) : null}
         </>
       )}
     </div>
@@ -198,78 +192,6 @@ function MonthNavigator({
         })}
       </div>
     </div>
-  )
-}
-
-/** Tabel hari untuk satu minggu, dengan baris non-aktif diredupkan. */
-function WeekTable({
-  week,
-  month,
-  range,
-}: {
-  week: WeekEntry
-  month: MonthGroup
-  range: MagangRange
-}) {
-  return (
-    <div className="border border-border-base">
-      <div className="flex items-center justify-between gap-2 border-b border-border-base bg-bg-card px-3 py-2">
-        <span className="text-[12px] font-semibold text-text-primary">
-          M{week.weekOfMonth} - {formatWeekRange(week.startDate)}
-        </span>
-        <Badge tone={week.days.some((d) => d.kegiatan) ? 'ok' : 'neutral'}>
-          {week.days.filter((d) => d.kegiatan).length}/6 terisi
-        </Badge>
-      </div>
-
-      <ul className="m-0 list-none p-0">
-        {week.days.map((day) => (
-          <DayRow key={day.date} day={day} monthKey={month.key} range={range} />
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-function DayRow({ day, monthKey, range }: { day: DayEntry; monthKey: string; range: MagangRange }) {
-  const reason = disabledReasonFor(day.date, monthKey, range)
-  const disabled = reason !== null
-
-  return (
-    <li
-      data-testid={`day-row-${day.date}`}
-      data-disabled={disabled ? 'true' : 'false'}
-      className={cn(
-        'theme-t flex items-center gap-3 border-b border-border-base px-3 py-2 last:border-b-0',
-        disabled && 'bg-bg-body',
-      )}
-    >
-      <div className="w-40 shrink-0">
-        <span
-          className={cn(
-            'block text-[13px]',
-            disabled ? 'text-text-dim' : 'font-medium text-text-main',
-          )}
-        >
-          {dayNameId(day.date)}
-        </span>
-        <span className="block text-[11px] text-text-dim">{formatTanggalPendek(day.date)}</span>
-      </div>
-
-      <div className="min-w-0 flex-1">
-        {day.kegiatan ? (
-          <p className={cn('truncate text-[12px]', disabled ? 'text-text-dim' : 'text-text-main')}>
-            {day.kegiatan}
-          </p>
-        ) : (
-          <p className="text-[12px] text-text-dim">
-            {disabled ? 'Tidak dapat diisi' : 'Belum diisi'}
-          </p>
-        )}
-      </div>
-
-      {reason ? <Badge tone="neutral">{disabledReasonText(reason)}</Badge> : null}
-    </li>
   )
 }
 

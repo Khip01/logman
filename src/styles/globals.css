@@ -184,6 +184,58 @@
   z-index: 2;
 }
 
+/* ------------------------------------------------------------- DOKUMEN */
+
+/*
+ * Tabel dokumen Log Book. Sengaja dibuat sederhana: border 1 px, tanpa sudut
+ * membulat, tanpa bayangan. Lihat AGENTS.md bagian 11.2.
+ *
+ * Tinggi baris minimum 1.80 cm dengan aturan `atLeast`: baris TUMBUH mengikuti isi.
+ * Pada tabel HTML, `height` pada sel berlaku sebagai tinggi minimum, sehingga baris
+ * memanjang sendiri saat textarea tumbuh.
+ */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-doc);
+  font-size: 12pt;
+  color: var(--doc-ink);
+}
+
+.doc-table th,
+.doc-table td {
+  border: 1px solid var(--doc-border);
+  vertical-align: top;
+}
+
+.doc-table thead th {
+  background: var(--doc-header-bg);
+  text-align: center;
+  font-weight: 700;
+}
+
+.doc-table tbody th,
+.doc-table tbody td {
+  height: 1.8cm;
+  padding: 0.4rem 0.5rem;
+}
+
+/*
+ * Kolom Hari/Tanggal, Jam Masuk, dan Jam Pulang mengikuti lebar konten dan melar
+ * bila panjang. Hanya kolom Kegiatan yang berlebar tetap dan membungkus.
+ */
+.doc-cell-fit {
+  field-sizing: content;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* Kolom Kegiatan berlebar tetap dan membungkus ke baris baru, tidak melar. */
+.doc-cell-wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* --------------------------------------------------------------- CETAK */
 
 /*

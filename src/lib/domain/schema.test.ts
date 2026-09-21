@@ -34,6 +34,29 @@ describe('jam', () => {
     expect(normalizeJam('salah')).toBeNull()
     expect(normalizeJam(null)).toBeNull()
   })
+
+  it('memad jam satu digit', () => {
+    expect(normalizeJam('8.00')).toBe('08.00')
+    expect(normalizeJam('7:05')).toBe('07.05')
+    expect(normalizeJam('9.30')).toBe('09.30')
+  })
+
+  it('menerima jam bulat tanpa menit', () => {
+    expect(normalizeJam('8')).toBe('08.00')
+    expect(normalizeJam('16')).toBe('16.00')
+    expect(normalizeJam('0')).toBe('00.00')
+  })
+
+  it('menolak menit satu digit karena ambigu', () => {
+    expect(normalizeJam('8.5')).toBeNull()
+    expect(normalizeJam('16.3')).toBeNull()
+  })
+
+  it('menolak jam di luar 00 sampai 23', () => {
+    expect(normalizeJam('24.00')).toBeNull()
+    expect(normalizeJam('99.00')).toBeNull()
+    expect(normalizeJam('8.99')).toBeNull()
+  })
 })
 
 describe('parseConfig', () => {

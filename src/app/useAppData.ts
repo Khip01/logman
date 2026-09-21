@@ -51,18 +51,19 @@ export function useUiPreferenceSync(): void {
 }
 
 /**
- * Membangun daftar bulan dan minggu dari rentang magang, lalu mengisinya dengan
- * entri hari dari store logs. Struktur bulan dan minggu selalu diturunkan, tidak
- * disimpan (AGENTS.md bagian 5.2).
+ * Membangun daftar bulan dan minggu dari rentang magang (AGENTS.md bagian 5.2).
  *
- * Efek ini juga menjaga agar pilihan bulan dan minggu tetap valid: bulan pertama
- * dipilih otomatis (bulan yang memuat hari ini bila ada), dan minggu aktif selalu
- * berada di bulan yang sedang dibuka.
+ * Struktur bulan dan minggu SELALU diturunkan dari rentang, tidak disimpan. Penting:
+ * fungsi ini SENGAJA tidak membaca data hari. Bila ia ikut bergantung pada data hari,
+ * setiap ketikan akan membangun ulang seluruh struktur dan memaksa semua baris editor
+ * ter-render ulang, melanggar aturan performa di AGENTS.md bagian 13. Isi hari dibaca
+ * langsung oleh komponen baris lewat selector per tanggal.
+ *
+ * Efek ini juga menjaga agar pilihan bulan dan minggu tetap valid.
  */
 export function useDeriveMonths(): void {
   const mulai = useConfigStore((s) => s.config.magang.mulai)
   const selesai = useConfigStore((s) => s.config.magang.selesai)
-  const days = useLogsStore((s) => s.data.days)
   const setMonths = useLogbookStore((s) => s.setMonths)
 
   useEffect(() => {
@@ -73,24 +74,13 @@ export function useDeriveMonths(): void {
     }
 
     const months = buildMonthGroups(mulai, selesai)
-    const filled = months.map((month) => ({
-      ...month,
-      weeks: month.weeks.map((week) => ({
-        ...week,
-        days: week.days.map((day) => {
-          const saved = days[day.date]
-          return saved ? { ...day, ...saved } : day
-        }),
-      })),
-    }))
-
-    setMonths(filled)
+    setMonths(months)
 
     // Pertahankan pilihan user bila masih valid, selain itu pilih default.
     const today = todayIso()
     const logbook = useLogbookStore.getState()
-    const monthKey = logbook.activeMonthKey ?? pickInitialMonthKey(filled, today)
-    const month = monthKey ? filled.find((item) => item.key === monthKey) : undefined
+    const monthKey = logbook.activeMonthKey ?? pickInitialMonthKey(months, today)
+    const month = monthKey ? months.find((item) => item.key === monthKey) : undefined
     if (!month) return
 
     const weekId = month.weeks.some((week) => week.id === logbook.activeWeekId)
@@ -99,7 +89,7 @@ export function useDeriveMonths(): void {
 
     if (weekId) logbook.selectWeek(weekId, month.key)
     else logbook.setActiveMonth(month.key)
-  }, [mulai, selesai, days, setMonths])
+  }, [mulai, selesai, setMonths])
 }
 
 /**
