@@ -22,6 +22,13 @@ pembaruan dokumen ini.
    memanggil API mutasi tanpa ACC.
 6. Jangan mengarang isi, struktur data, atau perilaku yang belum diputuskan. Jika ada
    yang belum jelas, tulis sebagai `TODO(pertanyaan)` dan tanyakan.
+7. Selama development, test HANYA bagian yang tersentuh perubahan (lihat bagian 14.1).
+   Full suite hanya di akhir, per-intah, berhenti saat ada gagal. Jangan mengulang
+   gate yang sudah lulus tanpa perubahan kode. Jangan merangkai pkill+audit+build
+   dalam satu script panjang.
+8. Sebelum `pkill` atau mematikan proses/port, cek dulu apakah proses/port benar-benar
+   masih hidup. Bila perlu mematikan, lakukan inkremental dengan timeout bertahap
+   (lihat bagian 14.2). Jangan asal `pkill` berulang sampai kena timeout tool.
 
 ### Aturan kerja wajib (ditegakkan setiap kali membuat fitur)
 
@@ -598,6 +605,102 @@ Yang TIDAK dijadikan gate CI (jujur soal keterbatasan):
 
 ## 14. Testing
 
+### 14.1 Strategi test bertahap (WAJIB saat development)
+
+Testing dipecah agar debugging tidak menunggu seluruh suite berjalan ber-menit-menit.
+
+**Saat development / debugging (perbaikan kecil):**
+- Jalankan HANYA test yang relevan dengan bagian yang diubah. Contoh:
+  - Ubah `src/lib/domain/*` -> `pnpm test:domain`
+  - Ubah `server/pdf.ts` -> `pnpm test:server`
+  - Ubah e2e ekspor -> `pnpm test:e2e:export` (atau `pnpm playwright test e2e/<spec>.ts`)
+  - Ubah satu file komponen -> unit/component test file itu saja
+- Sebelum menjalankan, tentukan dulu: perubahan ini memengaruhi test mana saja?
+  Jalankan set itu saja. Kalau gagal, perbaiki, lalu re-run set yang sama (atau
+  subset yang lebih kecil bila kegagalan sudah menyempit).
+- DILARANG menjalankan `pnpm test` + `pnpm test:e2e` + audit penuh setiap kali
+  memperbaiki satu kesalahan. Itu membuang waktu development.
+- DILARANG menggabungkan banyak gate + pkill + server start dalam SATU perintah
+  shell panjang. Itu lama, sulit dibatalkan, dan bila diganggu di tengah malah
+  merusak hasil (browser audit mati, dsb). Jalankan perintah kecil satu per satu.
+- Sebelum menjalankan gate apa pun, cek dulu log hasil sebelumnya di `/tmp` atau
+  ingat hasil di sesi ini. Kalau sudah lulus dan kode sejak itu tidak berubah,
+  JANGAN diulang. Hanya jalankan yang belum lulus / yang tersentuh perubahan.
+
+**Saat final / sebelum commit / penandaan selesai:**
+- SATU KALI saja, jalankan full gate: lint, typecheck, unit penuh, e2e penuh,
+  audit motion, audit a11y, bundle (sesuai checklist bagian 19).
+- Urutan ringan ke berat, perintah terpisah, berhenti bila ada yang gagal
+  (perbaiki dulu, jangan lanjut menumpuk kegagalan):
+  1. `pnpm lint`
+  2. `pnpm typecheck`
+  3. `pnpm test`
+  4. `pnpm audit:motion`
+  5. `pnpm test:e2e` (butuh port bebas; cek port dulu, jangan pkill membabi buta)
+  6. start server singkat -> `pnpm audit:a11y` -> stop server (perintah terpisah)
+  7. `pnpm build` lalu `node scripts/analyze-bundle.mjs`
+- Full suite adalah gate kualitas akhir, bukan alat debugging harian.
+- Bila sebagian gate di sesi yang sama SUDAH lulus dan tidak ada perubahan kode
+  sejak itu, final cukup menjalankan sisa gate yang belum lulus. Catat di ringkasan
+  mana yang lulus kapan, supaya tidak mengulang e2e 50 test hanya karena satu
+  file markdown berubah.
+
+**Pemetaan cepat perubahan -> test:**
+
+| Yang diubah | Test yang dijalankan saat development |
+|---|---|
+| `src/lib/domain/*` | `pnpm test:domain` |
+| `src/components/ui/*` | `pnpm vitest run src/components/ui` |
+| `src/features/*` (1 fitur) | unit/component test fitur itu + e2e spec fitur itu saja |
+| `server/*` | `pnpm test:server` + e2e spec terkait bila endpoint berubah |
+| `e2e/<spec>.ts` saja | `pnpm playwright test e2e/<spec>.ts` |
+| CSS/token tema | `pnpm audit:a11y` (atau spec a11y terkait), bukan full e2e |
+| Animasi/motion | `pnpm audit:motion` + e2e motion/dev terkait |
+
+Bila ragu mana yang terpengaruh, pilih yang paling dekat dengan file yang diubah,
+bukan yang paling luas.
+
+### 14.2 Disiplin shell: cek dulu, pkill inkremental
+
+Port already in use atau proses nyangkut BUKAN alasan untuk langsung `pkill` massal
+berulang-ulang sampai kena timeout tool.
+
+**Urutan wajib:**
+1. Cek dulu: `ss -ltnp | grep <port>` atau `lsof -i :<port>` atau `pgrep -af <pattern>`.
+   Kalau port/proses sudah tidak ada, JANGAN pkill. Selesai.
+2. Kalau proses benar ada dan harus dimatikan, pakai timeout inkremental:
+   - Tahap 1: `timeout 5 pkill -<sig> <pattern>` (atau `kill <pid>`), cek lagi.
+   - Tahap 2: masih ada? `timeout 10 pkill -<sig> <pattern>`, cek lagi.
+   - Tahap 3: masih ada? baru sinyal lebih keras / kill PID spesifik, timeout sedang.
+   - Berhenti begitu proses/port bersih. Jangan loop tanpa batas.
+3. Selalu awali dengan cek, bukan dengan kill. Timeout tiap tahap wajib dipasang
+   (`timeout N ...`) supaya perintah tidak menggantung sampai timeout tool opencode.
+4. Untuk port bentrok saat test: lebih baik pakai port lain (env var port) bila
+   program mendukung, seperti yang dilakukan manusia. Kill adalah opsi terakhir,
+   bukan reaksi pertama.
+5. DILARANG menggabungkan pkill + wait server + audit + build dalam satu script
+   shell raksasa. Itu lama, sulit dibatalkan, dan mengganggu di tengah akan merusak
+   hasil (misalnya menutup browser audit a11y). Satu tujuan = satu perintah kecil.
+5. JANGAN pernah mencampur pkill, wait server, audit, dan build dalam satu script
+   shell multi-baris. Perintah panjang begini lama, sulit dibatalkan dengan aman,
+   dan mengganggu di tengah merusak hasil (misalnya menutup browser audit a11y).
+   Satu tujuan = satu perintah kecil.
+
+Contoh pola yang benar:
+
+```bash
+# 1. cek
+ss -ltnp | grep 5199 || echo "port free"
+# 2. bila perlu matikan, bertahap
+timeout 5 pkill -f "vite" || true
+sleep 1
+ss -ltnp | grep 5199 || echo "port free"
+# 3. hanya bila masih hidup, tahap berikutnya
+timeout 10 pkill -f "vite" || true
+```
+
+### 14.3 Jenis test
+
 - **Vitest (domain):** perhitungan tanggal, kepemilikan baris per bulan, minggu lintas
   bulan dan lintas tahun, rentang partial, validasi hari kosong, format jam titik,
   format tanggal Indonesia, parser rentang magang. Wajib cepat dan deterministik.
@@ -712,6 +815,13 @@ Catatan CI:
 - [ ] Dokumen ini diperbarui bila perilaku berubah.
 - [ ] Visual snapshot diperbarui bila perubahan UI memang disengaja.
 - [ ] Mutasi eksternal sudah mendapat ACC eksplisit dari pemilik.
+- [ ] Selama development test berjalan bertahap (bagian 14.1); full suite hanya
+      dijalankan SATU KALI di tahap final ini, perintah per gate, berhenti saat gagal.
+- [ ] Gate yang sudah lulus di sesi yang sama tidak diulang tanpa perubahan kode
+      terkait (bagian 14.1).
+- [ ] Tidak ada `pkill` massal tanpa cek; kill proses memakai pola inkremental
+      ber-timeout (bagian 14.2). Tidak ada script shell panjang yang mencampur
+      pkill + audit + build.
 
 ---
 
@@ -720,7 +830,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 6 (editor A4) selesai. Berikutnya fase 7 (ekspor PDF).
+- Fase saat ini: 7 (ekspor PDF) selesai. Berikutnya fase 8 (render/preview dokumen,
+  validasi ekspor, mode seed).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -843,10 +954,37 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (165 test), Playwright (44 test),
     audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle
     (JS awal 141.5 KB gzip).
+  - Fase 7 ekspor PDF:
+    - `server/pdf.ts`: `buildExportHtml` (murni, unit test) dan `exportMonthToPdf`
+      (Playwright `page.pdf` dengan `printBackground` dan `preferCSSPageSize`).
+      Letterhead di-embed sebagai data URI dari `public/letterhead-polinema.png`
+      agar PDF tidak bergantung server web saat render. Kop, identitas, tabel
+      enam baris, dan blok tanda tangan per halaman. Subjudul memakai tanda hubung
+      biasa, bukan em dash.
+    - `buildExportFileName`: pola `LogBook_<NIM>_<Bulan>-<Tahun>.pdf`.
+    - Endpoint `POST /api/export` (`{monthKey}`) menyimpan ke `folderExport` atau
+      `data/exports`, lalu mengembalikan `fileName` dan path.
+    - Endpoint `GET /api/export/download?file=` menyajikan PDF; menolak nama file
+      dengan path separator, `..`, atau ekstansi bukan `.pdf`.
+    - Route `/export` + nav sidebar Ekspor. `ExportPage` menampilkan daftar bulan
+      (jumlah minggu, hari, terisi) dan tombol Ekspor per bulan yang memanggil
+      API lalu mengunduh lewat link download.
+    - `/export` masuk daftar halaman `scripts/axe-check.mjs`.
+    - Token `--doc-muted` diubah dari `#9a9a9a` ke `#666666` agar label tanggal
+      11px di editor memenuhi kontras AA 4.5:1 di atas kertas putih.
+    - Unit test baru `server/pdf.test.ts` (nama file, struktur HTML, strip jam,
+      ukuran kertas, penolakan rentang kosong).
+    - E2E baru `e2e/export.spec.ts` (6 test): daftar bulan, POST ekspor, bulan
+      di luar rentang, body tanpa monthKey, download aman path traversal, unduh
+      dari UI.
+  - Verifikasi lulus: lint, typecheck, Vitest (172 test), Playwright (50 test),
+    audit motion, audit a11y 0 pelanggaran (6 halaman x 9 tema), anggaran bundle
+    (JS awal 142.9 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 6 tuntas).
+  - tidak ada (fase 7 tuntas).
 - Berikutnya:
-  - Fase 7 ekspor PDF.
+  - Fase 8: render/preview dokumen di browser, validasi ekspor, mode seed
+    (bagian 18 poin 7 dan 8).
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.

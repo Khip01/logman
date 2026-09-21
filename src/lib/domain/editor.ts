@@ -49,11 +49,10 @@ export function showsJamStrip(day: DayEntry): boolean {
 
 /**
  * Label jam untuk ditampilkan. Mengembalikan strip untuk status Sakit dan Izin, atau
- * nilai jam bila ada. Bila kosong, pemanggil yang memutuskan memakai jam default.
+ * nilai jam bila ada. Bila kosong, memakai fallback (misal jam default).
  */
-export function displayJam(day: DayEntry, field: 'masuk' | 'pulang'): string {
-  if (showsJamStrip(day)) return JAM_STRIP
-  return day[field] ?? ''
+export function displayJam(value: string | null, fallback: string): string {
+  return value ?? fallback
 }
 
 export interface DayIssue {

@@ -1,9 +1,15 @@
 import AxeBuilder from '@axe-core/playwright'
 import { chromium } from '@playwright/test'
 
-/** Audit aksesibilitas semua halaman pada semua tema. */
+/**
+ * Audit aksesibilitas semua halaman pada semua tema.
+ *
+ * Tema dijalankan PARALEL (beberapa context pada satu browser) supaya total waktu
+ * mendekati satu tema, bukan sembilan. Animasi dibekukan via CSS sehingga wait bisa
+ * pendek dan hasil deterministik.
+ */
 const BASE = 'http://127.0.0.1:5199'
-const PAGES = ['/', '/settings', '/dev/components', '/dev/motion', '/dev/perf']
+const PAGES = ['/', '/settings', '/export', '/dev/components', '/dev/motion', '/dev/perf']
 const THEMES = [
   'hitam-pekat',
   'hitam-abu',
@@ -15,9 +21,6 @@ const THEMES = [
   'putih-word',
   'word-dark',
 ]
-
-const browser = await chromium.launch()
-let total = 0
 
 /**
  * Membekukan semua animasi dan transisi sebelum audit.
@@ -40,40 +43,57 @@ const FREEZE_ANIMATION_CSS = `
   }
 `
 
-for (const theme of THEMES) {
+const browser = await chromium.launch()
+
+async function auditTheme(theme) {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 1400 },
     reducedMotion: 'reduce',
   })
   const page = await context.newPage()
-  for (const path of PAGES) {
-    await page.goto(`${BASE}${path}`)
-    await page.addStyleTag({ content: FREEZE_ANIMATION_CSS })
-    await page.evaluate((t) => {
-      document.documentElement.dataset.theme = t
-    }, theme)
-    await page.waitForTimeout(350)
-    const results = await new AxeBuilder({ page }).analyze()
-    const serious = results.violations.filter(
-      (v) => v.impact === 'serious' || v.impact === 'critical',
-    )
-    if (serious.length > 0) {
-      console.log(`[${theme}] ${path}`)
+  const findings = []
+
+  try {
+    for (const path of PAGES) {
+      await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded' })
+      await page.addStyleTag({ content: FREEZE_ANIMATION_CSS })
+      await page.evaluate((t) => {
+        document.documentElement.dataset.theme = t
+      }, theme)
+      // Animasi sudah dibekukan; wait pendek hanya untuk React commit + font.
+      await page.waitForTimeout(80)
+      const results = await new AxeBuilder({ page }).analyze()
+      const serious = results.violations.filter(
+        (v) => v.impact === 'serious' || v.impact === 'critical',
+      )
       for (const v of serious) {
-        console.log(`   [${v.impact}] ${v.id}`)
-        for (const n of v.nodes.slice(0, 2)) {
-          console.log('      target:', n.target.join(' '))
-          for (const c of [...n.any, ...n.all]) {
-            if (c.message) console.log('      msg   :', c.message.slice(0, 170))
-          }
-        }
-        total += 1
+        findings.push({ theme, path, violation: v })
       }
     }
+  } finally {
+    await context.close()
   }
-  await context.close()
+
+  return findings
+}
+
+const all = await Promise.all(THEMES.map((theme) => auditTheme(theme)))
+await browser.close()
+
+let total = 0
+for (const findings of all) {
+  for (const { theme, path, violation: v } of findings) {
+    console.log(`[${theme}] ${path}`)
+    console.log(`   [${v.impact}] ${v.id}`)
+    for (const n of v.nodes.slice(0, 2)) {
+      console.log('      target:', n.target.join(' '))
+      for (const c of [...n.any, ...n.all]) {
+        if (c.message) console.log('      msg   :', c.message.slice(0, 170))
+      }
+    }
+    total += 1
+  }
 }
 
 console.log(`TOTAL pelanggaran serious/critical: ${total}`)
-await browser.close()
 process.exit(total === 0 ? 0 : 1)

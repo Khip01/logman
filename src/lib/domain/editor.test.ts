@@ -79,20 +79,13 @@ describe('isStripStatus dan showsJamStrip', () => {
 })
 
 describe('displayJam', () => {
-  it('menampilkan strip untuk Sakit dan Izin walau ada jam tersimpan', () => {
-    const sakit = day({ alasan: 'Sakit', masuk: '08.00', pulang: '16.00' })
-    expect(displayJam(sakit, 'masuk')).toBe(JAM_STRIP)
-    expect(displayJam(sakit, 'pulang')).toBe(JAM_STRIP)
+  it('menampilkan fallback bila jam belum diisi', () => {
+    expect(displayJam(null, '08.00')).toBe('08.00')
   })
 
   it('menampilkan jam bila ada', () => {
-    const terisi = day({ kegiatan: 'Kerja', masuk: '08.00', pulang: '16.00' })
-    expect(displayJam(terisi, 'masuk')).toBe('08.00')
-    expect(displayJam(terisi, 'pulang')).toBe('16.00')
-  })
-
-  it('menampilkan string kosong bila jam belum diisi', () => {
-    expect(displayJam(day({ kegiatan: 'Kerja' }), 'masuk')).toBe('')
+    expect(displayJam('08.00', '09.00')).toBe('08.00')
+    expect(displayJam('16.00', '17.00')).toBe('16.00')
   })
 
   it('memakai karakter strip yang bukan em dash', () => {

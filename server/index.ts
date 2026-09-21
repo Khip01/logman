@@ -1,11 +1,13 @@
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { applyDayPatch, parseConfig, parseLogData } from '../src/lib/domain/schema'
 import type { AppConfig, DayEntry, LogData } from '../src/lib/domain/types'
 import { createServerLogger, readRecentLogs } from './logger'
+import { buildExportFileName, exportMonthToPdf } from './pdf'
 import {
   backupBeforeWrite,
   createPaths,
@@ -172,6 +174,71 @@ app.post('/api/logs/client', async (c) => {
 app.get('/api/logs/recent', (c) => {
   const limit = Number(c.req.query('limit') ?? 200)
   return c.json({ lines: readRecentLogs(paths.logsDir, Number.isFinite(limit) ? limit : 200) })
+})
+
+app.post('/api/export', async (c) => {
+  const traceId = log.newTrace()
+  const body = (await c.req.json().catch(() => null)) as { monthKey?: string } | null
+  if (!body?.monthKey) return c.json({ error: 'Field monthKey wajib diisi.' }, 400)
+
+  const config = loadConfig()
+  const logs = loadLogs()
+  const months = buildMonthGroups(config.magang.mulai ?? '', config.magang.selesai ?? '')
+  const month = months.find((m) => m.key === body.monthKey)
+
+  if (!month) {
+    return c.json({ error: `Bulan ${body.monthKey} tidak ditemukan dalam rentang magang.` }, 404)
+  }
+
+  const exportDir = config.folderExport || join(dataRoot, 'exports')
+  mkdirSync(exportDir, { recursive: true })
+  const fileName = buildExportFileName(config.profil.nim, body.monthKey)
+  const outputPath = join(exportDir, fileName)
+
+  try {
+    await exportMonthToPdf({
+      config,
+      logs,
+      monthKey: body.monthKey,
+      outputPath,
+    })
+    log.info('export.pdf', 'PDF bulan diekspor.', {
+      traceId,
+      data: { monthKey: body.monthKey, file: fileName },
+    })
+    return c.json({ ok: true, fileName, path: outputPath })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Gagal mengekspor PDF.'
+    log.error('export.pdf', message, { traceId })
+    return c.json({ error: message }, 500)
+  }
+})
+
+/**
+ * Menyajikan file PDF hasil ekspor untuk diunduh browser. Hanya nama file polos
+ * yang diterima, sehingga path traversal tidak mungkin terjadi.
+ */
+app.get('/api/export/download', async (c) => {
+  const file = c.req.query('file')
+  if (!file || file.includes('/') || file.includes('\\') || file.includes('..')) {
+    return c.json({ error: 'Nama file tidak valid.' }, 400)
+  }
+  if (!file.endsWith('.pdf')) {
+    return c.json({ error: 'Hanya file PDF yang boleh diunduh.' }, 400)
+  }
+
+  const config = loadConfig()
+  const exportDir = config.folderExport || join(dataRoot, 'exports')
+  const filePath = join(exportDir, file)
+  if (!existsSync(filePath)) {
+    return c.json({ error: 'File tidak ditemukan. Ekspor ulang bulan tersebut.' }, 404)
+  }
+
+  const { readFileSync: read } = await import('node:fs')
+  return c.body(read(filePath), 200, {
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename="${file}"`,
+  })
 })
 
 // Sajikan hasil build produksi bila ada, supaya satu perintah bisa melayani semuanya.

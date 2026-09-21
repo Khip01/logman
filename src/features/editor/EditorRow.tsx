@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { displayJam, JAM_STRIP, patchAlasan, patchKegiatan } from '@/lib/domain/editor'
+import { JAM_STRIP, patchAlasan, patchKegiatan, showsJamStrip } from '@/lib/domain/editor'
 import { normalizeJam } from '@/lib/domain/schema'
 import type { DayEntry } from '@/lib/domain/types'
 import { useConfigStore } from '@/stores/config'
@@ -46,7 +46,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
   const alasanOptions = useConfigStore((s) => s.config.alasan)
 
   const day = stored ?? emptyDay(date)
-  const strip = displayJam(day, 'masuk') === JAM_STRIP
+  const strip = showsJamStrip(day)
   const adaAlasan = Boolean(day.alasan && !day.kegiatan)
 
   function commitJam(field: 'masuk' | 'pulang', raw: string) {

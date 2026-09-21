@@ -2,6 +2,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  Download,
   FlaskConical,
   Gauge,
   Layers,
@@ -33,6 +34,7 @@ interface NavItem {
 const MAIN_NAV: NavItem[] = [
   { label: 'Log Book', path: '/', icon: BookOpen },
   { label: 'Pengaturan', path: '/settings', icon: Settings },
+  { label: 'Ekspor', path: '/export', icon: Download },
 ]
 
 const DEV_NAV: NavItem[] = [

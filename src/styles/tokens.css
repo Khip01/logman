@@ -37,7 +37,9 @@
   --doc-ink: #000000;
   --doc-border: #000000;
   --doc-header-bg: #d0cece;
-  --doc-muted: #9a9a9a;
+  /* Harus memenuhi kontras AA 4.5:1 di atas kertas putih untuk teks 11-12px.
+     #666666 memberi rasio sekitar 5.7:1. Nilai lama #9a9a9a hanya 2.8:1. */
+  --doc-muted: #666666;
 }
 
 /* ---------------------------------------------------------------- GELAP */

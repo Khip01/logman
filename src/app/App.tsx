@@ -23,6 +23,9 @@ const LogbookPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
+const ExportPage = lazy(() =>
+  import('@/features/export/ExportPage').then((m) => ({ default: m.ExportPage })),
+)
 const DevComponentsPage = lazy(() =>
   import('../../dev/DevComponentsPage').then((m) => ({ default: m.DevComponentsPage })),
 )
@@ -42,6 +45,7 @@ interface RouteDef {
 const ROUTES: RouteDef[] = [
   { path: '/', breadcrumb: ['Log Book'], element: <LogbookPage /> },
   { path: '/settings', breadcrumb: ['Pengaturan'], element: <SettingsPage /> },
+  { path: '/export', breadcrumb: ['Ekspor'], element: <ExportPage /> },
   { path: '/dev/components', breadcrumb: ['Dev', 'Komponen'], element: <DevComponentsPage /> },
   { path: '/dev/motion', breadcrumb: ['Dev', 'Motion'], element: <DevMotionPage /> },
   { path: '/dev/perf', breadcrumb: ['Dev', 'Performa'], element: <DevPerfPage /> },
