@@ -1,3 +1,4 @@
+import { sanitizeAlasan } from './alasan'
 import { isIsoDate } from './date'
 import type {
   AppConfig,
@@ -111,12 +112,6 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
 }
 
-function asStringArray(value: unknown, fallback: string[]): string[] {
-  if (!Array.isArray(value)) return fallback
-  const items = value.filter((v): v is string => typeof v === 'string')
-  return items.length > 0 ? items : fallback
-}
-
 /**
  * Memvalidasi dan menormalkan konfigurasi. Field yang rusak diganti default dan
  * dicatat sebagai issue, sehingga konfigurasi yang sebagian rusak tetap bisa dipakai.
@@ -171,7 +166,9 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     profil,
     magang: { mulai, selesai } as RentangMagang,
     jamDefault,
-    alasan: asStringArray(input.alasan, base.alasan),
+    // Alasan dikelola user. Daftar kosong dibiarkan kosong (user boleh menghapus
+    // semua), hanya input yang bukan array yang jatuh ke default.
+    alasan: Array.isArray(input.alasan) ? sanitizeAlasan(input.alasan) : base.alasan,
     tema: asString(input.tema, base.tema),
     tierAnimasi: asString(input.tierAnimasi, base.tierAnimasi),
     ukuranKertas,

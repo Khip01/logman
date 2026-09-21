@@ -707,7 +707,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 3 (data layer) selesai. Berikutnya fase 4 (Settings lengkap).
+- Fase saat ini: 4 (Settings lengkap) selesai. Berikutnya fase 5 (navigasi bulan dan
+  minggu, plus logika kepemilikan baris).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -759,13 +760,30 @@ langsung tahu posisinya.
       perubahan/Gagal) dengan `data-testid="save-status"`.
     - E2E memakai direktori `data-e2e` terpisah; `reuseExistingServer` selalu false
       dengan sengaja agar test tidak menyentuh data nyata.
-  - Verifikasi lulus: lint, typecheck, Vitest (105 test), Playwright (24 test),
+  - Fase 4 Settings lengkap:
+    - `src/lib/domain/alasan.ts`: sanitizeAlasan, addAlasan, removeAlasan (murni,
+      dedupe tanpa beda huruf, unit test lengkap).
+    - `src/features/settings/JamInput.tsx`: input jam format titik dengan validasi dan
+      normalisasi saat blur atau Enter. `input type="time"` sengaja tidak dipakai karena
+      format tampilannya mengikuti locale.
+    - `src/features/settings/JamDefaultSection.tsx`: jam default Senin sampai Sabtu,
+      plus tombol kembali ke 08.00 sampai 16.00.
+    - `src/features/settings/AlasanSection.tsx`: kelola daftar alasan (tambah, hapus,
+      kembalikan bawaan). Duplikat ditolak tanpa membedakan huruf besar/kecil.
+    - `src/features/settings/DokumenEksporSection.tsx`: ukuran kertas (A4, F4, Letter),
+      folder ekspor, dan pratinjau pola nama file.
+    - `parseConfig` kini memakai `sanitizeAlasan` dan MEMPERTAHANKAN daftar alasan
+      kosong, karena user boleh menghapus semua. Sebelumnya daftar kosong dikembalikan
+      ke default, sehingga penghapusan tidak bertahan setelah reload.
+    - Seksi "Belum tersedia" (ComingSoonSection) dihapus dari Settings.
+  - Verifikasi lulus: lint, typecheck, Vitest (117 test), Playwright (30 test),
     audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle
-    (JS awal 133.4 KB gzip).
+    (JS awal 134.8 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 3 tuntas).
+  - tidak ada (fase 4 tuntas).
 - Berikutnya:
-  - Fase 4 Settings lengkap (jam default, alasan, ukuran kertas, folder ekspor).
+  - Fase 5 navigasi bulan dan minggu, plus logika kepemilikan baris.
+  - Fase 6 editor A4: edit inline, auto-grow, navigasi keyboard.
   - Fase 5 editor langsung per sel dan daftar minggu penuh.
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak

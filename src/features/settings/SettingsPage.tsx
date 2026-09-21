@@ -1,5 +1,4 @@
-import { Clock, Palette, Ruler, Sparkles, UserRound } from 'lucide-react'
-import { Badge } from '@/components/ui/Badge'
+import { Palette, Sparkles, UserRound } from 'lucide-react'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -8,6 +7,9 @@ import { cn } from '@/lib/utils/cn'
 import { MOTION_TIER_PROFILE } from '@/motion/tiers'
 import { useConfigStore } from '@/stores/config'
 import { MOTION_TIERS, THEMES, useUiStore } from '@/stores/ui'
+import { AlasanSection } from './AlasanSection'
+import { DokumenEksporSection } from './DokumenEksporSection'
+import { JamDefaultSection } from './JamDefaultSection'
 import { TierPreview } from './TierPreview'
 
 export function SettingsPage() {
@@ -148,8 +150,9 @@ export function SettingsPage() {
         <TierPreview tier={motion} />
       </section>
 
-      <ComingSoonSection icon={Clock} title="Jam Default" />
-      <ComingSoonSection icon={Ruler} title="Ukuran Kertas" />
+      <JamDefaultSection />
+      <AlasanSection />
+      <DokumenEksporSection />
     </div>
   )
 }
@@ -160,23 +163,6 @@ function SectionTitle({ icon: Icon, title }: { icon: typeof Palette; title: stri
       <Icon className="size-4" strokeWidth={1.75} />
       {title}
     </h2>
-  )
-}
-
-/**
- * Seksi yang belum tersedia. Sengaja TIDAK memakai opacity pada teks, karena
- * menurunkan kontras di bawah ambang aksesibilitas. Status ditandai dengan Badge.
- */
-function ComingSoonSection({ icon: Icon, title }: { icon: typeof Palette; title: string }) {
-  return (
-    <section className="mb-10">
-      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-        <Icon className="size-4" strokeWidth={1.75} />
-        {title}
-        <Badge>Belum tersedia</Badge>
-      </h2>
-      <p className="text-[12px] text-text-muted">Akan datang di fase berikutnya.</p>
-    </section>
   )
 }
 
