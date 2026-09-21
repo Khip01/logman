@@ -1,5 +1,11 @@
 import { lazy, Suspense } from 'react'
 import { useRoute } from '@/app/router'
+import {
+  useBootstrapData,
+  useDeriveMonths,
+  useFlushOnHidden,
+  useUiPreferenceSync,
+} from '@/app/useAppData'
 import { useThemeEffect } from '@/app/useThemeEffect'
 import { FeatureErrorBoundary } from '@/components/shared/FeatureErrorBoundary'
 import { Shell } from '@/components/shared/Shell'
@@ -59,6 +65,10 @@ function RouteFallback() {
 
 export function App() {
   useThemeEffect()
+  useBootstrapData()
+  useUiPreferenceSync()
+  useDeriveMonths()
+  useFlushOnHidden()
   const path = useRoute()
 
   const match = ROUTES.find((route) => route.path === path)

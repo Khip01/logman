@@ -46,7 +46,9 @@ export function StatusBar() {
     >
       <div className="flex items-center gap-2">
         <span className={cn('size-1.5 shrink-0', DOT_CLASS[state])} aria-hidden />
-        <span className="text-text-main">{LABEL[state]}</span>
+        <span data-testid="save-status" className="text-text-main">
+          {LABEL[state]}
+        </span>
         {state === 'saving' ? (
           <Loader2 className="size-3 animate-spin text-status-warn-text" aria-hidden />
         ) : null}

@@ -63,6 +63,8 @@ export interface JamDefaultHarian {
 
 export type JamDefault = Record<DayOfWeek, JamDefaultHarian>
 
+export type UkuranKertas = 'A4' | 'F4' | 'Letter'
+
 export interface AppConfig {
   profil: Profil
   magang: RentangMagang
@@ -70,6 +72,20 @@ export interface AppConfig {
   alasan: string[]
   tema: string
   tierAnimasi: string
-  ukuranKertas: 'A4' | 'F4' | 'Letter'
+  ukuranKertas: UkuranKertas
   folderExport: string
+}
+
+/**
+ * Seluruh data log dalam satu struktur (AGENTS.md bagian 5.2).
+ *
+ * Minggu dan bulan TIDAK disimpan, melainkan diturunkan dari rentang magang lewat
+ * `buildMonthGroups`. Yang disimpan hanya entri hari, sehingga autosave cukup
+ * mengirim hari yang berubah saja.
+ */
+export interface LogData {
+  version: number
+  updatedAt: string
+  /** Entri hari, dikunci oleh tanggal ISO `YYYY-MM-DD`. */
+  days: Record<string, DayEntry>
 }

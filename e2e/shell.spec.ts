@@ -9,7 +9,13 @@ test('shell tampil dan halaman logbook merender tanpa error', async ({ page }) =
 
   await page.goto('/')
   await expect(page.getByTestId('sidebar-rail')).toBeVisible()
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Rentang magang')
+
+  // Halaman logbook punya dua bentuk: ajakan mengatur rentang (bila kosong) atau
+  // daftar minggu (bila rentang sudah diisi). Uji keduanya agar test tidak rapuh
+  // terhadap isi direktori data.
+  const kosong = page.getByRole('heading', { name: 'Rentang magang belum diatur' })
+  const terisi = page.getByRole('heading', { name: 'Log Book' })
+  await expect(kosong.or(terisi)).toBeVisible()
   expect(errors).toEqual([])
 })
 
@@ -40,7 +46,7 @@ test('rail selalu tampil dan drawer bisa dibuka lalu ditutup', async ({ page }) 
   await expect(rail).toBeVisible()
 
   // Konten tetap bisa diklik di desktop (tidak ada backdrop yang memblokir).
-  await page.getByRole('heading', { level: 1 }).click()
+  await page.locator('h1').first().click()
 
   // Buka drawer dari tombol di rail.
   await rail.getByRole('button', { name: 'Buka sidebar' }).click()

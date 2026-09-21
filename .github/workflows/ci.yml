@@ -83,7 +83,7 @@ jobs:
       - run: pnpm test:e2e
       - name: Audit aksesibilitas semua tema
         run: |
-          pnpm dev &
+          LOGMAN_DATA_DIR=data-ci pnpm dev &
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:5199/ > /dev/null; then break; fi
             sleep 2

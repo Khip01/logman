@@ -1,9 +1,12 @@
-import { Clock, FileText, Palette, Ruler, Sparkles } from 'lucide-react'
+import { Clock, Palette, Ruler, Sparkles, UserRound } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
+import { Field } from '@/components/ui/Field'
+import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { setThemeAnimated } from '@/lib/theme/themeTransition'
 import { cn } from '@/lib/utils/cn'
 import { MOTION_TIER_PROFILE } from '@/motion/tiers'
+import { useConfigStore } from '@/stores/config'
 import { MOTION_TIERS, THEMES, useUiStore } from '@/stores/ui'
 import { TierPreview } from './TierPreview'
 
@@ -12,12 +15,84 @@ export function SettingsPage() {
   const motion = useUiStore((s) => s.motion)
   const setMotion = useUiStore((s) => s.setMotion)
 
+  const config = useConfigStore((s) => s.config)
+  const update = useConfigStore((s) => s.update)
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <h1 className="mb-8 text-[17px] font-semibold text-text-primary">Pengaturan</h1>
 
+      {/* Profil dan rentang magang. Wajib sebelum daftar Log Book muncul. */}
+      <section className="mb-10" data-testid="section-profil">
+        <SectionTitle icon={UserRound} title="Profil dan Rentang Magang" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field htmlFor="set-nama" label="Nama mahasiswa">
+            <Input
+              id="set-nama"
+              value={config.profil.nama}
+              placeholder="Nama lengkap"
+              onChange={(event) =>
+                update({ profil: { ...config.profil, nama: event.target.value } })
+              }
+            />
+          </Field>
+          <Field htmlFor="set-nim" label="NIM">
+            <Input
+              id="set-nim"
+              value={config.profil.nim}
+              placeholder="Nomor induk mahasiswa"
+              onChange={(event) =>
+                update({ profil: { ...config.profil, nim: event.target.value } })
+              }
+            />
+          </Field>
+          <Field htmlFor="set-prodi" label="Program Studi">
+            <Input
+              id="set-prodi"
+              value={config.profil.programStudi}
+              onChange={(event) =>
+                update({ profil: { ...config.profil, programStudi: event.target.value } })
+              }
+            />
+          </Field>
+          <Field htmlFor="set-mitra" label="Nama Mitra Industri">
+            <Input
+              id="set-mitra"
+              value={config.profil.mitraIndustri}
+              onChange={(event) =>
+                update({ profil: { ...config.profil, mitraIndustri: event.target.value } })
+              }
+            />
+          </Field>
+          <Field
+            htmlFor="set-mulai"
+            label="Tanggal mulai magang"
+            description="Daftar Log Book dibuat otomatis dari rentang ini."
+          >
+            <Input
+              id="set-mulai"
+              type="date"
+              value={config.magang.mulai ?? ''}
+              onChange={(event) =>
+                update({ magang: { ...config.magang, mulai: event.target.value } })
+              }
+            />
+          </Field>
+          <Field htmlFor="set-selesai" label="Tanggal selesai magang">
+            <Input
+              id="set-selesai"
+              type="date"
+              value={config.magang.selesai ?? ''}
+              onChange={(event) =>
+                update({ magang: { ...config.magang, selesai: event.target.value } })
+              }
+            />
+          </Field>
+        </div>
+      </section>
+
       {/* Tema: grid kartu swatch miniatur, bukan radio (AGENTS.md bagian 10) */}
-      <section className="mb-10">
+      <section className="mb-10" data-testid="section-tema">
         <SectionTitle icon={Palette} title="Tema" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {THEMES.map((item) => (
@@ -49,7 +124,7 @@ export function SettingsPage() {
       </section>
 
       {/* Tier animasi: kontrol manual, default penuh (AGENTS.md bagian 8.1) */}
-      <section className="mb-10">
+      <section className="mb-10" data-testid="section-tier">
         <SectionTitle icon={Sparkles} title="Tier Animasi" />
         <p className="mb-3 text-[12px] text-text-muted">
           Menentukan kadar gerakan sekunder. Tier tinggi lebih ekspresif dan lebih berat.
@@ -62,7 +137,10 @@ export function SettingsPage() {
               label: MOTION_TIER_PROFILE[tier].label,
             }))}
             value={motion}
-            onValueChange={setMotion}
+            onValueChange={(value) => {
+              setMotion(value)
+              update({ tierAnimasi: value })
+            }}
           />
         </div>
 
@@ -72,8 +150,16 @@ export function SettingsPage() {
 
       <ComingSoonSection icon={Clock} title="Jam Default" />
       <ComingSoonSection icon={Ruler} title="Ukuran Kertas" />
-      <ComingSoonSection icon={FileText} title="Profil dan Rentang Magang" />
     </div>
+  )
+}
+
+function SectionTitle({ icon: Icon, title }: { icon: typeof Palette; title: string }) {
+  return (
+    <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
+      <Icon className="size-4" strokeWidth={1.75} />
+      {title}
+    </h2>
   )
 }
 
@@ -91,15 +177,6 @@ function ComingSoonSection({ icon: Icon, title }: { icon: typeof Palette; title:
       </h2>
       <p className="text-[12px] text-text-muted">Akan datang di fase berikutnya.</p>
     </section>
-  )
-}
-
-function SectionTitle({ icon: Icon, title }: { icon: typeof Palette; title: string }) {
-  return (
-    <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-      <Icon className="size-4" strokeWidth={1.75} />
-      {title}
-    </h2>
   )
 }
 

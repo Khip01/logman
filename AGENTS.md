@@ -707,7 +707,7 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 2 (design system dan shell) selesai. Berikutnya fase 3 (data layer).
+- Fase saat ini: 3 (data layer) selesai. Berikutnya fase 4 (Settings lengkap).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -732,18 +732,41 @@ langsung tahu posisinya.
   - Code splitting per route, JS awal turun ke sekitar 129 KB gzip.
   - Token kontras aksesibilitas (`--status-*-text`) ditambahkan untuk tema gelap dan
     terang.
-  - Store Zustand: `ui` (tema, tier animasi, sidebar), `saveStatus`, `logbook`.
-  - Server Hono minimal dengan `/api/health`.
+  - Store Zustand: `ui` (tema, tier animasi, sidebar), `saveStatus`, `logbook`,
+    `config`, `logs`.
+  - Server Hono dengan `/api/health`, `/api/config` (GET/PUT), `/api/logs`
+    (GET/PATCH/PUT), `/api/backups`, `/api/restore`, `/api/logs-client`,
+    `/api/logs-recent`, dan penyajian `dist/`.
   - Skrip: `scripts/analyze-bundle.mjs`, `scripts/audit-motion.mjs`,
     `scripts/axe-check.mjs`.
   - CI: `.github/workflows/ci.yml` dan `release.yml`.
-  - Verifikasi lulus: lint, typecheck, Vitest (18 test), Playwright (16 test),
-    audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle.
+  - Fase 3 data layer:
+    - Logika murni `src/lib/domain/`: `date.ts` (aritmetika tanggal, format Indonesia),
+      `calendar.ts` (buildMonthGroups, disabledReasonFor, isDayActive, mondaysInRange,
+      buildWeekDays), `schema.ts` (parseConfig, parseDayEntry, parseLogData,
+      applyDayPatch, normalizeJam), `types.ts`.
+    - Akses data DIP: `src/lib/repo/` (interface + InMemory + Http), `src/lib/log/`
+      (JSON Lines + traceId), `src/lib/autosave/debouncedSaver.ts` (debounce 500ms,
+      merge patch, flush, cancel).
+    - Penyimpanan server: `server/store.ts` (tulis atomik + backup rotasi maks 20 +
+      restore), `server/logger.ts` (JSON Lines harian), `server/index.ts`.
+    - Bootstrap aplikasi: `src/app/useAppData.ts` (useBootstrapData,
+      useUiPreferenceSync, useDeriveMonths, useFlushOnHidden).
+    - Halaman Logbook membuat daftar minggu dari rentang magang (minggu lintas bulan
+      muncul di dua grup bulan), Settings mengautosave profil, rentang magang, tema,
+      dan tier animasi.
+    - Status bar menampilkan status simpan autosave (Tersimpan/Menyimpan/Ada
+      perubahan/Gagal) dengan `data-testid="save-status"`.
+    - E2E memakai direktori `data-e2e` terpisah; `reuseExistingServer` selalu false
+      dengan sengaja agar test tidak menyentuh data nyata.
+  - Verifikasi lulus: lint, typecheck, Vitest (105 test), Playwright (24 test),
+    audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle
+    (JS awal 133.4 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 2 tuntas).
+  - tidak ada (fase 3 tuntas).
 - Berikutnya:
-  - Fase 3 data layer (repository, skema config dan logs, autosave, backup, logger).
-  - Fase 4 Settings lengkap (profil, rentang magang, jam default, alasan, kertas).
+  - Fase 4 Settings lengkap (jam default, alasan, ukuran kertas, folder ekspor).
+  - Fase 5 editor langsung per sel dan daftar minggu penuh.
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.
