@@ -55,6 +55,14 @@ export const pulseVariants: Variants = {
   },
 }
 
+/** Transisi indikator yang bergeser pada segmented control (shared layout). */
+export const segmentIndicatorTransition: Transition = {
+  type: 'spring',
+  stiffness: 520,
+  damping: 42,
+  mass: 0.6,
+}
+
 export interface TierPreviewVariants {
   window: Variants
   panel: Variants

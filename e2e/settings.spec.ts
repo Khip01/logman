@@ -35,7 +35,7 @@ test('tier mati mengganti tema tanpa View Transitions', async ({ page }) => {
   await installViewTransitionCounter(page)
   await page.goto('/settings')
 
-  await page.getByRole('button', { name: 'Mati' }).click()
+  await page.getByRole('radio', { name: 'Mati' }).click()
   const before = await readViewTransitionCount(page)
 
   await page.getByText('Putih Tulang').click()
@@ -51,11 +51,11 @@ test('pratinjau tier menampilkan mini window dan deskripsi tier terpilih', async
   await expect(preview).toBeVisible()
 
   // Label tier di pratinjau mengikuti tier yang dipilih.
-  await page.getByRole('button', { name: 'Minimal' }).click()
+  await page.getByRole('radio', { name: 'Minimal' }).click()
   await expect(preview.getByText('Minimal')).toBeVisible()
   await expect(page.getByText('Hanya transisi opacity', { exact: false })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Penuh' }).click()
+  await page.getByRole('radio', { name: 'Penuh' }).click()
   await expect(preview.getByText('Penuh')).toBeVisible()
   await expect(page.getByText('Semua animasi aktif', { exact: false })).toBeVisible()
 })
@@ -91,7 +91,7 @@ test('pratinjau tier benar-benar beranimasi saat tier berganti', async ({ page }
     }
   })()
 
-  await page.getByRole('button', { name: 'Seimbang' }).click()
+  await page.getByRole('radio', { name: 'Seimbang' }).click()
   await record
   reading = false
 
@@ -102,7 +102,7 @@ test('pratinjau tier benar-benar beranimasi saat tier berganti', async ({ page }
 
 test('tier mati membuat pratinjau tampil seketika', async ({ page }) => {
   await page.goto('/settings')
-  await page.getByRole('button', { name: 'Mati' }).click()
+  await page.getByRole('radio', { name: 'Mati' }).click()
   await page.waitForTimeout(120)
 
   const samples: string[] = []

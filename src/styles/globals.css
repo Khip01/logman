@@ -34,6 +34,13 @@
   --color-status-warn: var(--status-warn);
   --color-status-error: var(--status-error);
   --color-status-idle: var(--status-idle);
+  --color-status-ok-bg: var(--status-ok-bg);
+  --color-status-warn-bg: var(--status-warn-bg);
+  --color-status-error-bg: var(--status-error-bg);
+  --color-status-idle-bg: var(--status-idle-bg);
+  --color-status-ok-text: var(--status-ok-text);
+  --color-status-warn-text: var(--status-warn-text);
+  --color-status-error-text: var(--status-error-text);
 
   --color-doc-paper: var(--doc-paper);
   --color-doc-ink: var(--doc-ink);

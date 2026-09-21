@@ -18,7 +18,7 @@ test('navigasi ke pengaturan menampilkan 9 tema dan tier animasi', async ({ page
   await expect(page.getByRole('heading', { name: 'Pengaturan' })).toBeVisible()
   await expect(page.getByText('Hitam Pekat')).toBeVisible()
   await expect(page.getByText('Dark Word')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Penuh' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: 'Penuh' })).toBeVisible()
 })
 
 test('mengganti tema mengubah atribut data-theme', async ({ page }) => {
@@ -29,7 +29,7 @@ test('mengganti tema mengubah atribut data-theme', async ({ page }) => {
 
 test('mengubah tier animasi mengubah data-motion', async ({ page }) => {
   await page.goto('/settings')
-  await page.getByRole('button', { name: 'Minimal' }).click()
+  await page.getByRole('radio', { name: 'Minimal' }).click()
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'minimal')
 })
 

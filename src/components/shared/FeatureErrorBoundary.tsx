@@ -32,7 +32,7 @@ export class FeatureErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="m-6 border border-status-error bg-bg-card p-4">
-        <h2 className="mb-2 text-[13px] font-semibold text-status-error">
+        <h2 className="mb-2 text-[13px] font-semibold text-status-error-text">
           Fitur "{this.props.name}" gagal dimuat
         </h2>
         <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-[11px] text-text-muted">

@@ -48,11 +48,11 @@ export function StatusBar() {
         <span className={cn('size-1.5 shrink-0', DOT_CLASS[state])} aria-hidden />
         <span className="text-text-main">{LABEL[state]}</span>
         {state === 'saving' ? (
-          <Loader2 className="size-3 animate-spin text-status-warn" aria-hidden />
+          <Loader2 className="size-3 animate-spin text-status-warn-text" aria-hidden />
         ) : null}
-        {state === 'saved' ? <Check className="size-3 text-status-ok" aria-hidden /> : null}
+        {state === 'saved' ? <Check className="size-3 text-status-ok-text" aria-hidden /> : null}
         {state === 'error' ? (
-          <AlertTriangle className="size-3 text-status-error" aria-hidden />
+          <AlertTriangle className="size-3 text-status-error-text" aria-hidden />
         ) : null}
         {message ? <span className="text-text-dim">{message}</span> : null}
       </div>

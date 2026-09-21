@@ -439,6 +439,36 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
 - Area dokumen A4 tetap bersih: monokrom, tanpa aksen, tanpa animasi. Preview harus sama
   dengan hasil cetak.
 
+### 10.1 Primitif UI (`src/components/ui/`)
+
+- Satu komponen, satu file. Ekspor lewat barrel `src/components/ui/index.ts`.
+- Varian memakai CVA. Nama variant dan size harus konsisten antar komponen.
+- Radix hanya untuk perilaku dan aksesibilitas. Tampilan selalu direstyle total ke token
+  kita. DILARANG membiarkan gaya bawaan Radix atau shadcn apa adanya.
+- Komponen yang tersedia:
+  - Dasar: `Button`, `Card` (+ Header/Title/Description/Content/Footer), `Badge`,
+    `Separator`, `Kbd`, `Spinner`, `EmptyState`.
+  - Form: `Input`, `Textarea`, `Label`, `Field`, `Switch`, `Checkbox`, `Slider`,
+    `Select`, `Combobox`, `SegmentedControl`.
+  - Overlay: `Dialog`, `Popover`, `Tooltip` (+ `SimpleTooltip`).
+- `Combobox` mendukung pilih dari daftar DAN teks bebas. Ini dipakai untuk kolom alasan
+  hari kosong (bagian 11.3).
+- `SegmentedControl` memakai shared layout Motion untuk indikator geser. Selalu beri
+  `aria-label`.
+- Tombol bahaya memakai varian `danger` bergaya outline merah. Latar merah solid dengan
+  teks putih DILARANG karena gagal rasio kontras AA.
+- Setiap primitif baru WAJIB didaftarkan di galeri `/dev/components` (bagian 15).
+- Aksesibilitas adalah syarat, bukan tambahan:
+  - Semua kontrol harus punya nama yang dapat dibaca (label, `aria-label`, atau
+    `aria-labelledby`). Slider tanpa nama pernah lolos dan ditangkap axe.
+  - Teks kecil (11 sampai 13 px) wajib memenuhi kontras WCAG AA 4.5:1 pada SEMUA tema.
+  - DILARANG memakai utilitas `opacity-*` pada teks untuk menandai "nonaktif", karena
+    menurunkan kontras. Gunakan token warna redup atau `Badge` status.
+  - Teks status memakai token `--status-ok-text`, `--status-warn-text`,
+    `--status-error-text` yang nilainya berbeda untuk tema gelap dan terang. DILARANG
+    memakai warna status mentah (`--status-ok` dan sejenisnya) sebagai warna teks.
+  - Verifikasi otomatis: `pnpm audit:a11y` (menyapu semua halaman x semua tema).
+
 ---
 
 ## 11. Dokumen dan editor
@@ -535,7 +565,15 @@ Teknik wajib:
 - Zustand dengan selector. DILARANG subscribe ke seluruh store.
 - Autosave debounced, hanya menyerialkan bagian yang berubah.
 - LazyMotion dengan `domAnimation` untuk fitur animasi.
-- Code splitting per route.
+- Code splitting per route. Setiap halaman di `src/app/App.tsx` dimuat dengan `lazy`
+  dan dibungkus `Suspense`. Shell, provider, dan primitif inti tetap di bundle awal.
+  Halaman dev (`/dev/*`) juga lazy, karena tidak dipakai user akhir.
+- Definisi "JS awal" untuk anggaran: entry chunk plus chunk yang di-import statis oleh
+  entry. Chunk lazy TIDAK dihitung, karena baru dimuat saat route dibuka.
+  `scripts/analyze-bundle.mjs` menghitungnya dengan cara ini.
+- Catatan penting: kode baru yang ditambahkan ke bundle awal harus dipertimbangkan
+  dampaknya. Halaman dev pernah tidak sengaja menarik primitif ke bundle awal dan
+  menaikkannya ke 161 KB gzip. Code splitting per route adalah pengaman standar.
 
 Yang TIDAK dijadikan gate CI (jujur soal keterbatasan):
 - FPS dan smoothness nyata pada perangkat spesifik. Runner CI tidak punya GPU yang
@@ -552,11 +590,15 @@ Yang TIDAK dijadikan gate CI (jujur soal keterbatasan):
   format tanggal Indonesia, parser rentang magang. Wajib cepat dan deterministik.
 - **Vitest + Testing Library (komponen):** editor menerima ketikan, Tab pindah sel,
   Enter menambah baris Kegiatan, validasi muncul, ganti tema mengubah `data-theme`,
-  tier animasi berubah.
+  tier animasi berubah. Termasuk primitif UI: Switch, SegmentedControl, Combobox.
 - **Playwright (e2e):** alur isi rentang magang, isi satu minggu, ekspor PDF,
   verifikasi PDF bisa dibuka dan jumlah halaman benar.
+- **Playwright (dev tooling):** galeri `/dev/components` menampilkan semua seksi,
+  dialog bisa dibuka, katalog `/dev/motion` menampilkan semua preset. Termasuk test
+  regresi animasi (memastikan animasi masuk benar-benar berjalan, lihat bagian 8.3.1).
 - **Visual snapshot:** screenshot dibandingkan dengan baseline. Ini GATE CI.
-- **Aksesibilitas:** `@axe-core/playwright`. Ini GATE CI.
+- **Aksesibilitas:** `@axe-core/playwright` dijalankan di e2e DAN lewat `pnpm audit:a11y`
+  (semua halaman x semua tema). Pelanggaran impact serious dan critical adalah GATE CI.
 - **Perf gate:** ukuran bundle, long task saat mengetik, jumlah render.
 
 Artefak CI wajib diunggah saat gagal: screenshot, trace Playwright, laporan visualizer.
@@ -568,10 +610,15 @@ Tujuannya agar agen bisa "melihat" kegagalan tanpa akses layar.
 
 Karena agen tidak bisa melihat layar pemilik, fasilitas ini wajib ada:
 
-- `/dev/components`: galeri semua komponen UI yang sudah direstyle.
-- `/dev/motion`: katalog semua preset animasi, bisa dipratinjau per tier.
+- `/dev/components`: galeri semua komponen UI yang sudah direstyle. Setiap primitif baru
+  WAJIB ditambahkan di sini, dengan contoh semua varian dan ukuran. Setiap seksi punya
+  `data-testid` berpola `galeri-<nama-seksi>` agar bisa diuji.
+- `/dev/motion`: katalog semua preset animasi, bisa dipratinjau per tier. Setiap preset
+  punya `data-testid` berpola `motion-<nama>`.
 - `/dev/perf`: menampilkan ukuran bundle, jumlah render, dan long task dalam satu
   tampilan, supaya progres terlihat tanpa membuka CI.
+- Skrip audit: `pnpm audit:motion` (aturan animasi) dan `pnpm audit:a11y` (aksesibilitas
+  semua halaman x semua tema, memakai axe lewat `scripts/axe-check.mjs`).
 - Log terstruktur: JSON lines dengan `traceId`, sehingga satu aksi bisa dilacak dari UI
   sampai penulisan disk. Lokasi: `data/logs/`.
 - Error boundary PER FITUR, selain global. Satu fitur gagal tidak mematikan aplikasi.
@@ -590,7 +637,8 @@ Job:
 1. `lint`: Biome check.
 2. `typecheck`: `tsc --noEmit`.
 3. `unit`: Vitest (domain + komponen).
-4. `build`: Vite build, cek anggaran bundle, unggah laporan visualizer.
+4. `build`: Vite build, cek anggaran bundle, audit aturan animasi, unggah laporan
+   visualizer.
 5. `e2e`: Playwright, snapshot visual, a11y. Unggah screenshot dan trace.
 6. `perf`: harness long task dan jumlah render.
 
@@ -659,7 +707,7 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 2 (design system dan shell) berjalan.
+- Fase saat ini: 2 (design system dan shell) selesai. Berikutnya fase 3 (data layer).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -670,26 +718,29 @@ langsung tahu posisinya.
   - Design system dasar: `src/styles/tokens.css` (9 tema), `globals.css` (pemetaan
     Tailwind, print CSS, View Transitions), favicon.
   - Shell: Sidebar (rail statis + drawer overlay), TopHeader, StatusBar sticky,
-    FeatureErrorBoundary, MotionProvider + `src/motion/presets.ts`.
+    FeatureErrorBoundary, AppProviders (LazyMotion + Tooltip).
   - Halaman: Logbook (placeholder rentang belum diatur), Settings (pemilih 9 tema dan
-    4 tier animasi berfungsi), tiga halaman dev placeholder.
+    4 tier animasi berfungsi), tiga halaman dev.
+  - Primitif UI lengkap di `src/components/ui/`: Button, Card, Badge, Separator, Kbd,
+    Spinner, EmptyState, Input, Textarea, Label, Field, Switch, Checkbox, Slider,
+    Select, Combobox, SegmentedControl, Dialog, Popover, Tooltip.
+  - Galeri `/dev/components` berisi semua primitif, katalog `/dev/motion` berisi semua
+    preset animasi per tier.
   - Transisi tema beranimasi: reveal melingkar dari titik klik lewat View Transitions,
-    dengan fallback langsung. Implementasi `src/lib/theme/themeTransition.ts`.
-  - Profil tier animasi `src/motion/tiers.ts` plus pratinjau mini window di Settings
-    (`src/features/settings/TierPreview.tsx`), dengan tombol putar ulang dan pause
-    saat tab tidak aktif.
-  - Perbaikan bug: `AnimatePresence initial={false}` di Shell sempat mematikan seluruh
-    animasi masuk lewat konteks. Sudah dihapus dan didokumentasikan di bagian 8.3.1.
-    Ditambah 2 test regresi e2e yang mengunci perilaku ini.
+    dengan fallback langsung.
+  - Profil tier animasi `src/motion/tiers.ts` plus pratinjau mini window di Settings.
+  - Code splitting per route, JS awal turun ke sekitar 129 KB gzip.
+  - Token kontras aksesibilitas (`--status-*-text`) ditambahkan untuk tema gelap dan
+    terang.
   - Store Zustand: `ui` (tema, tier animasi, sidebar), `saveStatus`, `logbook`.
   - Server Hono minimal dengan `/api/health`.
-  - Skrip `scripts/analyze-bundle.mjs` dan `scripts/audit-motion.mjs`.
+  - Skrip: `scripts/analyze-bundle.mjs`, `scripts/audit-motion.mjs`,
+    `scripts/axe-check.mjs`.
   - CI: `.github/workflows/ci.yml` dan `release.yml`.
-  - Verifikasi lulus: lint, typecheck, Vitest (12 test), Playwright (11 test),
-    audit motion, anggaran bundle (sekitar 114 KB gzip, batas 200 KB).
+  - Verifikasi lulus: lint, typecheck, Vitest (18 test), Playwright (16 test),
+    audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle.
 - Sedang dikerjakan:
-  - Fase 2 lanjutan: primitif UI (Button, Input, dll) dan mengisi galeri
-    `/dev/components` serta `/dev/motion`.
+  - tidak ada (fase 2 tuntas).
 - Berikutnya:
   - Fase 3 data layer (repository, skema config dan logs, autosave, backup, logger).
   - Fase 4 Settings lengkap (profil, rentang magang, jam default, alasan, kertas).
@@ -698,3 +749,4 @@ langsung tahu posisinya.
     perlu membedah ulang docx.
   - Dev server default: web `http://127.0.0.1:5199`, API `http://127.0.0.1:5198`.
   - Commit GPG signing aktif. Setiap commit otomatis ditandatangani.
+  - Snapshot visual Playwright belum dibuat (dijadwalkan di fase 9).

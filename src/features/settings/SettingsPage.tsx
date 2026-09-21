@@ -1,4 +1,6 @@
 import { Clock, FileText, Palette, Ruler, Sparkles } from 'lucide-react'
+import { Badge } from '@/components/ui/Badge'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { setThemeAnimated } from '@/lib/theme/themeTransition'
 import { cn } from '@/lib/utils/cn'
 import { MOTION_TIER_PROFILE } from '@/motion/tiers'
@@ -52,50 +54,43 @@ export function SettingsPage() {
         <p className="mb-3 text-[12px] text-text-muted">
           Menentukan kadar gerakan sekunder. Tier tinggi lebih ekspresif dan lebih berat.
         </p>
-        <div className="mb-4 inline-flex border border-border-base">
-          {MOTION_TIERS.map((tier) => (
-            <button
-              key={tier}
-              type="button"
-              onClick={() => setMotion(tier)}
-              aria-pressed={motion === tier}
-              className={cn(
-                'theme-t px-4 py-2 text-[12px]',
-                motion === tier
-                  ? 'bg-accent font-semibold text-accent-text'
-                  : 'text-text-muted hover:bg-bg-card hover:text-text-primary',
-              )}
-            >
-              {MOTION_TIER_PROFILE[tier].label}
-            </button>
-          ))}
+        <div className="mb-4">
+          <SegmentedControl
+            aria-label="Tier animasi"
+            options={MOTION_TIERS.map((tier) => ({
+              value: tier,
+              label: MOTION_TIER_PROFILE[tier].label,
+            }))}
+            value={motion}
+            onValueChange={setMotion}
+          />
         </div>
 
         {/* Pratinjau mini window di bawah tier selector, di atas deskripsinya. */}
         <TierPreview tier={motion} />
       </section>
 
-      <section className="mb-10 opacity-60">
-        <SectionTitle icon={Clock} title="Jam Default" />
-        <p className="text-[12px] text-text-muted">
-          Belum tersedia. Akan datang di fase berikutnya.
-        </p>
-      </section>
-
-      <section className="mb-10 opacity-60">
-        <SectionTitle icon={Ruler} title="Ukuran Kertas" />
-        <p className="text-[12px] text-text-muted">
-          Belum tersedia. Akan datang di fase berikutnya.
-        </p>
-      </section>
-
-      <section className="opacity-60">
-        <SectionTitle icon={FileText} title="Profil dan Rentang Magang" />
-        <p className="text-[12px] text-text-muted">
-          Belum tersedia. Akan datang di fase berikutnya.
-        </p>
-      </section>
+      <ComingSoonSection icon={Clock} title="Jam Default" />
+      <ComingSoonSection icon={Ruler} title="Ukuran Kertas" />
+      <ComingSoonSection icon={FileText} title="Profil dan Rentang Magang" />
     </div>
+  )
+}
+
+/**
+ * Seksi yang belum tersedia. Sengaja TIDAK memakai opacity pada teks, karena
+ * menurunkan kontras di bawah ambang aksesibilitas. Status ditandai dengan Badge.
+ */
+function ComingSoonSection({ icon: Icon, title }: { icon: typeof Palette; title: string }) {
+  return (
+    <section className="mb-10">
+      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
+        <Icon className="size-4" strokeWidth={1.75} />
+        {title}
+        <Badge>Belum tersedia</Badge>
+      </h2>
+      <p className="text-[12px] text-text-muted">Akan datang di fase berikutnya.</p>
+    </section>
   )
 }
 
