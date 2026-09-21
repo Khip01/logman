@@ -35,8 +35,11 @@ test.describe('alur data', () => {
 
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'Log Book' })).toBeVisible()
-    await expect(page.getByText('Agustus 2026')).toBeVisible()
-    await expect(page.getByText('September 2026')).toBeVisible()
+    // Halaman menampilkan satu bulan aktif pada satu waktu; bulan yang memuat hari ini
+    // dibuka otomatis, dan bulan lain dijangkau lewat tombol navigasi.
+    await expect(page.locator('h2').first()).toHaveText('September 2026')
+    await page.getByRole('button', { name: 'Bulan sebelumnya' }).click()
+    await expect(page.locator('h2').first()).toHaveText('Agustus 2026')
   })
 
   test('data bertahan setelah reload', async ({ page }) => {

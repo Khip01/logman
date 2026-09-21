@@ -291,6 +291,19 @@ dibuka), apakah baris tersebut aktif atau disabled. Fungsi inilah sumber kebenar
 wajib punya unit test lengkap, termasuk kasus lintas bulan, lintas tahun, dan rentang
 partial di kedua ujungnya.
 
+Catatan implementasi navigasi (fase 5):
+- Halaman Log Book menampilkan SATU bulan aktif pada satu waktu, dengan tombol maju dan
+  mundur. Bulan yang memuat hari ini dipilih otomatis; bila hari ini di luar rentang,
+  bulan pertama yang dipakai. Pilihan disimpan di store `logbook`, struktur bulan tetap
+  diturunkan dari rentang.
+- Pemilih minggu di halaman berupa tab M1, M2, ... untuk bulan aktif.
+- Karena minggu lintas bulan muncul di dua grup, memilih minggu SELALU menyertakan bulan
+  konteks (`selectWeek(weekId, monthKey)`). Tanpa konteks itu, baris milik bulan yang
+  salah yang akan dianggap aktif.
+- Rail sidebar (saat tertutup) menampilkan label bulan 3 huruf. Mengkliknya membuka
+  popover berisi daftar minggu bulan itu, sehingga user tetap bisa memilih minggu tanpa
+  membuka drawer.
+
 ---
 
 ## 7. Autosave dan status simpan
@@ -707,8 +720,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 4 (Settings lengkap) selesai. Berikutnya fase 5 (navigasi bulan dan
-  minggu, plus logika kepemilikan baris).
+- Fase saat ini: 5 (navigasi bulan dan minggu) selesai. Berikutnya fase 6 (editor A4:
+  edit inline, auto-grow, navigasi keyboard).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -776,15 +789,32 @@ langsung tahu posisinya.
       kosong, karena user boleh menghapus semua. Sebelumnya daftar kosong dikembalikan
       ke default, sehingga penghapusan tidak bertahan setelah reload.
     - Seksi "Belum tersedia" (ComingSoonSection) dihapus dari Settings.
-  - Verifikasi lulus: lint, typecheck, Vitest (117 test), Playwright (30 test),
+  - Fase 5 navigasi bulan dan minggu:
+    - `src/lib/domain/calendar.ts` ditambah helper murni: `pickInitialMonthKey`,
+      `pickInitialWeekId`, `findWeek`, `findMonthOfWeek`, `disabledReasonText`, plus
+      tipe `DisabledReason`. Selector tema pilihan tetap diturunkan dari rentang.
+    - `src/stores/logbook.ts` menegakkan `selectWeek(weekId, monthKey)`: pilihan minggu
+      SELALU menyertakan bulan konteks, karena minggu lintas bulan muncul di dua grup.
+      `setActiveMonth` memindahkan minggu aktif ke minggu pertama bulan baru bila minggu
+      lama tidak ada di sana.
+    - `src/app/useAppData.ts` memilih bulan dan minggu awal secara otomatis dan menjaga
+      pilihan tetap valid saat data berubah.
+    - `LogbookPage` menampilkan satu bulan aktif, tombol maju dan mundur, tab minggu
+      M1, M2, ..., dan tabel enam baris hari. Baris non-aktif diredupkan dan diberi badge
+      alasan (Bulan lain, Sebelum magang, Setelah magang).
+    - Rail sidebar menampilkan label bulan 3 huruf. Mengklik satu bulan membuka popover
+      berisi daftar minggu, sehingga minggu tetap bisa dipilih tanpa membuka drawer.
+    - E2E dijalankan SERIAL (`workers: 1`, `fullyParallel: false`) karena aplikasi
+      single-user dengan satu `config.json`, sehingga spec paralel saling menimpa
+      rentang magang. Spec baru `e2e/navigation.spec.ts` menguji kepemilikan baris
+      minggu lintas bulan.
+  - Verifikasi lulus: lint, typecheck, Vitest (137 test), Playwright (36 test),
     audit motion, audit a11y 0 pelanggaran (5 halaman x 9 tema), anggaran bundle
-    (JS awal 134.8 KB gzip).
+    (JS awal 141.6 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 4 tuntas).
+  - tidak ada (fase 5 tuntas).
 - Berikutnya:
-  - Fase 5 navigasi bulan dan minggu, plus logika kepemilikan baris.
   - Fase 6 editor A4: edit inline, auto-grow, navigasi keyboard.
-  - Fase 5 editor langsung per sel dan daftar minggu penuh.
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.

@@ -6,10 +6,14 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // Aplikasi ini single-user dengan SATU file `config.json` dan `logs.json`. Semua spec
+  // e2e memakai server dan direktori data yang sama, sehingga menjalankannya paralel
+  // membuat spec saling menimpa konfigurasi (misal rentang magang). Dijalankan serial
+  // agar hasilnya deterministik. CI juga memakai workers 1.
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:5199',

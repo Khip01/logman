@@ -5,9 +5,14 @@ import {
   createEmptyDay,
   dayOfWeekKey,
   disabledReasonFor,
+  disabledReasonText,
+  findMonthOfWeek,
+  findWeek,
   formatWeekRange,
   isDayActive,
   mondaysInRange,
+  pickInitialMonthKey,
+  pickInitialWeekId,
   weekDates,
 } from './calendar'
 
@@ -206,5 +211,88 @@ describe('weekDates dan formatWeekRange', () => {
   it('memformat rentang minggu lintas bulan', () => {
     expect(formatWeekRange('2026-08-31')).toBe('31 Agu - 5 Sep')
     expect(formatWeekRange('2026-09-21')).toBe('21 Sep - 26 Sep')
+  })
+})
+
+describe('pickInitialMonthKey', () => {
+  const groups = buildMonthGroups('2026-08-01', '2026-12-31')
+
+  it('memilih bulan yang memuat hari ini', () => {
+    expect(pickInitialMonthKey(groups, '2026-10-05')).toBe('2026-10')
+  })
+
+  it('memilih bulan pertama bila hari ini di luar rentang, sebelum', () => {
+    expect(pickInitialMonthKey(groups, '2026-01-01')).toBe('2026-08')
+  })
+
+  it('memilih bulan pertama bila hari ini di luar rentang, sesudah', () => {
+    expect(pickInitialMonthKey(groups, '2030-01-01')).toBe('2026-08')
+  })
+
+  it('mengembalikan null untuk daftar kosong', () => {
+    expect(pickInitialMonthKey([], '2026-10-05')).toBeNull()
+  })
+
+  it('hari ini di bulan tanpa grup (2026-09-20 Minggu) tetap cocok lewat kunci bulan', () => {
+    expect(pickInitialMonthKey(groups, '2026-09-20')).toBe('2026-09')
+  })
+})
+
+describe('pickInitialWeekId', () => {
+  const groups = buildMonthGroups('2026-08-01', '2026-12-31')
+  const september = groups.find((g) => g.key === '2026-09')
+
+  /** September dijamin ada pada rentang di atas; gagal jelas bila tidak. */
+  function septemberGroup() {
+    if (!september) throw new Error('Grup bulan September 2026 tidak ditemukan')
+    return september
+  }
+
+  it('memilih minggu yang memuat hari ini bila hari ini di bulan itu', () => {
+    // 2026-09-21 adalah Senin minggu 21 Sep sampai 26 Sep.
+    expect(pickInitialWeekId(septemberGroup(), '2026-09-23')).toBe('2026-09-21')
+  })
+
+  it('memilih minggu pertama bila hari ini bukan di bulan itu', () => {
+    expect(pickInitialWeekId(septemberGroup(), '2026-10-05')).toBe(septemberGroup().weeks[0]?.id)
+  })
+
+  it('memilih minggu pertama bila hari ini akhir pekan dan tidak masuk minggu mana pun', () => {
+    // 2026-09-20 adalah Minggu, di luar minggu kerja mana pun.
+    expect(pickInitialWeekId(septemberGroup(), '2026-09-20')).toBe(septemberGroup().weeks[0]?.id)
+  })
+
+  it('mengembalikan null untuk bulan tanpa minggu', () => {
+    const kosong = { key: '2026-09', label: 'September 2026', short: 'Sep', weeks: [] }
+    expect(pickInitialWeekId(kosong, '2026-09-21')).toBeNull()
+  })
+})
+
+describe('findWeek dan findMonthOfWeek', () => {
+  const groups = buildMonthGroups('2026-08-01', '2026-09-30')
+
+  it('menemukan minggu lintas bulan di kedua grup', () => {
+    const week = findWeek(groups, '2026-08-31')
+    expect(week?.startDate).toBe('2026-08-31')
+
+    const months = groups.filter((g) => g.weeks.some((w) => w.id === '2026-08-31'))
+    expect(months.map((m) => m.key)).toEqual(['2026-08', '2026-09'])
+  })
+
+  it('mengembalikan null untuk id yang tidak ada', () => {
+    expect(findWeek(groups, '1999-01-04')).toBeNull()
+    expect(findMonthOfWeek(groups, '1999-01-04')).toBeNull()
+  })
+
+  it('menemukan grup bulan dari sebuah minggu', () => {
+    expect(findMonthOfWeek(groups, '2026-09-21')?.key).toBe('2026-09')
+  })
+})
+
+describe('disabledReasonText', () => {
+  it('memberi teks untuk setiap alasan', () => {
+    expect(disabledReasonText('sebelum-magang')).toBe('Sebelum magang')
+    expect(disabledReasonText('setelah-magang')).toBe('Setelah magang')
+    expect(disabledReasonText('bulan-lain')).toBe('Bulan lain')
   })
 })

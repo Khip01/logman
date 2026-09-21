@@ -19,11 +19,36 @@ const THEMES = [
 const browser = await chromium.launch()
 let total = 0
 
+/**
+ * Membekukan semua animasi dan transisi sebelum audit.
+ *
+ * Alasan: beberapa preset animasi memakai opacity (misalnya denyut idle di
+ * `/dev/motion`). Bila axe mengukur saat opacity berada di tengah animasi, warna teks
+ * terlihat tercampur dengan latar dan kontras terbaca lebih rendah dari keadaan akhir,
+ * sehingga audit menjadi flaky. Ini masalah alat ukur, bukan warna tema. Membekukan
+ * animasi membuat pengukuran deterministik dan mengukur keadaan akhir yang sebenarnya.
+ *
+ * Gaya ini hanya ada di dalam sesi audit, tidak pernah masuk ke aplikasi.
+ */
+const FREEZE_ANIMATION_CSS = `
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+`
+
 for (const theme of THEMES) {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 1400 } })
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 1400 },
+    reducedMotion: 'reduce',
+  })
   const page = await context.newPage()
   for (const path of PAGES) {
     await page.goto(`${BASE}${path}`)
+    await page.addStyleTag({ content: FREEZE_ANIMATION_CSS })
     await page.evaluate((t) => {
       document.documentElement.dataset.theme = t
     }, theme)

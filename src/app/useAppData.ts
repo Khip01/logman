@@ -1,5 +1,10 @@
 import { useEffect } from 'react'
-import { buildMonthGroups } from '@/lib/domain/calendar'
+import {
+  buildMonthGroups,
+  pickInitialMonthKey,
+  pickInitialWeekId,
+  todayIso,
+} from '@/lib/domain/calendar'
 import { log } from '@/lib/log'
 import { useConfigStore } from '@/stores/config'
 import { useLogbookStore } from '@/stores/logbook'
@@ -49,19 +54,21 @@ export function useUiPreferenceSync(): void {
  * Membangun daftar bulan dan minggu dari rentang magang, lalu mengisinya dengan
  * entri hari dari store logs. Struktur bulan dan minggu selalu diturunkan, tidak
  * disimpan (AGENTS.md bagian 5.2).
+ *
+ * Efek ini juga menjaga agar pilihan bulan dan minggu tetap valid: bulan pertama
+ * dipilih otomatis (bulan yang memuat hari ini bila ada), dan minggu aktif selalu
+ * berada di bulan yang sedang dibuka.
  */
 export function useDeriveMonths(): void {
   const mulai = useConfigStore((s) => s.config.magang.mulai)
   const selesai = useConfigStore((s) => s.config.magang.selesai)
   const days = useLogsStore((s) => s.data.days)
   const setMonths = useLogbookStore((s) => s.setMonths)
-  const activeMonthKey = useLogbookStore((s) => s.activeMonthKey)
-  const setActiveMonth = useLogbookStore((s) => s.setActiveMonth)
 
   useEffect(() => {
     if (!mulai || !selesai) {
       setMonths([])
-      if (activeMonthKey !== null) setActiveMonth(null)
+      useLogbookStore.getState().setActiveMonth(null)
       return
     }
 
@@ -78,8 +85,21 @@ export function useDeriveMonths(): void {
     }))
 
     setMonths(filled)
-    if (!activeMonthKey && filled[0]) setActiveMonth(filled[0].key)
-  }, [mulai, selesai, days, setMonths, activeMonthKey, setActiveMonth])
+
+    // Pertahankan pilihan user bila masih valid, selain itu pilih default.
+    const today = todayIso()
+    const logbook = useLogbookStore.getState()
+    const monthKey = logbook.activeMonthKey ?? pickInitialMonthKey(filled, today)
+    const month = monthKey ? filled.find((item) => item.key === monthKey) : undefined
+    if (!month) return
+
+    const weekId = month.weeks.some((week) => week.id === logbook.activeWeekId)
+      ? logbook.activeWeekId
+      : pickInitialWeekId(month, today)
+
+    if (weekId) logbook.selectWeek(weekId, month.key)
+    else logbook.setActiveMonth(month.key)
+  }, [mulai, selesai, days, setMonths])
 }
 
 /**

@@ -171,6 +171,55 @@ export function weekDates(mondayIso: string): string[] {
   return Array.from({ length: 6 }, (_, index) => addDays(mondayIso, index))
 }
 
+/**
+ * Memilih bulan yang dibuka saat pertama kali.
+ *
+ * Aturan: bulan yang memuat tanggal `today` bila ada, supaya user langsung mendarat di
+ * minggu berjalan. Bila `today` di luar rentang, pakai bulan pertama. Mengembalikan
+ * null bila daftar bulan kosong.
+ */
+export function pickInitialMonthKey(months: MonthGroup[], today: string): string | null {
+  if (months.length === 0) return null
+  const containing = months.find((month) => month.key === monthKey(today))
+  return (containing ?? months[0])?.key ?? null
+}
+
+/**
+ * Memilih minggu default di dalam sebuah bulan.
+ *
+ * Aturan: minggu yang memuat `today` bila `today` berada di bulan itu, selain itu
+ * minggu pertama. Mengembalikan null bila bulan tidak punya minggu.
+ */
+export function pickInitialWeekId(month: MonthGroup, today: string): string | null {
+  if (month.weeks.length === 0) return null
+  if (monthKey(today) === month.key) {
+    const containing = month.weeks.find((week) => isWithin(today, week.startDate, week.endDate))
+    if (containing) return containing.id
+  }
+  return month.weeks[0]?.id ?? null
+}
+
+/** Mencari minggu berdasarkan id di seluruh grup bulan. */
+export function findWeek(months: MonthGroup[], weekId: string): WeekEntry | null {
+  for (const month of months) {
+    const week = month.weeks.find((item) => item.id === weekId)
+    if (week) return week
+  }
+  return null
+}
+
+/** Mencari grup bulan yang memuat sebuah minggu. */
+export function findMonthOfWeek(months: MonthGroup[], weekId: string): MonthGroup | null {
+  return months.find((month) => month.weeks.some((week) => week.id === weekId)) ?? null
+}
+
+/** Label alasan disabled untuk ditampilkan di UI. */
+export function disabledReasonText(reason: DisabledReason): string {
+  if (reason === 'sebelum-magang') return 'Sebelum magang'
+  if (reason === 'setelah-magang') return 'Setelah magang'
+  return 'Bulan lain'
+}
+
 /** Label rentang minggu untuk sidebar, misal "31 Agu - 5 Sep". */
 export function formatWeekRange(mondayIso: string): string {
   const short = (iso: string) => {

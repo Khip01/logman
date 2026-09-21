@@ -12,6 +12,8 @@ import {
 import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import { navigate } from '@/app/router'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
+import { formatWeekRange } from '@/lib/domain/calendar'
 import { cn } from '@/lib/utils/cn'
 import {
   listItemVariants,
@@ -55,7 +57,7 @@ export function Sidebar({ activePath }: SidebarProps) {
   const activeMonthKey = useLogbookStore((s) => s.activeMonthKey)
   const setActiveMonth = useLogbookStore((s) => s.setActiveMonth)
   const activeWeekId = useLogbookStore((s) => s.activeWeekId)
-  const setActiveWeek = useLogbookStore((s) => s.setActiveWeek)
+  const selectWeek = useLogbookStore((s) => s.selectWeek)
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
 
   function openDrawerAt(key: string | null) {
@@ -71,8 +73,11 @@ export function Sidebar({ activePath }: SidebarProps) {
     setActiveMonth(key)
   }
 
-  function selectWeek(weekId: string) {
-    setActiveWeek(weekId)
+  function pickWeek(monthKey: string, weekId: string) {
+    // Bulan konteks ikut dipilih, penting untuk minggu lintas bulan (AGENTS.md bagian 6).
+    selectWeek(weekId, monthKey)
+    // Perluas daftar minggu bulan ini, tutup yang lain agar rapi.
+    setOpenMonths({ [monthKey]: true })
     navigate('/')
   }
 
@@ -183,7 +188,7 @@ export function Sidebar({ activePath }: SidebarProps) {
                                 >
                                   <button
                                     type="button"
-                                    onClick={() => selectWeek(week.id)}
+                                    onClick={() => pickWeek(month.key, week.id)}
                                     className={cn(
                                       'theme-t block w-full px-2 py-1.5 text-left text-[12px]',
                                       week.id === activeWeekId
@@ -193,7 +198,7 @@ export function Sidebar({ activePath }: SidebarProps) {
                                   >
                                     <span className="font-semibold">M{week.weekOfMonth}</span>
                                     <span className="ml-2 text-[11px]">
-                                      {week.startDate} - {week.endDate}
+                                      {formatWeekRange(week.startDate)}
                                     </span>
                                   </button>
                                 </m.li>
@@ -249,20 +254,46 @@ export function Sidebar({ activePath }: SidebarProps) {
             <PanelLeftOpen className="mt-2 size-4 text-text-dim" strokeWidth={1.75} />
           ) : null}
           {months.map((month) => (
-            <button
-              key={month.key}
-              type="button"
-              onClick={() => openDrawerAt(month.key)}
-              aria-label={`Buka bulan ${month.label}`}
-              className={cn(
-                'theme-t grid h-9 w-9 shrink-0 place-items-center border text-[11px] font-semibold',
-                month.key === activeMonthKey
-                  ? 'border-border-light bg-bg-card text-text-primary'
-                  : 'border-transparent text-text-muted hover:border-border-base hover:text-text-primary',
-              )}
-            >
-              {month.short}
-            </button>
+            <Popover key={month.key}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Bulan ${month.label}`}
+                  className={cn(
+                    'theme-t grid h-9 w-9 shrink-0 place-items-center border text-[11px] font-semibold',
+                    month.key === activeMonthKey
+                      ? 'border-border-light bg-bg-card text-text-primary'
+                      : 'border-transparent text-text-muted hover:border-border-base hover:text-text-primary',
+                  )}
+                >
+                  {month.short}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="right" align="start">
+                <p className="mb-1 px-1 text-[12px] font-semibold text-text-primary">
+                  {month.label}
+                </p>
+                <ul className="m-0 max-h-72 list-none overflow-y-auto p-0">
+                  {month.weeks.map((week) => (
+                    <li key={week.id} className="list-none">
+                      <button
+                        type="button"
+                        onClick={() => pickWeek(month.key, week.id)}
+                        className={cn(
+                          'theme-t block w-full px-2 py-1.5 text-left text-[12px]',
+                          week.id === activeWeekId
+                            ? 'bg-bg-card text-text-primary'
+                            : 'text-text-dim hover:bg-bg-card hover:text-text-primary',
+                        )}
+                      >
+                        <span className="font-semibold">M{week.weekOfMonth}</span>
+                        <span className="ml-2 text-[11px]">{formatWeekRange(week.startDate)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </PopoverContent>
+            </Popover>
           ))}
         </div>
       </nav>
