@@ -1,0 +1,700 @@
+# logman
+
+Generator Log Book Magang. Aplikasi web lokal untuk menyusun Log Book kegiatan magang
+(format dokumen resmi kampus), mengeditnya langsung seperti dokumen, lalu mengekspor PDF
+siap cetak dan tanda tangan.
+
+Dokumen ini adalah sumber kebenaran tunggal (single source of truth) untuk aturan,
+konvensi, dan keputusan desain proyek. Setiap perubahan perilaku WAJIB disertai
+pembaruan dokumen ini.
+
+---
+
+## 0. Cara kerja agen (WAJIB DIBACA DULU)
+
+1. Baca seluruh dokumen ini sebelum menulis kode.
+2. Jangan menyimpang dari keputusan di dokumen ini tanpa persetujuan eksplisit pemilik.
+3. Setiap perubahan fungsional: perbarui bagian dokumen yang relevan pada commit yang sama.
+4. Prioritas urutan keputusan bila ada konflik: keamanan client side > stabilitas >
+   performa > keindahan animasi > kecepatan rilis. Semua tetap dalam batas aturan di sini.
+5. Mutasi layanan eksternal apa pun (Google Workspace, Git remote, deployment) butuh
+   persetujuan eksplisit dari pemilik per aksi. Jangan pernah push, release, atau
+   memanggil API mutasi tanpa ACC.
+6. Jangan mengarang isi, struktur data, atau perilaku yang belum diputuskan. Jika ada
+   yang belum jelas, tulis sebagai `TODO(pertanyaan)` dan tanyakan.
+
+### Aturan kerja wajib (ditegakkan setiap kali membuat fitur)
+
+Dokumen ini adalah PRD sekaligus kontrak kerja. Setiap kali mengerjakan apa pun,
+urutan ini WAJIB dijalankan:
+
+1. SEBELUM menulis kode, buka dan baca kembali bagian dokumen yang relevan dengan
+   fitur yang sedang dikerjakan. Jangan mengandalkan ingatan. Sebutkan di ringkasan
+   kerja bagian mana yang jadi acuan (misal: "acuan bagian 6 dan 8.2").
+2. SEBELUM menulis kode, periksa checklist singkat berikut terhadap rencana:
+   - Apakah ada aturan kalender (bagian 6) yang tersentuh?
+   - Apakah ada animasi, dan apakah mematuhi properti terlarang (bagian 8.2)?
+   - Apakah ada warna, dan apakah hanya lewat token (bagian 10)?
+   - Apakah ada ikon, dan apakah memakai lucide tanpa emoji (bagian 9)?
+   - Apakah menyentuh dokumen cetak, dan apakah mematuhi bagian 11 dan 12?
+   - Apakah memengaruhi performa, dan apakah anggaran bagian 13 masih aman?
+   - Apakah logika murni ini seharusnya ada di `lib/domain/` dan diuji (bagian 4, 14)?
+   - Apakah butuh mutasi eksternal, dan apakah sudah ada ACC pemilik (bagian 0.5)?
+3. SAAT menulis kode, patuhi penempatan folder (bagian 4), konvensi kode (bagian 17),
+   dan gaya output (bagian 0).
+4. SETELAH selesai, jalankan checklist bagian 19 dan perbarui dokumen ini pada commit
+   yang sama bila perilaku berubah.
+5. Jika sebuah permintaan bertentangan dengan dokumen ini, JANGAN diam-diam
+   menyimpang. Berhenti, tunjukkan bagian mana yang bertentangan, dan minta keputusan
+   pemilik lebih dulu.
+6. Jika menemukan aturan di dokumen ini yang ternyata salah atau kurang, ajukan
+   perubahan eksplisit, jangan langsung mengubahnya.
+
+Ringkasan status pekerjaan (fase mana yang sedang dikerjakan, apa yang sudah selesai,
+apa yang berikutnya) dipelihara di bagian 20 pada dokumen ini, agar sesi baru agen
+langsung tahu posisinya.
+
+### Gaya output agen
+
+- Bahasa percakapan: Indonesia. Bahasa kode, identifier, komentar kode, dan commit:
+  mengikuti konvensi teknis (Inggris) kecuali konten dokumen Log Book yang berbahasa
+  Indonesia.
+- Dilarang em dash. Gunakan tanda hubung biasa, koma, atau titik.
+- Dilarang emoji di output maupun di dalam file proyek, termasuk sebagai ikon.
+- Ringkas dan langsung. Hindari basa-basi dan pengulangan.
+
+---
+
+## 1. Tujuan proyek dan konteks
+
+Pemilik harus menyetor laporan kegiatan magang bulanan ke kampus. Laporan berbentuk
+dokumen cetak (PDF) berisi tabel kegiatan harian Senin sampai Sabtu, satu halaman per
+minggu, yang dicetak, ditandatangani basah oleh mahasiswa, dosen pembimbing, dan
+pembimbing lapangan.
+
+Aplikasi ini:
+- Menyimpan profil mahasiswa dan rentang tanggal magang.
+- Menampilkan daftar Log Book per bulan dan per minggu secara otomatis dari rentang.
+- Menyediakan editor yang menyerupai dokumen: user mengedit langsung di sel tabel.
+- Merekam kegiatan harian beserta jam masuk, jam pulang, dan alasan bila hari kosong.
+- Menyimpan otomatis saat user mengetik.
+- Menghasilkan preview A4 dan mengekspor PDF siap cetak.
+
+Bukan tujuan (out of scope saat ini):
+- Multi-user, autentikasi, atau backend terpusat.
+- Sinkronisasi cloud.
+- Edit kolaboratif real-time.
+- Aplikasi mobile native.
+
+---
+
+## 2. Keputusan yang sudah dikunci
+
+Daftar ini hasil diskusi perencanaan. Jangan diubah tanpa persetujuan pemilik.
+
+### 2.1 Lokasi dan repo
+
+- Lokasi: `/home/khip/App/log-book-magang/logman`
+- Remote: `https://github.com/Khip01/logman.git`, branch `main`.
+- Lisensi: Apache 2.0.
+
+### 2.2 Bias dan prinsip
+
+- Ini proyek yang dirawat oleh agen AI, bukan manusia. Struktur folder harus berfungsi
+  sebagai peta navigasi bagi agen.
+- Ketat pada performa dan stabilitas client side. Pemilik siap menerima kerumitan demi
+  hasil yang aman.
+- Animasi UI ekspresif dan mulus, tetapi dibatasi properti murah (lihat bagian 8).
+- Tech stack harus sangat dipahami oleh model agen untuk menulis, men-debug, membaca
+  log, dan menguji.
+
+---
+
+## 3. Tech stack (final)
+
+| Area | Pilihan | Alasan |
+| --- | --- | --- |
+| Build | Vite 8 | Ringan, minim magic, HMR instan, banyak dipahami agen |
+| UI | React 19 + TypeScript | Standar, paling fasih bagi model agen |
+| Compiler | React Compiler aktif | Auto-memoization, hilangkan kelas bug memoisasi manual |
+| Styling | Tailwind v4 | Utility menempel di JSX, agen tahu titik edit persisnya |
+| Varian | CVA + clsx + tailwind-merge | Pola standar shadcn, ringkas dan konsisten |
+| Animasi | Motion (`motion/react`) + LazyMotion | Deklaratif, fasih bagi agen, bundle fitur dimuat terpisah |
+| Animasi util | tw-animate-css | Keyframe utilitas untuk Tailwind |
+| Komponen | Radix via shadcn/ui | Aksesibilitas dan keyboard beres, direstyle total |
+| Ikon | lucide-react | SVG stroke konsisten, tree-shakable, fasih bagi agen |
+| State | Zustand (selector) | Sekitar 1 KB, cegah re-render berantai |
+| Lint/format | Biome | Satu tool, cepat, error ramah agen |
+| Server | Hono | Server mini untuk IO file, PDF, log |
+| Unit test | Vitest + Testing Library | Cepat, jsdom, terintegrasi Vite |
+| E2E test | Playwright + @axe-core/playwright | Browser nyata, screenshot, a11y, PDF |
+| Bundle analisis | rollup-plugin-visualizer | Anggaran ukuran bundle terukur |
+| Paket manager | pnpm | Cepat, hemat disk, konsisten |
+
+Ditolak dan alasannya (jangan dipakai tanpa persetujuan):
+- Next.js App Router: overkill untuk tool lokal single-user, menambah footgun RSC,
+  hydration, dan semantik caching yang sulit di-debug tanpa melihat layar.
+- SCSS: kalah dari CSS custom properties untuk tema runtime, menambah toolchain tanpa
+  manfaat nyata. Tailwind v4 sudah punya nesting dan layer reuse.
+- LaTeX/Typst sebagai engine dokumen: menambah renderer kedua dan dependency binari.
+- ESLint + Prettier: digantikan Biome.
+- Emoji sebagai ikon: dilarang.
+
+---
+
+## 4. Struktur folder
+
+Struktur adalah peta navigasi agen. Jangan menambah folder tingkat atas tanpa persetujuan.
+
+```
+logman/
+├── AGENTS.md            # dokumen ini
+├── run                  # ./run -> jalankan dev (Vite + server Hono)
+├── package.json
+├── biome.json
+├── tsconfig.json
+├── vite.config.ts
+├── vitest.config.ts
+├── playwright.config.ts
+├── .github/
+│   └── workflows/
+│       ├── ci.yml       # lint, typecheck, unit, build+budget, e2e, a11y, perf
+│       └── release.yml  # tag v* -> build produksi + GitHub Release
+├── src/
+│   ├── app/             # routing dan halaman. Tiap route lazy-loaded.
+│   ├── components/
+│   │   ├── ui/          # primitif shadcn yang sudah direstyle
+│   │   │   └── icons/   # ikon SVG buatan sendiri (non-Lucide)
+│   │   └── shared/      # Sidebar, TopHeader, StatusBar, Shell
+│   ├── features/        # per fitur: UI + hook + logikanya sendiri
+│   │   ├── logbook/
+│   │   ├── editor/
+│   │   ├── settings/
+│   │   └── export/
+│   ├── motion/          # layer preset animasi terregistrasi
+│   ├── lib/
+│   │   ├── domain/      # logika murni: tanggal, kepemilikan bulan, validasi
+│   │   ├── repo/        # LogRepository + HttpLogRepository + InMemoryLogRepository
+│   │   ├── log/         # logger terstruktur dengan traceId
+│   │   └── utils/       # helper umum
+│   ├── stores/          # Zustand store
+│   └── styles/
+│       ├── tokens.css   # 9 tema sebagai CSS custom properties + @theme Tailwind
+│       └── globals.css  # base, scrollbar, print CSS, reduced-motion
+├── server/              # Hono: config, logs, PDF, backup, logging
+├── data/                # data runtime (gitignored)
+│   ├── config.json
+│   ├── logs.json
+│   ├── backups/
+│   └── logs/            # log aplikasi (JSON lines)
+├── e2e/                 # Playwright: spec, snapshot, fixture
+├── scripts/             # audit animasi saat build, utilitas
+├── public/              # aset statis (logo letterhead, favicon)
+└── dev/                 # halaman dev: /dev/components, /dev/motion, /dev/perf
+```
+
+Aturan penempatan (jangan dilanggar):
+- Logika yang bisa diuji tanpa React WAJIB di `src/lib/domain/`. Murni, tanpa side effect.
+- Akses data HANYA lewat `LogRepository`. UI tidak boleh memanggil HTTP langsung.
+- Komponen atomik di `components/ui/`. Komposisi besar di `components/shared/`.
+- Satu fitur, satu folder di `features/`. Jangan campur antar fitur.
+
+---
+
+## 5. Model data
+
+### 5.1 `data/config.json` (konfigurasi, file terpisah dari list log)
+
+```
+{
+  "profil": {
+    "nama": "string",
+    "nim": "string",
+    "programStudi": "string (default: Sarjana Terapan Teknik Informatika)",
+    "mitraIndustri": "string (default: PT Naraya Telematika)"
+  },
+  "magang": {
+    "mulai": "YYYY-MM-DD",
+    "selesai": "YYYY-MM-DD"
+  },
+  "jamDefault": {
+    "senin": { "masuk": "08.00", "pulang": "16.00" },
+    "selasa": { "...": "..." },
+    "rabu": { "...": "..." },
+    "kamis": { "...": "..." },
+    "jumat": { "...": "..." },
+    "sabtu": { "...": "..." }
+  },
+  "alasan": ["Libur Nasional", "Cuti Bersama", "Izin", "Sakit", "Tanpa Keterangan"],
+  "tema": "hitam-pekat",
+  "tierAnimasi": "penuh",
+  "ukuranKertas": "A4",
+  "folderExport": "string (path lokal)"
+}
+```
+
+- `magang.mulai` dan `magang.selesai` WAJIB diisi sebelum daftar Log Book muncul.
+  Tanpa rentang, halaman daftar hanya menampilkan arahan ke Settings.
+- `alasan` adalah daftar yang bisa dikelola user. Selain dropdown, user boleh mengetik
+  teks bebas yang tidak ada di daftar.
+- `jamDefault` per hari. Bila user mengosongkan jam pada form, nilai default ini dipakai.
+
+### 5.2 `data/logs.json` (satu file untuk semua log)
+
+- Satu file JSON global. BUKAN satu file per bulan.
+- Berisi seluruh minggu dan seluruh entri hari.
+- Struktur internal bebas dirancang, namun harus mendukung: identifikasi minggu,
+  tanggal tiap hari, jam masuk, jam pulang, isi kegiatan, status hari (terisi, kosong,
+  libur, sakit, izin), dan alasan bila kosong.
+- Perubahan disimpan otomatis (lihat bagian 7).
+
+### 5.3 Backup
+
+- `data/backups/` menyimpan rotasi beberapa versi terakhir `logs.json` dan `config.json`.
+- Rotasi dibuat sebelum penulisan yang menimpa, supaya salah edit bisa dipulihkan.
+- Autosave menimpa file utama secara langsung, jadi backup bukan opsional.
+
+### 5.4 Akses data (DIP)
+
+- Interface `LogRepository` dan `ConfigRepository` di `src/lib/repo/`.
+- Implementasi `HttpLogRepository` untuk runtime, `InMemoryLogRepository` untuk test dan CI.
+- CI dan test TIDAK boleh menyentuh filesystem nyata.
+- Menambah backend baru tidak boleh mengubah UI.
+
+---
+
+## 6. Aturan kalender: bulan, minggu, dan kepemilikan baris
+
+Ini aturan paling mudah salah. Baca dengan teliti. Semua logika ini WAJIB murni dan diuji.
+
+1. Minggu adalah wadah (container). Satu minggu berisi baris hari Senin sampai Sabtu.
+2. Kepemilikan baris hari mengikuti BULAN dari TANGGAL hari itu, bukan bulan minggunya.
+3. Sebuah minggu boleh berisi baris dari dua bulan berbeda. Ini wajar dan harus didukung.
+4. Contoh: minggu Senin 31 Agustus sampai Sabtu 5 September.
+   - Baris Senin 31 Agustus menjadi milik grup Agustus (minggu terakhir Agustus).
+   - Baris Selasa 1 September sampai Sabtu 5 September menjadi milik grup September
+     (minggu 1 September).
+5. Baris yang bukan milik bulan yang sedang dibuka TETAP DITAMPILKAN, namun jam masuk,
+   jam pulang, dan kegiatan di-DISABLE dan diberi warna redup, seperti tanggal di
+   kalender. Tanggalnya tetap terlihat.
+6. Minggu yang melewati batas bulan MUNCUL DI DUA bulan. Saat ekspor bulanan, PDF bulan
+   ini dan bulan berikutnya memuat minggu tersebut, masing-masing dengan baris yang
+   relevan terisi dan baris lainnya disabled.
+7. Nomor minggu (M1, M2, ...) DI-RESET PER BULAN. Minggu pertama tiap bulan adalah M1.
+8. Aturan yang sama menangani minggu pertama rentang magang yang tidak mulai hari Senin.
+   Hari sebelum `magang.mulai` berperilaku persis seperti baris milik bulan lain:
+   tampil, disabled, redup. Tidak ada perlakuan khusus terpisah.
+9. Setelah `magang.selesai`, perlakuan sama: tampil, disabled, redup.
+
+Konsekuensi: satu fungsi murni menentukan, untuk setiap (tanggal, bulan yang sedang
+dibuka), apakah baris tersebut aktif atau disabled. Fungsi inilah sumber kebenaran dan
+wajib punya unit test lengkap, termasuk kasus lintas bulan, lintas tahun, dan rentang
+partial di kedua ujungnya.
+
+---
+
+## 7. Autosave dan status simpan
+
+- User mengetik di sel, perubahan disimpan otomatis ke server, yang menulis ke JSON.
+- Debounce 500 ms. Jangan menyerialkan seluruh file tiap ketikan, hanya bagian berubah.
+- Optimistic update: UI berubah langsung, penyimpanan menyusul.
+- Status bar sticky di bawah (posisi seperti status bar VS Code), selalu terlihat,
+  menampilkan salah satu status:
+  - Tersimpan (sejak perubahan terakhir sudah tersimpan)
+  - Menyimpan (sedang menulis)
+  - Ada perubahan (menunggu debounce)
+  - Gagal (tampilkan aksi coba lagi)
+- Status bar juga menampilkan status simpan konfigurasi dari Settings.
+- Autosave menimpa langsung, maka rotasi backup di bagian 5.3 wajib berjalan.
+
+---
+
+## 8. Animasi
+
+### 8.1 Tier animasi (manual, bukan otomatis)
+
+- Tier ada di Settings. TIDAK ADA autodetect. Default: Penuh.
+- Nilai: `penuh`, `seimbang`, `minimal`, `mati`.
+- Tier hanya mengurangi gerakan sekunder (stagger, gelombang, animasi idle, partikel),
+  bukan menghilangkan karakter UI. Di tier `mati` semua transisi non-esensial hilang.
+- Hormati `prefers-reduced-motion` sebagai tambahan, dan tetap sediakan override manual.
+- Tier aktif disimpan di `config.json` dan diterapkan lewat atribut di `<html>`.
+- Sumber kebenaran profil tier: `src/motion/tiers.ts` (`MOTION_TIER_PROFILE`). Menambah
+  atau mengubah kadar animasi dilakukan di file itu, bukan tersebar di komponen.
+- Settings WAJIB menampilkan PRATINJAU mini window untuk tier yang sedang dipilih, di
+  bawah kontrol tier. Pratinjau memperlihatkan gerakan panel, stagger baris, dan denyut
+  idle sesuai tier, plus tombol "Putar ulang". Pratinjau memakai preset dari
+  `buildTierPreviewVariants` di `src/motion/presets.ts`.
+- Animasi idle di pratinjau (dan di mana pun) WAJIB di-pause saat tab tidak aktif,
+  memakai `useDocumentVisible`.
+
+### 8.2 Aturan properti (disiplin performa, ditegakkan)
+
+DILARANG menganimasikan properti pemicu layout:
+`width`, `height`, `top`, `left`, `right`, `bottom`, `margin`, `padding`, `border-width`,
+`font-size`.
+
+WAJIB menganimasikan hanya properti murah:
+`transform`, `opacity`.
+
+Aturan tambahan:
+- Blur dan box-shadow besar hanya statis, tidak dianimasikan.
+- `will-change` dipakai hemat dan DILEPAS setelah animasi selesai. Jangan ditumpuk terus.
+- Animasi idle (misal gradient bergerak) di-pause saat tab tidak aktif.
+- Accordion tinggi memakai `grid-template-rows` transition atau `scaleY` dengan
+  transform-origin, bukan animasi `height`.
+- Transisi warna hanya pada properti spesifik (`color`, `background-color`,
+  `border-color`) dan hanya pada elemen shell. DILARANG `transition: all` dan DILARANG
+  memakai selector `*` untuk transisi.
+- Transisi dimatikan selama pengetikan agar tidak ada repaint di jalur input.
+
+PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
+- Reveal transisi tema menganimasikan `clip-path` pada pseudo-element
+  `::view-transition-new(root)`. Ini lapisan snapshot compositor milik View Transitions
+  API, bukan elemen DOM hidup, dan hanya berjalan saat tier mengizinkan. Semua properti
+  lain tetap tunduk pada aturan di atas. Implementasi: `src/lib/theme/themeTransition.ts`.
+
+### 8.3 Layer preset animasi
+
+- Semua animasi hidup di `src/motion/` sebagai preset terregistrasi.
+- DILARANG menulis `motion.div` tersebar di banyak komponen. Gunakan preset.
+- Menambah animasi berarti menambah preset di registry, bukan menyebar logika.
+- Setiap preset punya perilaku yang jelas untuk tiap tier.
+- Animasi berat dimuat on demand dengan LazyMotion, bukan global.
+- Elemen anak yang dianimasikan WAJIB memakai `variants`, `initial`, dan `animate`
+  secara eksplisit. Jangan hanya memasang `variants` lalu mengandalkan propagasi dari
+  induk, karena elemen yang dipasang ulang (misalnya `key` berubah) akan langsung
+  tampil pada keadaan akhir tanpa animasi.
+
+### 8.3.1 Jebakan `AnimatePresence initial={false}` (WAJIB DIINGAT)
+
+- DILARANG memberi `initial={false}` pada `AnimatePresence` yang membungkus konten
+  halaman. Nilai itu menyebar lewat konteks ke SELURUH komponen Motion di dalam pohon,
+  sehingga semua animasi masuk (pratinjau tier, kartu, panel) ikut dilewati tanpa error
+  apa pun. Gejalanya: animasi mount tidak pernah jalan, tetapi animasi yang dipicu
+  perubahan state (misalnya drawer) tetap jalan. Ini pernah terjadi dan sulit dilacak.
+- Halaman cukup memakai `initial="hidden"` biasa pada `m.div`. Animasi masuk halaman
+  pada muat pertama memang diinginkan.
+- `initial={false}` pada komponen `m.*` biasa tidak menyebar ke anak, jadi masih aman
+  bila memang perlu mematikan animasi satu elemen saja.
+
+### 8.4 Arah visual
+
+- Animasi harus terasa ekspresif dan khas, bukan default HTML/CSS dasar.
+- Boleh memakai spring, stagger, shared layout, transisi halaman, gelombang halus.
+- Tetap tunduk pada seluruh batasan di atas.
+
+---
+
+## 9. Ikon
+
+- Semua ikon dari `lucide-react`. DILARANG emoji sebagai ikon, kapan pun.
+- Ukuran default 16 sampai 20 px. `strokeWidth` 1.75 untuk body, 2 untuk aksi utama.
+- Warna ikon mengikuti `currentColor` agar otomatis ikut tema.
+- Ikon yang beranimasi dibungkus Motion, bukan GIF atau emoji.
+- Ikon non-Lucide (logo, favicon) sebagai SVG buatan sendiri di `components/ui/icons/`,
+  satu file per ikon.
+- Rail sidebar saat collapse TIDAK memakai ikon untuk bulan, melainkan teks 3 huruf
+  (Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des).
+- Logo letterhead Polinema memakai PNG hasil ekstraksi dari docx
+  (`public/letterhead-polinema.png`), bukan ikon UI, karena bagian resmi dokumen cetak.
+- Favicon: SVG monokrom, huruf L, senada aksen.
+
+---
+
+## 10. Tema
+
+- 9 tema, dipilih lewat CSS custom properties di `<html data-theme="...">`.
+- Daftar tema:
+  - Gelap: `hitam-pekat` (default, seperti proxman), `hitam-abu`, `hitam-pastel`.
+  - Terang: `putih-bersih`, `putih-pastel`, `putih-tulang`, `putih-gdocs`,
+    `putih-word`, `word-dark`.
+- Aksen SELALU monokrom: putih pada tema gelap, hitam pada tema terang.
+  DILARANG aksen biru atau warna merek pihak ketiga. Tema boleh terinspirasi suasana
+  Google Docs atau Microsoft Word, tetapi aksen tetap milik kita.
+- Warna status tetap: hijau (sukses), kuning (peringatan), merah (gagal).
+- Ganti tema WAJIB beranimasi halus. Urutan penerapan (implementasi:
+  `src/lib/theme/themeTransition.ts`):
+  1. Tema diterapkan di dalam callback View Transitions, agar snapshot lama masih
+     memakai tema sebelumnya.
+  2. Snapshot baru di-reveal melingkar (`clip-path` pada `::view-transition-new(root)`)
+     dari titik klik kartu tema. Ini satu-satunya animasi `clip-path` yang diizinkan
+     (lihat pengecualian sempit di bagian 8.2).
+  3. Selama transisi berjalan, kelas `theme-transitioning` di `<html>` mematikan
+     transisi warna per elemen agar snapshot menangkap keadaan final, bukan keadaan
+     di tengah transisi.
+- Fallback wajib: bila View Transitions tidak didukung, atau tier `mati`, atau user
+  memakai `prefers-reduced-motion`, tema diterapkan langsung dan transisi warna halus
+  dari kelas `.theme-t` yang mengambil alih. Jangan pernah membuat tema gagal berubah.
+- Durasi reveal per tier diambil dari `MOTION_TIER_PROFILE[tier].revealDuration`.
+- Pemilih tema berupa grid kartu swatch, tiap kartu miniatur shell aplikasi dalam tema
+  tersebut. Hover terangkat, terpilih diberi ring dan badge centang beranimasi.
+- PENTING: atribut `data-theme` pada kartu miniatur hanya dipasang di area miniatur,
+  BUKAN di seluruh kartu, agar label tema terang tidak ikut menjadi gelap di atas
+  latar aplikasi.
+- DILARANG radio button atau checkbox bawaan browser yang polos. Gunakan komponen
+  kustom: toggle switch, segmented control, kartu pilihan, slider.
+- Semua token warna hanya di `src/styles/tokens.css`. DILARANG menulis nilai hex warna
+  langsung di komponen.
+- Area dokumen A4 tetap bersih: monokrom, tanpa aksen, tanpa animasi. Preview harus sama
+  dengan hasil cetak.
+
+---
+
+## 11. Dokumen dan editor
+
+### 11.1 Referensi template asli
+
+Sumber: `Log Book Template.docx` (diektrak ke `docs/reference/`).
+
+Fakta terverifikasi dari template:
+- Ukuran halaman A4, 210 x 297 mm. Margin 2.54 cm semua sisi.
+- Font dokumen: Times New Roman 12 pt.
+- Kop surat (letterhead) berisi logo Polinema di sisi kiri dan teks:
+  KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI / POLITEKNIK NEGERI MALANG /
+  JURUSAN TEKNOLOGI INFORMASI, beserta alamat dan telepon.
+- Tabel kegiatan: 4 kolom (Hari, Tanggal | Jam Masuk | Jam Pulang | Kegiatan).
+- Tinggi baris minimum 1.80 cm, dengan aturan `atLeast` (baris tumbuh mengikuti isi).
+- 6 baris kegiatan: Senin sampai Sabtu.
+- Header tabel berwarna shading abu `#D0CECE`.
+- Blok tanda tangan: Mahasiswa, dan Mengetahui (Dosen Pembimbing serta Pembimbing
+  Lapangan).
+- Nilai default jam pada template: 08.00 masuk, 16.00 pulang.
+
+### 11.2 Perilaku editor (direct manipulation)
+
+- User mengedit LANGSUNG di sel tabel. Tidak ada dialog input.
+- Sel berisi `input` atau `textarea` borderless yang mengisi penuh sel. Saat tidak
+  fokus tampak seperti teks dokumen, saat fokus muncul outline tipis.
+- DILARANG memakai `contenteditable` (rawan cursor lompat dan paste berformat).
+- Tinggi baris minimum 1.80 cm dan TUMBUH mengikuti isi. Textarea di-set
+  `height = scrollHeight` setiap ketikan. TIDAK ADA scrollbar di dalam sel.
+- Sel WAJIB punya padding yang cukup, konten tidak boleh dempet garis tabel.
+- Lebar kolom Hari/Tanggal, Jam Masuk, dan Jam Pulang mengikuti lebar konten, melar bila
+  panjang (misal `field-sizing: content` dengan `white-space: nowrap`).
+- Kolom Kegiatan berlebar tetap dan membungkus ke baris baru (`white-space: pre-wrap`),
+  TIDAK melar mengikuti konten. Hanya kolom ini yang berperilaku demikian.
+- Tabel dirender simple: border 1 px, tanpa sudut membulat, tanpa bayangan berlebih,
+  header shading `#D0CECE`. Hindari tampilan tabel HTML kuno yang jelek.
+- Format jam memakai titik, misal `08.00`, sesuai template. `input type="time"` boleh
+  dipakai di internal, tetapi tampilan ke user wajib format titik.
+- Tanggal ditulis format Indonesia, misal `Senin, 5 Januari 2026`.
+- Navigasi keyboard: Tab berpindah antar sel, Enter menambah baris baru di kolom Kegiatan.
+
+### 11.3 Hari kosong
+
+- Setiap hari yang kosong WAJIB punya alasan sebelum ekspor.
+- Alasan dipilih dari dropdown yang bisa dikelola user, ATAU diketik bebas.
+- Khusus Sakit dan Izin: jam masuk dan jam pulang ditampilkan sebagai strip (bukan angka),
+  dan kolom Kegiatan diisi alasan tersebut.
+- Banner validasi di atas tabel menampilkan daftar hari yang belum lengkap sebelum ekspor.
+
+### 11.4 Navigasi
+
+- Sidebar bersifat overlay: menumpuk DI ATAS konten dengan backdrop, TIDAK mendorong
+  lebar konten.
+- Saat collapse, sidebar menjadi rail sempit berisi teks 3 huruf bulan.
+- Klik ikon bulan akan memperluas daftar minggu di bulan itu (M1, M2, ...). User tetap
+  bisa memilih minggu walau sidebar dalam kondisi tertutup.
+- Animasi sidebar memakai spring dan stagger.
+
+---
+
+## 12. Render dokumen dan ekspor
+
+- Engine dokumen: HTML + CSS `@page`. Preview di browser ADALAH dokumen itu sendiri.
+  Satu sumber kebenaran, bukan dua renderer.
+- Ekspor PDF: Playwright di sisi server, dengan `printBackground` dan
+  `-webkit-print-color-adjust: exact` agar shading header dan logo ikut tercetak.
+- Ukuran kertas: A4 (default), F4, Letter.
+- Satu halaman = satu minggu, berisi 6 baris Senin sampai Sabtu.
+- Ekspor menghasilkan PDF PER BULAN, multi-halaman. Page break per minggu.
+- Bila satu minggu melebihi tinggi satu halaman, letterhead tetap tampil di setiap
+  halaman, sesuai perilaku template asli.
+- Kop surat dan blok tanda tangan ikut lengkap di dokumen.
+- Pola nama file: `LogBook_<NIM>_<Bulan>-<Tahun>.pdf`.
+- Hasil ekspor disimpan ke folder lokal yang dikonfigurasi di `config.json`.
+- Data mentah tetap tersimpan sebagai JSON walau tidak diekspor.
+
+---
+
+## 13. Performa (gate keras)
+
+Anggaran dan aturan ini diuji di CI. Kegagalan berarti CI merah.
+
+- JS awal (first load) gzip di bawah 200 KB. Peringatan pada 170 KB.
+- TIDAK BOLEH ada long task di atas 50 ms saat user mengetik di editor.
+- TIDAK BOLEH ada layout shift tak terduga saat load.
+- Skenario animasi utama dijalankan di CI, gagal bila ada frame drop besar.
+- Linter kustom menolak: animasi properti terlarang (bagian 8.2) dan impor Motion
+  global (wajib LazyMotion).
+- Jumlah render: satu ketikan hanya boleh me-render ulang sel yang bersangkutan,
+  bukan tabel atau halaman.
+
+Teknik wajib:
+- Zustand dengan selector. DILARANG subscribe ke seluruh store.
+- Autosave debounced, hanya menyerialkan bagian yang berubah.
+- LazyMotion dengan `domAnimation` untuk fitur animasi.
+- Code splitting per route.
+
+Yang TIDAK dijadikan gate CI (jujur soal keterbatasan):
+- FPS dan smoothness nyata pada perangkat spesifik. Runner CI tidak punya GPU yang
+  representatif, jadi angka FPS di CI flaky dan menyesatkan. Ini divalidasi manual di
+  PC pemilik.
+- Lighthouse untuk localhost SPA tidak dijadikan patokan.
+
+---
+
+## 14. Testing
+
+- **Vitest (domain):** perhitungan tanggal, kepemilikan baris per bulan, minggu lintas
+  bulan dan lintas tahun, rentang partial, validasi hari kosong, format jam titik,
+  format tanggal Indonesia, parser rentang magang. Wajib cepat dan deterministik.
+- **Vitest + Testing Library (komponen):** editor menerima ketikan, Tab pindah sel,
+  Enter menambah baris Kegiatan, validasi muncul, ganti tema mengubah `data-theme`,
+  tier animasi berubah.
+- **Playwright (e2e):** alur isi rentang magang, isi satu minggu, ekspor PDF,
+  verifikasi PDF bisa dibuka dan jumlah halaman benar.
+- **Visual snapshot:** screenshot dibandingkan dengan baseline. Ini GATE CI.
+- **Aksesibilitas:** `@axe-core/playwright`. Ini GATE CI.
+- **Perf gate:** ukuran bundle, long task saat mengetik, jumlah render.
+
+Artefak CI wajib diunggah saat gagal: screenshot, trace Playwright, laporan visualizer.
+Tujuannya agar agen bisa "melihat" kegagalan tanpa akses layar.
+
+---
+
+## 15. Fasilitas dev untuk agen
+
+Karena agen tidak bisa melihat layar pemilik, fasilitas ini wajib ada:
+
+- `/dev/components`: galeri semua komponen UI yang sudah direstyle.
+- `/dev/motion`: katalog semua preset animasi, bisa dipratinjau per tier.
+- `/dev/perf`: menampilkan ukuran bundle, jumlah render, dan long task dalam satu
+  tampilan, supaya progres terlihat tanpa membuka CI.
+- Log terstruktur: JSON lines dengan `traceId`, sehingga satu aksi bisa dilacak dari UI
+  sampai penulisan disk. Lokasi: `data/logs/`.
+- Error boundary PER FITUR, selain global. Satu fitur gagal tidak mematikan aplikasi.
+  Error yang tertangkap menyimpan stack lengkap agar agen bisa membacanya.
+- Mode seed/demo: tombol mengisi satu bulan data contoh untuk pengujian cepat.
+
+---
+
+## 16. CI/CD
+
+Mengikuti pola yang sudah dipakai di proyek proxman.
+
+### `ci.yml` (push ke main dan pull_request)
+
+Job:
+1. `lint`: Biome check.
+2. `typecheck`: `tsc --noEmit`.
+3. `unit`: Vitest (domain + komponen).
+4. `build`: Vite build, cek anggaran bundle, unggah laporan visualizer.
+5. `e2e`: Playwright, snapshot visual, a11y. Unggah screenshot dan trace.
+6. `perf`: harness long task dan jumlah render.
+
+Catatan CI:
+- Server Hono di CI memakai `InMemoryLogRepository` dan direktori `data/` sementara.
+  CI tidak boleh menulis ke filesystem nyata.
+- Playwright butuh Chromium, tersedia di runner GitHub.
+
+### `release.yml` (tag `v*`)
+
+- Build produksi, lalu GitHub Release berisi artifact build.
+
+---
+
+## 17. Konvensi kode
+
+- TypeScript strict. Dilarang `any` implisit. Preferensi `unknown` lalu dipersempit.
+- Komponen fungsi. Hook untuk state. Tidak ada class component.
+- Nama file komponen: PascalCase. Nama file non-komponen: kebab-case.
+- Satu komponen, satu file. Ekspor bernama untuk util, default untuk halaman route.
+- Fungsi domain murni: tanpa I/O, tanpa React, tanpa akses global. Mudah diuji.
+- Komentar kode seperlunya, menjelaskan "mengapa", bukan "apa".
+- Varian komponen memakai CVA. Tidak ada cabang `className` bertumpuk.
+- Klas Tailwind panjang digabung dengan `tailwind-merge` melalui helper `cn`.
+- Dilarang `transition-all`. Dilarang selector `*` untuk transisi.
+- Dilarang impor Motion global. Wajib lewat LazyMotion dan preset `src/motion/`.
+
+---
+
+## 18. Urutan pengerjaan
+
+1. Bootstrap repo: Vite, Tailwind, Biome, React Compiler, struktur folder, `run`,
+   dan dokumen ini.
+2. Design system: 9 token tema, primitif shadcn direstyle, ikon, shell, layer motion,
+   galeri `/dev/components` dan `/dev/motion`.
+3. Data layer: server Hono, skema config dan logs, repository, autosave, backup,
+   logger traceId.
+4. Settings: profil, rentang magang, jam default, alasan, tema, ukuran kertas,
+   tier animasi.
+5. Navigasi bulan dan minggu, plus logika kepemilikan baris.
+6. Editor A4: edit inline, auto-grow, navigasi keyboard.
+7. Render dokumen: letterhead, blok tanda tangan, print CSS.
+8. Ekspor PDF, validasi, dan mode seed.
+9. Testing: Vitest, Playwright, snapshot, a11y, harness performa, `/dev/perf`.
+10. Audit animasi saat build dan workflow CI.
+11. Polish: error boundary per fitur, logging, README, sinkronisasi dokumen ini.
+
+---
+
+## 19. Checklist sebelum menandai pekerjaan selesai
+
+- [ ] Tidak ada emoji dan em dash di file yang diubah.
+- [ ] Tidak ada animasi properti terlarang (bagian 8.2).
+- [ ] Tidak ada nilai hex warna di luar `tokens.css`.
+- [ ] Tidak ada impor Motion global.
+- [ ] Domain logic murni dan ada unit test-nya.
+- [ ] Anggaran performa masih terpenuhi.
+- [ ] Dokumen ini diperbarui bila perilaku berubah.
+- [ ] Visual snapshot diperbarui bila perubahan UI memang disengaja.
+- [ ] Mutasi eksternal sudah mendapat ACC eksplisit dari pemilik.
+
+---
+
+## 20. Status pekerjaan (dipelihara setiap sesi)
+
+Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
+langsung tahu posisinya.
+
+- Fase saat ini: 2 (design system dan shell) berjalan.
+- Sudah selesai:
+  - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
+  - Aset referensi: `docs/reference/Log-Book-Template.docx`,
+    `docs/reference/extracted-metrics.md`, `public/letterhead-polinema.png`.
+  - Bootstrap: `package.json`, Vite 8 + React 19 + TS, Tailwind v4, Biome,
+    React Compiler (lewat `oxc-transform-react`), Vitest, Playwright, konfigurasi
+    tsconfig/vite/vitest/playwright, skrip `./run`.
+  - Design system dasar: `src/styles/tokens.css` (9 tema), `globals.css` (pemetaan
+    Tailwind, print CSS, View Transitions), favicon.
+  - Shell: Sidebar (rail statis + drawer overlay), TopHeader, StatusBar sticky,
+    FeatureErrorBoundary, MotionProvider + `src/motion/presets.ts`.
+  - Halaman: Logbook (placeholder rentang belum diatur), Settings (pemilih 9 tema dan
+    4 tier animasi berfungsi), tiga halaman dev placeholder.
+  - Transisi tema beranimasi: reveal melingkar dari titik klik lewat View Transitions,
+    dengan fallback langsung. Implementasi `src/lib/theme/themeTransition.ts`.
+  - Profil tier animasi `src/motion/tiers.ts` plus pratinjau mini window di Settings
+    (`src/features/settings/TierPreview.tsx`), dengan tombol putar ulang dan pause
+    saat tab tidak aktif.
+  - Perbaikan bug: `AnimatePresence initial={false}` di Shell sempat mematikan seluruh
+    animasi masuk lewat konteks. Sudah dihapus dan didokumentasikan di bagian 8.3.1.
+    Ditambah 2 test regresi e2e yang mengunci perilaku ini.
+  - Store Zustand: `ui` (tema, tier animasi, sidebar), `saveStatus`, `logbook`.
+  - Server Hono minimal dengan `/api/health`.
+  - Skrip `scripts/analyze-bundle.mjs` dan `scripts/audit-motion.mjs`.
+  - CI: `.github/workflows/ci.yml` dan `release.yml`.
+  - Verifikasi lulus: lint, typecheck, Vitest (12 test), Playwright (11 test),
+    audit motion, anggaran bundle (sekitar 114 KB gzip, batas 200 KB).
+- Sedang dikerjakan:
+  - Fase 2 lanjutan: primitif UI (Button, Input, dll) dan mengisi galeri
+    `/dev/components` serta `/dev/motion`.
+- Berikutnya:
+  - Fase 3 data layer (repository, skema config dan logs, autosave, backup, logger).
+  - Fase 4 Settings lengkap (profil, rentang magang, jam default, alasan, kertas).
+- Catatan terbuka:
+  - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
+    perlu membedah ulang docx.
+  - Dev server default: web `http://127.0.0.1:5199`, API `http://127.0.0.1:5198`.
+  - Commit GPG signing aktif. Setiap commit otomatis ditandatangani.

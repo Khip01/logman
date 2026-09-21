@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# logman launcher. Menjalankan dev server (Vite + API Hono) dalam satu perintah.
+# Lihat AGENTS.md bagian 4.
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[logman] pnpm tidak ditemukan. Install pnpm dulu." >&2
+  exit 1
+fi
+
+if [ ! -d node_modules ]; then
+  echo "[logman] Dependencies belum terpasang, menjalankan pnpm install..."
+  pnpm install
+fi
+
+if [ "$#" -eq 0 ]; then
+  exec pnpm dev
+else
+  exec pnpm "$@"
+fi

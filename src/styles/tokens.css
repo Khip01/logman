@@ -1,0 +1,243 @@
+/*
+ * logman design tokens.
+ *
+ * Aturan (AGENTS.md bagian 10):
+ * - SEMUA nilai warna hanya boleh didefinisikan di file ini.
+ * - Aksen selalu monokrom: putih pada tema gelap, hitam pada tema terang.
+ * - Dilarang aksen biru atau warna merek pihak ketiga.
+ * - Warna status tetap hijau/kuning/merah pada semua tema.
+ */
+
+:root {
+  /* Structural tokens (tidak berubah antar tema) */
+  --sidebar-width: 248px;
+  --sidebar-rail-width: 52px;
+  --header-height: 52px;
+  --statusbar-height: 26px;
+
+  /* Durasi animasi (dipakai lewat layer motion, bukan transisi global) */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Warna status (identik di semua tema) */
+  --status-ok: #22c55e;
+  --status-ok-bg: rgba(34, 197, 94, 0.1);
+  --status-warn: #eab308;
+  --status-warn-bg: rgba(234, 179, 8, 0.1);
+  --status-error: #ef4444;
+  --status-error-bg: rgba(239, 68, 68, 0.1);
+  --status-idle: #888888;
+  --status-idle-bg: rgba(136, 136, 136, 0.1);
+
+  /* Dokumen cetak selalu kertas putih (AGENTS.md bagian 10 dan 11) */
+  --doc-paper: #ffffff;
+  --doc-ink: #000000;
+  --doc-border: #000000;
+  --doc-header-bg: #d0cece;
+  --doc-muted: #9a9a9a;
+}
+
+/* ---------------------------------------------------------------- GELAP */
+
+[data-theme="hitam-pekat"] {
+  --bg-body: #050505;
+  --bg-sidebar: #0d0d0d;
+  --bg-card: #121212;
+  --bg-card-hover: #181818;
+  --bg-input: #080808;
+  --bg-overlay: rgba(0, 0, 0, 0.72);
+  --border-color: #242424;
+  --border-light: #333333;
+  --border-dashed: #3a3a3a;
+  --border-focus: #666666;
+  --text-primary: #ffffff;
+  --text-main: #ececec;
+  --text-muted: #a0a0a0;
+  --text-dim: #707070;
+  --text-inverse: #000000;
+  --accent-bg: #ffffff;
+  --accent-text: #000000;
+  --accent-hover: #e0e0e0;
+  --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="hitam-abu"] {
+  --bg-body: #0f1115;
+  --bg-sidebar: #16181d;
+  --bg-card: #1b1e24;
+  --bg-card-hover: #22262e;
+  --bg-input: #12141a;
+  --bg-overlay: rgba(8, 10, 14, 0.72);
+  --border-color: #2a2e36;
+  --border-light: #3a4049;
+  --border-dashed: #454b55;
+  --border-focus: #7b8494;
+  --text-primary: #f2f4f7;
+  --text-main: #d7dce3;
+  --text-muted: #98a1ad;
+  --text-dim: #6b7480;
+  --text-inverse: #0f1115;
+  --accent-bg: #f2f4f7;
+  --accent-text: #0f1115;
+  --accent-hover: #dfe3e8;
+  --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="hitam-pastel"] {
+  --bg-body: #14121a;
+  --bg-sidebar: #1b1822;
+  --bg-card: #211d2a;
+  --bg-card-hover: #292432;
+  --bg-input: #17141d;
+  --bg-overlay: rgba(15, 13, 22, 0.72);
+  --border-color: #322c3e;
+  --border-light: #433a52;
+  --border-dashed: #4e4460;
+  --border-focus: #8a7ba6;
+  --text-primary: #f3effa;
+  --text-main: #ddd5ea;
+  --text-muted: #a79cbb;
+  --text-dim: #7a7190;
+  --text-inverse: #14121a;
+  --accent-bg: #f3effa;
+  --accent-text: #14121a;
+  --accent-hover: #e2d9f0;
+  --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* --------------------------------------------------------------- TERANG */
+
+[data-theme="putih-bersih"] {
+  --bg-body: #ffffff;
+  --bg-sidebar: #f7f7f7;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f2f2f2;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.32);
+  --border-color: #e4e4e4;
+  --border-light: #d2d2d2;
+  --border-dashed: #c6c6c6;
+  --border-focus: #8a8a8a;
+  --text-primary: #0a0a0a;
+  --text-main: #1c1c1c;
+  --text-muted: #5c5c5c;
+  --text-dim: #8a8a8a;
+  --text-inverse: #ffffff;
+  --accent-bg: #111111;
+  --accent-text: #ffffff;
+  --accent-hover: #2a2a2a;
+  --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="putih-pastel"] {
+  --bg-body: #fbfaff;
+  --bg-sidebar: #f4f2fb;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f7f5fd;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(40, 32, 64, 0.28);
+  --border-color: #e6e2f0;
+  --border-light: #d6d0e6;
+  --border-dashed: #c8c0dc;
+  --border-focus: #9a8fc0;
+  --text-primary: #1a1526;
+  --text-main: #2c2540;
+  --text-muted: #645a80;
+  --text-dim: #8f86a8;
+  --text-inverse: #fbfaff;
+  --accent-bg: #2a2140;
+  --accent-text: #fbfaff;
+  --accent-hover: #3d3159;
+  --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="putih-tulang"] {
+  --bg-body: #faf8f2;
+  --bg-sidebar: #f3f0e6;
+  --bg-card: #fffdf7;
+  --bg-card-hover: #f6f3e9;
+  --bg-input: #fffdf7;
+  --bg-overlay: rgba(48, 44, 32, 0.28);
+  --border-color: #e3ddcc;
+  --border-light: #d3ccb6;
+  --border-dashed: #c5bda4;
+  --border-focus: #a89d7c;
+  --text-primary: #211f18;
+  --text-main: #35322a;
+  --text-muted: #6d6757;
+  --text-dim: #97907c;
+  --text-inverse: #faf8f2;
+  --accent-bg: #2c2a20;
+  --accent-text: #faf8f2;
+  --accent-hover: #443f2e;
+  --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="putih-gdocs"] {
+  --bg-body: #f8f9fa;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f3f4;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(60, 64, 67, 0.3);
+  --border-color: #dadce0;
+  --border-light: #c4c7c5;
+  --border-dashed: #b8bcbf;
+  --border-focus: #80868b;
+  --text-primary: #202124;
+  --text-main: #3c4043;
+  --text-muted: #5f6368;
+  --text-dim: #80868b;
+  --text-inverse: #ffffff;
+  --accent-bg: #202124;
+  --accent-text: #ffffff;
+  --accent-hover: #3c4043;
+  --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="putih-word"] {
+  --bg-body: #ffffff;
+  --bg-sidebar: #f3f3f3;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f5f5f5;
+  --bg-input: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.3);
+  --border-color: #d4d4d4;
+  --border-light: #c0c0c0;
+  --border-dashed: #b4b4b4;
+  --border-focus: #767676;
+  --text-primary: #1f1f1f;
+  --text-main: #333333;
+  --text-muted: #5e5e5e;
+  --text-dim: #8a8a8a;
+  --text-inverse: #ffffff;
+  --accent-bg: #1f1f1f;
+  --accent-text: #ffffff;
+  --accent-hover: #3a3a3a;
+  --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="word-dark"] {
+  --bg-body: #1f1f1f;
+  --bg-sidebar: #262626;
+  --bg-card: #2d2d2d;
+  --bg-card-hover: #333333;
+  --bg-input: #222222;
+  --bg-overlay: rgba(0, 0, 0, 0.55);
+  --border-color: #3f3f3f;
+  --border-light: #4f4f4f;
+  --border-dashed: #5a5a5a;
+  --border-focus: #8f8f8f;
+  --text-primary: #f2f2f2;
+  --text-main: #e6e6e6;
+  --text-muted: #b0b0b0;
+  --text-dim: #808080;
+  --text-inverse: #1f1f1f;
+  --accent-bg: #f2f2f2;
+  --accent-text: #1f1f1f;
+  --accent-hover: #d6d6d6;
+  --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.04);
+}

@@ -1,0 +1,210 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./tokens.css";
+
+/*
+ * Pemetaan token ke Tailwind theme. Nilai memakai var() sehingga pergantian tema
+ * (data-theme) langsung terlihat tanpa rebuild dan tanpa re-render React.
+ * Lihat AGENTS.md bagian 10.
+ */
+@theme inline {
+  --color-bg-body: var(--bg-body);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-input: var(--bg-input);
+  --color-bg-overlay: var(--bg-overlay);
+
+  --color-border-base: var(--border-color);
+  --color-border-light: var(--border-light);
+  --color-border-dashed: var(--border-dashed);
+  --color-border-focus: var(--border-focus);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-dim: var(--text-dim);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent-bg);
+  --color-accent-text: var(--accent-text);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-status-ok: var(--status-ok);
+  --color-status-warn: var(--status-warn);
+  --color-status-error: var(--status-error);
+  --color-status-idle: var(--status-idle);
+
+  --color-doc-paper: var(--doc-paper);
+  --color-doc-ink: var(--doc-ink);
+  --color-doc-border: var(--doc-border);
+  --color-doc-header: var(--doc-header-bg);
+  --color-doc-muted: var(--doc-muted);
+
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-doc: "Times New Roman", Times, serif;
+
+  --radius-none: 0;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    /* Sudut tegas di seluruh aplikasi, mengikuti karakter proxman. */
+    border-radius: 0;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+  }
+
+  /* Scrollbar global */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-light) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border: 2px solid var(--bg-body);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-focus);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::selection {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--border-focus);
+    outline-offset: 1px;
+  }
+}
+
+@layer utilities {
+  @media (prefers-reduced-motion: reduce) {
+    .theme-t {
+      transition: none;
+    }
+  }
+
+  /*
+   * Transisi warna untuk elemen shell. Diterapkan eksplisit per elemen, BUKAN
+   * selector `*` atau `transition: all` (AGENTS.md bagian 8.2).
+   */
+  .theme-t {
+    transition:
+      background-color var(--dur-base) var(--ease-out-expo),
+      border-color var(--dur-base) var(--ease-out-expo),
+      color var(--dur-base) var(--ease-out-expo);
+  }
+
+  /* Tier animasi "mati" (AGENTS.md bagian 8.1). */
+  :where([data-motion="mati"]) .theme-t {
+    transition: none;
+  }
+
+  /*
+   * Selama view transition tema berjalan, transisi warna per elemen dimatikan agar
+   * snapshot baru menangkap keadaan final, bukan keadaan di tengah transisi.
+   * Animasi reveal ditangani oleh themeTransition.ts.
+   */
+  html.theme-transitioning .theme-t {
+    transition: none;
+  }
+
+  /* Transisi dimatikan selama pengetikan agar tidak ada repaint di jalur input. */
+  body.is-typing .theme-t {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------- TRANSIISI TEMA (VIEW) */
+
+/*
+ * Cross-fade bawaan View Transitions dimatikan agar reveal melingkar dari
+ * themeTransition.ts terlihat utuh. Lihat AGENTS.md bagian 10.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/* --------------------------------------------------------------- CETAK */
+
+/*
+ * Ukuran kertas diatur lewat variabel --page-size yang ditulis runtime oleh
+ * fitur export (A4 / F4 / Letter). Lihat AGENTS.md bagian 12.
+ */
+@page {
+  size: var(--page-size, A4);
+  margin: 0;
+}
+
+@media print {
+  body {
+    background: var(--doc-paper);
+    overflow: visible;
+  }
+
+  .no-print {
+    display: none;
+  }
+
+  .print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
