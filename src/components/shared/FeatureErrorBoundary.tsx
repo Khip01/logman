@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { log } from '@/lib/log'
 
 interface Props {
   children: ReactNode
@@ -22,8 +23,13 @@ export class FeatureErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Log ke console agar terbaca agen saat menjalankan dev atau test.
-    console.error(`[logman] fitur "${this.props.name}" gagal`, error, info.componentStack)
+    // Gagal render satu fitur ikut dilacak lewat logger terstruktur (traceId sama
+    // dari UI sampai disk), bukan console langsung, sesuai konvensi bagian 17.
+    const traceId = log.newTrace()
+    log.error('fitur.gagal', `Fitur "${this.props.name}" gagal.`, {
+      traceId,
+      data: { fitur: this.props.name, pesan: error.message, stack: info.componentStack },
+    })
   }
 
   override render(): ReactNode {

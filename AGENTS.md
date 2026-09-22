@@ -661,6 +661,9 @@ Testing dipecah agar debugging tidak menunggu seluruh suite berjalan ber-menit-m
 |---|---|
 | `src/lib/domain/*` | `pnpm test:domain` |
 | `src/components/ui/*` | `pnpm vitest run src/components/ui` |
+| `src/components/shared/*` | `pnpm vitest run src/components/shared` + e2e spec halaman terkait bila render berubah |
+| `README.md` / dokumen saja | `pnpm lint` saja; full suite tidak perlu bila tanpa perubahan kode |
+| Aset `public/*` yang tidak dirujuk kode | hapus + `pnpm test:e2e:visual` (memastikan tidak ada regresi visual) |
 | `src/features/*` (1 fitur) | unit/component test fitur itu + e2e spec fitur itu saja |
 | `server/*` | `pnpm test:server` + e2e spec terkait bila endpoint berubah |
 | `e2e/<spec>.ts` saja | `pnpm playwright test e2e/<spec>.ts` |
@@ -797,6 +800,11 @@ Catatan CI:
 - Klas Tailwind panjang digabung dengan `tailwind-merge` melalui helper `cn`.
 - Dilarang `transition-all`. Dilarang selector `*` untuk transisi.
 - Dilarang impor Motion global. Wajib lewat LazyMotion dan preset `src/motion/`.
+- Dilarang `console.*` langsung di `src/` (termasuk `console.error`). Satu-satunya
+  pengecualian adalah implementasi logger sendiri di `src/lib/log/` yang memakai
+  console sebagai sink tampilan. Semua pelaporan lain lewat `log` dari `@/lib/log/`
+  dengan `traceId`, karena record ikut terkirim ke server dan tersimpan di
+  `data/logs/`. `FeatureErrorBoundary` memakai pola yang sama.
 
 ---
 
@@ -846,9 +854,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 9 (snapshot visual, harness performa, /dev/perf) selesai.
-  Berikutnya fase 10 (audit animasi di CI sudah ada; sisanya polish: error
-  boundary per fitur, logging, README, sinkronisasi dokumen, bagian 18 poin 10-11).
+- Fase saat ini: 10 (polish: logging konsisten, README, sinkronisasi dokumen)
+  selesai. Seluruh roadmap bagian 18 tuntas; tidak ada fase berikutnya.
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -1049,12 +1056,28 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (189 test), Playwright (62 test),
     audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
     (JS awal 142.9 KB gzip).
+  - Fase 10 polish dan sinkronisasi:
+    - `src/components/shared/FeatureErrorBoundary.tsx` kini melaporkan gagal
+      render lewat `log.error` (scope `fitur.gagal`) dengan `traceId` dan
+      `componentStack`, bukan `console.error` langsung.
+    - Bagian 17 ditambah konvensi: dilarang `console.*` langsung di `src/`;
+      pengecualian hanya implementasi logger `src/lib/log/` sebagai sink.
+    - Unit test baru `FeatureErrorBoundary.test.tsx` (3 test): anak sehat,
+      fallback + pelaporan logger, tombol coba lagi.
+    - `public/letterhead-polinema-alt.jpeg` dihapus karena tidak dirujuk kode
+      mana pun (logo dokumen hanya `letterhead-polinema.png`).
+    - `README.md` ditulis ulang dengan perintah yang benar-benar ada
+      (`./run <argumen>` meneruskan ke skrip pnpm), cakupan gate kualitas,
+      daftar halaman, lokasi data runtime, dan alur rilis tag.
+  - Verifikasi lulus: lint, typecheck, Vitest (192 test), Playwright (62 test),
+    audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
+    (JS awal 142.9 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 9 tuntas).
+  - tidak ada (fase 10 tuntas; seluruh roadmap bagian 18 selesai).
 - Berikutnya:
-  - Fase 10 polish: error boundary per fitur sudah ada; sisanya logging
-    konsisten, README, dan sinkronisasi dokumen ini (bagian 18 poin 10-11).
-- Catatan terbuka:
+  - Pemakaian normal dan pemeliharaan. Bila ada perilaku baru, tambah sesuai
+    aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.
+  - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.
   - Dev server default: web `http://127.0.0.1:5199`, API `http://127.0.0.1:5198`.
