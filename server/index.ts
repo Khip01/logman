@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { buildMonthGroups } from '../src/lib/domain/calendar'
+import { monthIncompleteDates } from '../src/lib/domain/editor'
 import { applyDayPatch, parseConfig, parseLogData } from '../src/lib/domain/schema'
 import type { AppConfig, DayEntry, LogData } from '../src/lib/domain/types'
 import { createServerLogger, readRecentLogs } from './logger'
@@ -188,6 +189,24 @@ app.post('/api/export', async (c) => {
 
   if (!month) {
     return c.json({ error: `Bulan ${body.monthKey} tidak ditemukan dalam rentang magang.` }, 404)
+  }
+
+  // Validasi ekspor (AGENTS.md bagian 11.3): setiap hari yang kosong wajib punya
+  // alasan sebelum ekspor. Server menolak dengan daftar tanggalnya.
+  const range = { mulai: config.magang.mulai, selesai: config.magang.selesai }
+  const incomplete = monthIncompleteDates(month, logs.days, range)
+  if (incomplete.length > 0) {
+    log.warn('export.pdf', 'Ekspor ditolak karena hari belum lengkap.', {
+      traceId,
+      data: { monthKey: body.monthKey, jumlah: incomplete.length, contoh: incomplete.slice(0, 5) },
+    })
+    return c.json(
+      {
+        error: `${incomplete.length} hari belum punya kegiatan atau alasan. Lengkapi dulu sebelum ekspor.`,
+        incomplete,
+      },
+      422,
+    )
   }
 
   const exportDir = config.folderExport || join(dataRoot, 'exports')

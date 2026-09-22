@@ -36,7 +36,7 @@ export function ReasonPicker({
       onSelect={commit}
       onInputBlur={() => commit(draft)}
       placeholder="Atau pilih alasan"
-      className="[&_input]:h-6 [&_input]:border-dashed [&_input]:text-[11px]"
+      className="no-print [&_input]:h-6 [&_input]:border-dashed [&_input]:text-[11px]"
     />
   )
 }

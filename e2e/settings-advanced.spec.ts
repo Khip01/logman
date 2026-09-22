@@ -15,7 +15,31 @@ async function resolveDataDir(request: APIRequestContext): Promise<string> {
   return isAbsolute(body.dataDir) ? body.dataDir : join(process.cwd(), body.dataDir)
 }
 
+async function setConfig(request: APIRequestContext, patch: Record<string, unknown>) {
+  const current = (await (await request.get('http://127.0.0.1:5198/api/config')).json()) as {
+    config: Record<string, unknown>
+  }
+  await request.put('http://127.0.0.1:5198/api/config', {
+    data: { config: { ...current.config, ...patch } },
+  })
+}
+
 test.describe('settings lanjutan', () => {
+  test.beforeEach(async ({ request }) => {
+    // Kembalikan jam yang diubah test ini ke default, supaya komit selalu dianggap
+    // perubahan walau data-e2e masih menyimpan hasil run sebelumnya.
+    await setConfig(request, {
+      jamDefault: {
+        senin: { masuk: '08.00', pulang: '16.00' },
+        selasa: { masuk: '08.00', pulang: '16.00' },
+        rabu: { masuk: '08.00', pulang: '16.00' },
+        kamis: { masuk: '08.00', pulang: '16.00' },
+        jumat: { masuk: '08.00', pulang: '16.00' },
+        sabtu: { masuk: '08.00', pulang: '16.00' },
+      },
+    })
+  })
+
   test('jam default menolak format salah dan menormalkan titik dua', async ({ page }) => {
     await page.goto('/settings')
 

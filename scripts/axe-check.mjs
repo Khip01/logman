@@ -9,7 +9,15 @@ import { chromium } from '@playwright/test'
  * pendek dan hasil deterministik.
  */
 const BASE = 'http://127.0.0.1:5199'
-const PAGES = ['/', '/settings', '/export', '/dev/components', '/dev/motion', '/dev/perf']
+const PAGES = [
+  '/',
+  '/settings',
+  '/export',
+  '/dev/components',
+  '/dev/motion',
+  '/dev/perf',
+  '/dev/seed',
+]
 const THEMES = [
   'hitam-pekat',
   'hitam-abu',

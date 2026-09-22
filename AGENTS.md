@@ -538,6 +538,9 @@ Fakta terverifikasi dari template:
 - Khusus Sakit dan Izin: jam masuk dan jam pulang ditampilkan sebagai strip (bukan angka),
   dan kolom Kegiatan diisi alasan tersebut.
 - Banner validasi di atas tabel menampilkan daftar hari yang belum lengkap sebelum ekspor.
+- Ekspor DITOLAK selama masih ada hari yang belum lengkap: server membalas 422 dengan
+  daftar tanggalnya, dan tombol Ekspor di halaman Ekspor dinonaktifkan. Ekspor baru
+  jalan setiap hari terisi kegiatan atau punya alasan.
 
 ### 11.4 Navigasi
 
@@ -562,6 +565,13 @@ Fakta terverifikasi dari template:
 - Bila satu minggu melebihi tinggi satu halaman, letterhead tetap tampil di setiap
   halaman, sesuai perilaku template asli.
 - Kop surat dan blok tanda tangan ikut lengkap di dokumen.
+- Preview cetak di browser memakai elemen print-only: kop surat, judul dan subjudul
+  dokumen, tabel identitas pada minggu pertama, dan blok tanda tangan pada minggu
+  terakhir. Chrome aplikasi (sidebar, header, status bar, navigator, banner) memakai
+  `no-print`. Satu halaman cetak = satu minggu yang sedang dibuka.
+- Ukuran kertas dan margin `@page` ditulis runtime lewat tag style
+  `#logman-page-style` mengikuti config `ukuranKertas`, dari satu sumber di
+  `src/lib/domain/paper.ts` yang juga dipakai render PDF server.
 - Pola nama file: `LogBook_<NIM>_<Bulan>-<Tahun>.pdf`.
 - Hasil ekspor disimpan ke folder lokal yang dikonfigurasi di `config.json`.
 - Data mentah tetap tersimpan sebagai JSON walau tidak diekspor.
@@ -654,6 +664,8 @@ Testing dipecah agar debugging tidak menunggu seluruh suite berjalan ber-menit-m
 | `src/features/*` (1 fitur) | unit/component test fitur itu + e2e spec fitur itu saja |
 | `server/*` | `pnpm test:server` + e2e spec terkait bila endpoint berubah |
 | `e2e/<spec>.ts` saja | `pnpm playwright test e2e/<spec>.ts` |
+| `dev/DevSeedPage.tsx` | `pnpm playwright test e2e/seed.spec.ts` |
+| Print chrome / print CSS | `pnpm playwright test e2e/print.spec.ts` |
 | CSS/token tema | `pnpm audit:a11y` (atau spec a11y terkait), bukan full e2e |
 | Animasi/motion | `pnpm audit:motion` + e2e motion/dev terkait |
 
@@ -739,7 +751,9 @@ Karena agen tidak bisa melihat layar pemilik, fasilitas ini wajib ada:
   sampai penulisan disk. Lokasi: `data/logs/`.
 - Error boundary PER FITUR, selain global. Satu fitur gagal tidak mematikan aplikasi.
   Error yang tertangkap menyimpan stack lengkap agar agen bisa membacanya.
-- Mode seed/demo: tombol mengisi satu bulan data contoh untuk pengujian cepat.
+- Mode seed/demo: `/dev/seed` berisi tombol yang mengisi satu bulan (hanya hari yang
+  bisa diisi) dengan data contoh untuk pengujian cepat, lewat batch patch autosave.
+  Tindakan ini menimpa isi hari terpilih.
 
 ---
 
@@ -830,8 +844,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 7 (ekspor PDF) selesai. Berikutnya fase 8 (render/preview dokumen,
-  validasi ekspor, mode seed).
+- Fase saat ini: 8 (render/preview dokumen, validasi ekspor, mode seed) selesai.
+  Berikutnya fase 9 (snapshot visual, harness performa, isi /dev/perf).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -980,11 +994,42 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (172 test), Playwright (50 test),
     audit motion, audit a11y 0 pelanggaran (6 halaman x 9 tema), anggaran bundle
     (JS awal 142.9 KB gzip).
+  - Fase 8 render/preview dokumen, validasi ekspor, dan mode seed:
+    - `src/lib/domain/paper.ts`: `paperSizeCss` dan `pageStyleContent` sebagai
+      sumber tunggal ukuran kertas + margin 2.54 cm untuk `@page`. Dipakai Shell
+      (tag style `#logman-page-style`) dan `server/pdf.ts`.
+    - `src/features/logbook/DocumentPrintChrome.tsx`: kop surat, judul dokumen,
+      tabel identitas, dan blok tanda tangan sebagai elemen `print-only`, struktur
+      teks mengikuti `server/pdf.ts`.
+    - `LogbookPage` menyusun chrome dokumen di sekitar tabel minggu aktif;
+      navigator, banner, InfoRow, dan header halaman memakai `no-print`.
+      `WeekEditorTable` menyembunyikan baris header M-minggu saat cetak.
+    - `EditorRow`: sel jam menyediakan teks fallback untuk cetak (placeholder
+      tidak ikut tercetak), baris disabled memakai tinta penuh saat cetak, tombol
+      hapus alasan dan `ReasonPicker` `no-print`.
+    - `globals.css`: kelas `.print-only`/`.print-only-flex`, override
+      `--sidebar-rail-width` di `.app-frame` untuk melepas margin rail saat cetak
+      tanpa `!important`, dan `print-color-adjust` pada header tabel.
+    - Validasi ekspor: `monthIncompleteDates` di domain (dipakai banner, halaman
+      Ekspor, dan server). `POST /api/export` membalas 422 dengan daftar tanggal
+      bila hari belum lengkap; tombol Ekspor dinonaktifkan per bulan.
+    - Mode seed: `src/lib/domain/seed.ts` (`buildSeedPatch`, murni, deterministik)
+      plus `/dev/seed` (`dev/DevSeedPage.tsx`) yang mengisi hari yang bisa diisi
+      lewat batch patch autosave. Nav dev dan daftar halaman a11y ikut diperbarui.
+    - E2E baru `e2e/print.spec.ts` (3 test) dan `e2e/seed.spec.ts` (2 test);
+      `e2e/export.spec.ts` diperluas menjadi 8 test termasuk penolakan 422.
+    - Perbaikan hermetisitas e2e: `data-e2e` persist antar run, sehingga
+      `editor.spec` (bersihkan logs), `settings-advanced.spec` (reset jam default),
+      `data.spec` (paksa tema awal berbeda), dan `settings.spec` (paksa tier
+      beranimasi sebelum uji View Transitions) kini menyetel ulang state lewat API.
+  - Verifikasi lulus: lint, typecheck, Vitest (183 test), Playwright (57 test),
+    audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
+    (JS awal 143.3 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 7 tuntas).
+  - tidak ada (fase 8 tuntas).
 - Berikutnya:
-  - Fase 8: render/preview dokumen di browser, validasi ekspor, mode seed
-    (bagian 18 poin 7 dan 8).
+  - Fase 9: snapshot visual Playwright, harness performa, dan isi `/dev/perf`
+    (bagian 18 poin 9).
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.

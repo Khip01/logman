@@ -21,7 +21,16 @@ async function readViewTransitionCount(page: Page): Promise<number> {
   return page.evaluate(() => (window as unknown as { __vtCount?: number }).__vtCount ?? 0)
 }
 
-test('ganti tema memakai View Transitions dan menerapkan tema baru', async ({ page }) => {
+test('ganti tema memakai View Transitions dan menerapkan tema baru', async ({ page, request }) => {
+  // Tier mati melewati View Transitions. Paksa tier beranimasi lebih dulu, karena
+  // data-e2e persist dan run sebelumnya bisa meninggalkan tier mati.
+  const current = (await (await request.get('http://127.0.0.1:5198/api/config')).json()) as {
+    config: Record<string, unknown>
+  }
+  await request.put('http://127.0.0.1:5198/api/config', {
+    data: { config: { ...current.config, tierAnimasi: 'seimbang' } },
+  })
+
   await installViewTransitionCounter(page)
   await page.goto('/settings')
 

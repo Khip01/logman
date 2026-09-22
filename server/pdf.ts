@@ -5,16 +5,11 @@ import { chromium } from '@playwright/test'
 import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari, monthLabel } from '../src/lib/domain/date'
 import { displayJam, effectiveStatus, JAM_STRIP } from '../src/lib/domain/editor'
+import { PAGE_MARGIN_CM, paperSizeCss } from '../src/lib/domain/paper'
 import type { AppConfig, DayEntry, LogData, WeekEntry } from '../src/lib/domain/types'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const LETTERHEAD_PATH = join(here, '..', 'public', 'letterhead-polinema.png')
-
-const PAGE_SIZES: Record<string, string> = {
-  A4: 'A4',
-  F4: '215mm 330mm',
-  Letter: 'Letter',
-}
 
 function escapeHtml(text: string): string {
   return text
@@ -156,7 +151,7 @@ export function buildExportHtml(options: {
   const month = months.find((m) => m.key === monthKey)
   if (!month) throw new Error(`Bulan ${monthKey} tidak ditemukan dalam rentang magang.`)
 
-  const pageSize = PAGE_SIZES[config.ukuranKertas] ?? 'A4'
+  const pageSize = paperSizeCss(config.ukuranKertas)
 
   let pagesHtml = ''
   for (let i = 0; i < month.weeks.length; i++) {
@@ -180,7 +175,7 @@ export function buildExportHtml(options: {
 <head>
 <meta charset="utf-8"/>
 <style>
-  @page { size: ${pageSize}; margin: 2.54cm; }
+  @page { size: ${pageSize}; margin: ${PAGE_MARGIN_CM}cm; }
   * { box-sizing: border-box; }
   body {
     font-family: "Times New Roman", Times, serif;

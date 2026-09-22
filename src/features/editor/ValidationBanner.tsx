@@ -1,8 +1,8 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useMemo } from 'react'
-import { disabledReasonFor, type MagangRange } from '@/lib/domain/calendar'
+import type { MagangRange } from '@/lib/domain/calendar'
 import { formatTanggalPendek } from '@/lib/domain/date'
-import { collectIncompleteDates } from '@/lib/domain/editor'
+import { monthIncompleteDates } from '@/lib/domain/editor'
 import type { MonthGroup } from '@/lib/domain/types'
 import { useLogsStore } from '@/stores/logs'
 
@@ -13,16 +13,14 @@ import { useLogsStore } from '@/stores/logs'
  * kegiatan maupun alasan. Hari di luar rentang dan baris milik bulan lain tidak
  * dihitung, karena memang tidak dapat diisi.
  *
- * Banner ini bersifat informasi, bukan penghalang. Ekspor pada fase berikutnya yang
- * memutuskan apakah tetap boleh berjalan.
+ * Banner ini bersifat informasi di layar, tetapi daftar yang sama menjadi dasar
+ * validasi ekspor: server menolak ekspor dan tombol Ekspor dinonaktifkan selama
+ * masih ada hari yang belum lengkap (AGENTS.md bagian 11.3 dan 12).
  */
 export function ValidationBanner({ month, range }: { month: MonthGroup; range: MagangRange }) {
   const days = useLogsStore((s) => s.data.days)
 
-  const incomplete = useMemo(() => {
-    const all = month.weeks.flatMap((week) => week.days.map((d) => days[d.date] ?? d))
-    return collectIncompleteDates(all, (date) => disabledReasonFor(date, month.key, range) === null)
-  }, [month, days, range])
+  const incomplete = useMemo(() => monthIncompleteDates(month, days, range), [month, days, range])
 
   if (incomplete.length === 0) {
     return (

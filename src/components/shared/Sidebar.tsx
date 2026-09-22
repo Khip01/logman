@@ -9,6 +9,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  Sprout,
 } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
@@ -41,6 +42,7 @@ const DEV_NAV: NavItem[] = [
   { label: 'Komponen', path: '/dev/components', icon: Layers },
   { label: 'Motion', path: '/dev/motion', icon: FlaskConical },
   { label: 'Performa', path: '/dev/perf', icon: Gauge },
+  { label: 'Seed', path: '/dev/seed', icon: Sprout },
 ]
 
 interface SidebarProps {

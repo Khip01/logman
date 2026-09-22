@@ -239,17 +239,21 @@
 /* --------------------------------------------------------------- CETAK */
 
 /*
- * Ukuran kertas diatur lewat variabel --page-size yang ditulis runtime oleh
- * fitur export (A4 / F4 / Letter). Lihat AGENTS.md bagian 12.
+ * Aturan @page (ukuran kertas + margin 2.54 cm) ditulis runtime lewat tag style
+ * #logman-page-style dari config ukuranKertas, bukan lewat CSS statis, karena
+ * nilai @page tidak bisa memakai var() secara andal di semua browser.
+ * Lihat AGENTS.md bagian 12 dan src/lib/domain/paper.ts.
  */
-@page {
-  size: var(--page-size, A4);
-  margin: 0;
+
+/* Elemen dokumen yang hanya tampil saat dicetak: kop, judul, identitas, tanda tangan. */
+.print-only {
+  display: none;
 }
 
 @media print {
   body {
     background: var(--doc-paper);
+    color: var(--doc-ink);
     overflow: visible;
   }
 
@@ -257,13 +261,28 @@
     display: none;
   }
 
-  .print-page {
-    break-after: page;
-    page-break-after: always;
+  .print-only {
+    display: block;
   }
 
-  .print-page:last-child {
-    break-after: auto;
-    page-break-after: auto;
+  .print-only-flex {
+    display: flex;
+  }
+
+  /* Kerangka aplikasi dilepas agar dokumen memakai lebar kertas penuh.
+     Margin frame memakai var(--sidebar-rail-width); menetapkan ulang variabelnya
+     di sini menimpa nilai inline tanpa !important. */
+  .app-frame {
+    --sidebar-rail-width: 0px;
+  }
+
+  .app-main {
+    overflow: visible;
+  }
+
+  /* Shading header tabel wajib ikut tercetak, sesuai template (bagian 11.1). */
+  .doc-table thead th {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }

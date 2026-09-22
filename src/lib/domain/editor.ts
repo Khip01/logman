@@ -1,5 +1,6 @@
+import { disabledReasonFor, type MagangRange } from './calendar'
 import { isWithin } from './date'
-import type { DayEntry, DayStatus } from './types'
+import type { DayEntry, DayStatus, MonthGroup } from './types'
 
 /**
  * Logika editor Log Book (AGENTS.md bagian 11.2 dan 11.3). Semua fungsi MURNI dan
@@ -88,6 +89,22 @@ export function collectIncompleteDates(
     if (validateDay(day).length > 0) result.push(day.date)
   }
   return result
+}
+
+/**
+ * Tanggal belum lengkap untuk SATU bulan (AGENTS.md bagian 11.3).
+ *
+ * Sumber kebenaran bersama: banner validasi di editor, penanda di halaman Ekspor,
+ * dan validasi server sebelum membuat PDF. Hari yang tidak dapat diisi pada bulan
+ * itu (di luar rentang atau milik bulan lain) tidak dihitung.
+ */
+export function monthIncompleteDates(
+  month: MonthGroup,
+  days: Record<string, DayEntry>,
+  range: MagangRange,
+): string[] {
+  const all = month.weeks.flatMap((week) => week.days.map((d) => days[d.date] ?? d))
+  return collectIncompleteDates(all, (date) => disabledReasonFor(date, month.key, range) === null)
 }
 
 /**

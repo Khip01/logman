@@ -24,6 +24,9 @@ async function setRange(request: APIRequestContext, mulai: string, selesai: stri
 test.describe('editor per sel', () => {
   test.beforeEach(async ({ request }) => {
     await setRange(request, '2026-09-23', '2026-09-26')
+    // Kosongkan logs agar test tidak mewarisi isi dari spec lain atau run sebelumnya
+    // (data-e2e persist antar run; type pada textarea menambah ke nilai lama).
+    await request.put(`${API}/api/logs`, { data: { data: { version: 1, days: {} } } })
   })
 
   test('baris sebelum rentang magang disabled', async ({ page }) => {

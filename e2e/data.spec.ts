@@ -107,6 +107,16 @@ test.describe('alur data', () => {
 
   test('ganti tema tersimpan ke konfigurasi', async ({ page, request }) => {
     const dataDir = await resolveDataDir(request)
+
+    // Paksa tema awal berbeda dari target, supaya klik selalu memicu penyimpanan
+    // walau data-e2e masih menyimpan tema yang sama dari run sebelumnya.
+    const current = (await (await request.get('http://127.0.0.1:5198/api/config')).json()) as {
+      config: Record<string, unknown>
+    }
+    await request.put('http://127.0.0.1:5198/api/config', {
+      data: { config: { ...current.config, tema: 'hitam-pekat' } },
+    })
+
     await page.goto('/settings')
     await page.getByText('Putih Bersih').click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'putih-bersih')

@@ -35,6 +35,9 @@ const DevMotionPage = lazy(() =>
 const DevPerfPage = lazy(() =>
   import('../../dev/DevPerfPage').then((m) => ({ default: m.DevPerfPage })),
 )
+const DevSeedPage = lazy(() =>
+  import('../../dev/DevSeedPage').then((m) => ({ default: m.DevSeedPage })),
+)
 
 interface RouteDef {
   path: string
@@ -49,6 +52,7 @@ const ROUTES: RouteDef[] = [
   { path: '/dev/components', breadcrumb: ['Dev', 'Komponen'], element: <DevComponentsPage /> },
   { path: '/dev/motion', breadcrumb: ['Dev', 'Motion'], element: <DevMotionPage /> },
   { path: '/dev/perf', breadcrumb: ['Dev', 'Performa'], element: <DevPerfPage /> },
+  { path: '/dev/seed', breadcrumb: ['Dev', 'Seed'], element: <DevSeedPage /> },
 ]
 
 function NotFound() {

@@ -31,6 +31,8 @@
     "test:e2e:export": "playwright test e2e/export.spec.ts",
     "test:e2e:editor": "playwright test e2e/editor.spec.ts",
     "test:e2e:data": "playwright test e2e/data.spec.ts",
+    "test:e2e:seed": "playwright test e2e/seed.spec.ts",
+    "test:e2e:print": "playwright test e2e/print.spec.ts",
     "analyze": "vite build && node scripts/analyze-bundle.mjs",
     "audit:motion": "node scripts/audit-motion.mjs",
     "audit:a11y": "node scripts/axe-check.mjs"

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { buildMonthGroups } from './calendar'
 import {
   collectIncompleteDates,
   displayJam,
   effectiveStatus,
   isStripStatus,
   JAM_STRIP,
+  monthIncompleteDates,
   patchAlasan,
   patchKegiatan,
   showsJamStrip,
@@ -128,6 +130,44 @@ describe('collectIncompleteDates', () => {
   it('mengembalikan kosong bila semua lengkap', () => {
     const days = [day({ date: '2026-09-21', kegiatan: 'Kerja' })]
     expect(collectIncompleteDates(days, () => true)).toEqual([])
+  })
+})
+
+describe('monthIncompleteDates', () => {
+  const month =
+    buildMonthGroups('2026-09-23', '2026-09-26').find((m) => m.key === '2026-09') ?? null
+  if (!month) throw new Error('fixture bulan September tidak ditemukan')
+  const range = { mulai: '2026-09-23', selesai: '2026-09-26' }
+
+  it('menghitung hari yang bisa diisi namun masih kosong', () => {
+    const days: Record<string, DayEntry> = {
+      '2026-09-23': { ...day({ date: '2026-09-23' }), kegiatan: 'Kerja', status: 'terisi' },
+    }
+    expect(monthIncompleteDates(month, days, range)).toEqual([
+      '2026-09-24',
+      '2026-09-25',
+      '2026-09-26',
+    ])
+  })
+
+  it('tidak menghitung hari di luar rentang dan hari dengan alasan', () => {
+    const days: Record<string, DayEntry> = {
+      '2026-09-23': { ...day({ date: '2026-09-23' }), alasan: 'Sakit', status: 'sakit' },
+      '2026-09-24': { ...day({ date: '2026-09-24' }), kegiatan: 'Kerja', status: 'terisi' },
+      '2026-09-25': { ...day({ date: '2026-09-25' }), kegiatan: 'Kerja', status: 'terisi' },
+      '2026-09-26': { ...day({ date: '2026-09-26' }), kegiatan: 'Kerja', status: 'terisi' },
+    }
+    expect(monthIncompleteDates(month, days, range)).toEqual([])
+  })
+
+  it('mengembalikan kosong bila seluruh hari yang bisa diisi terisi', () => {
+    const days: Record<string, DayEntry> = Object.fromEntries(
+      ['2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26'].map((date) => [
+        date,
+        { ...day({ date }), kegiatan: 'Kerja', status: 'terisi' },
+      ]),
+    )
+    expect(monthIncompleteDates(month, days, range)).toEqual([])
   })
 })
 

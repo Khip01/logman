@@ -11,6 +11,13 @@ import { cn } from '@/lib/utils/cn'
 import { useConfigStore } from '@/stores/config'
 import { useLogbookStore } from '@/stores/logbook'
 import { useLogsStore } from '@/stores/logs'
+import {
+  PrintDocHeading,
+  PrintIdentity,
+  PrintLetterhead,
+  PrintSignature,
+  weekPosition,
+} from './DocumentPrintChrome'
 
 /**
  * Halaman Log Book: navigasi bulan dan minggu plus editor langsung per sel
@@ -18,6 +25,10 @@ import { useLogsStore } from '@/stores/logs'
  *
  * Baris hari yang bukan milik bulan yang sedang dibuka, atau di luar rentang magang,
  * tetap ditampilkan namun diredupkan dan tidak dapat diisi.
+ *
+ * Preview cetak (AGENTS.md bagian 12): kop, judul, identitas, dan blok tanda tangan
+ * dirender sebagai elemen print-only di sekitar tabel minggu aktif; chrome halaman
+ * memakai no-print. Satu halaman cetak = satu minggu yang sedang dibuka.
  */
 export function LogbookPage() {
   const magang = useConfigStore((s) => s.config.magang)
@@ -64,6 +75,7 @@ export function LogbookPage() {
     activeMonth?.weeks.find((week) => week.id === activeWeekId) ?? activeMonth?.weeks[0]
 
   const range: MagangRange = { mulai: magang.mulai, selesai: magang.selesai }
+  const printPosition = activeMonth && activeWeek ? weekPosition(activeMonth, activeWeek) : null
 
   function goToMonth(offset: number) {
     const next = months[activeIndex + offset]
@@ -71,19 +83,19 @@ export function LogbookPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <div className="mb-6 flex items-center gap-3">
+    <div className="mx-auto max-w-3xl px-6 py-10 print:mx-0 print:max-w-none print:px-0 print:py-0">
+      <div className="mb-6 flex items-center gap-3 no-print">
         <FileText className="size-5 text-text-muted" strokeWidth={1.75} />
         <h1 className="text-[17px] font-semibold text-text-primary">Log Book</h1>
       </div>
 
       {errorLogs ? (
-        <div className="mb-6 border border-status-error bg-status-error-bg px-3 py-2 text-[12px] text-status-error-text">
+        <div className="mb-6 border border-status-error bg-status-error-bg px-3 py-2 text-[12px] text-status-error-text no-print">
           Gagal memuat data log: {errorLogs}
         </div>
       ) : null}
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-2">
+      <div className="mb-8 grid gap-3 no-print sm:grid-cols-2">
         <InfoRow icon={UserRound} label="Nama" value={profil.nama || 'Belum diisi'} />
         <InfoRow icon={FileText} label="NIM" value={profil.nim || 'Belum diisi'} />
         <InfoRow
@@ -103,21 +115,33 @@ export function LogbookPage() {
         />
       ) : (
         <>
-          <MonthNavigator
-            month={activeMonth}
-            canPrev={activeIndex > 0}
-            canNext={activeIndex < months.length - 1}
-            onPrev={() => goToMonth(-1)}
-            onNext={() => goToMonth(1)}
-            onSelectWeek={(weekId) => selectWeek(weekId, activeMonth.key)}
-            activeWeekId={activeWeek?.id ?? null}
-          />
+          <PrintLetterhead />
+          {activeWeek ? (
+            <PrintDocHeading monthLabel={activeMonth.label} weekOfMonth={activeWeek.weekOfMonth} />
+          ) : null}
+          {printPosition?.isFirst ? <PrintIdentity /> : null}
 
-          <ValidationBanner month={activeMonth} range={range} />
+          <div className="no-print">
+            <MonthNavigator
+              month={activeMonth}
+              canPrev={activeIndex > 0}
+              canNext={activeIndex < months.length - 1}
+              onPrev={() => goToMonth(-1)}
+              onNext={() => goToMonth(1)}
+              onSelectWeek={(weekId) => selectWeek(weekId, activeMonth.key)}
+              activeWeekId={activeWeek?.id ?? null}
+            />
+          </div>
+
+          <div className="no-print">
+            <ValidationBanner month={activeMonth} range={range} />
+          </div>
 
           {activeWeek ? (
             <WeekEditorTable week={activeWeek} monthKey={activeMonth.key} range={range} />
           ) : null}
+
+          {printPosition?.isLast ? <PrintSignature /> : null}
         </>
       )}
     </div>

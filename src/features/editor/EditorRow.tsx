@@ -1,6 +1,12 @@
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { JAM_STRIP, patchAlasan, patchKegiatan, showsJamStrip } from '@/lib/domain/editor'
+import {
+  displayJam,
+  JAM_STRIP,
+  patchAlasan,
+  patchKegiatan,
+  showsJamStrip,
+} from '@/lib/domain/editor'
 import { normalizeJam } from '@/lib/domain/schema'
 import type { DayEntry } from '@/lib/domain/types'
 import { useConfigStore } from '@/stores/config'
@@ -88,7 +94,9 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
       />
       <td className="doc-cell-wrap px-2 py-1.5">
         {disabled ? (
-          <p className="text-[12px] text-doc-muted">{day.kegiatan || day.alasan || ''}</p>
+          <p className="text-[12px] text-doc-muted print:text-doc-ink">
+            {day.kegiatan || day.alasan || ''}
+          </p>
         ) : adaAlasan ? (
           <div className="flex items-start justify-between gap-2">
             <p className="text-[12px] text-doc-ink">{day.alasan}</p>
@@ -96,7 +104,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
               type="button"
               aria-label={`Hapus alasan ${tanggalLabel}`}
               onClick={() => setDay(date, patchAlasan(''))}
-              className="mt-0.5 grid size-5 shrink-0 place-items-center text-doc-muted hover:text-doc-ink"
+              className="mt-0.5 grid size-5 shrink-0 place-items-center text-doc-muted no-print hover:text-doc-ink"
             >
               <X className="size-3.5" strokeWidth={2} />
             </button>
@@ -160,7 +168,13 @@ function JamCell({
   if (disabled) {
     return (
       <td className="doc-cell-fit px-2 py-1.5 text-center">
-        <span className="text-[12px] text-doc-muted">{strip ? JAM_STRIP : (value ?? '')}</span>
+        {/* Layar: nilai tersimpan saja. Cetak: fallback ke jam default, sama seperti PDF. */}
+        <span className="text-[12px] text-doc-muted print:hidden">
+          {strip ? JAM_STRIP : (value ?? '')}
+        </span>
+        <span className="hidden text-[12px] text-doc-ink print:inline">
+          {strip ? JAM_STRIP : displayJam(value, placeholder)}
+        </span>
       </td>
     )
   }
@@ -181,13 +195,17 @@ function JamCell({
         aria-label={ariaLabel}
         value={draft}
         placeholder={placeholder}
-        className="w-full border-0 bg-transparent p-0 text-center text-[12px] text-doc-ink outline-none placeholder:text-doc-muted"
+        className="w-full border-0 bg-transparent p-0 text-center text-[12px] text-doc-ink outline-none placeholder:text-doc-muted print:hidden"
         onChange={(event) => setDraft(event.target.value)}
         onBlur={(event) => onCommit(field, event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter') event.currentTarget.blur()
         }}
       />
+      {/* Placeholder tidak ikut tercetak, jadi sediakan teks jam untuk mode cetak. */}
+      <span className="hidden text-[12px] text-doc-ink print:inline">
+        {displayJam(value, placeholder)}
+      </span>
     </td>
   )
 }

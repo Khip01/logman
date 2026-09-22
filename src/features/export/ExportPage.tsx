@@ -1,13 +1,22 @@
-import { Download, FileText } from 'lucide-react'
+import { Download, FileText, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
-import { buildMonthGroups } from '@/lib/domain/calendar'
+import { buildMonthGroups, type MagangRange } from '@/lib/domain/calendar'
+import { monthIncompleteDates } from '@/lib/domain/editor'
 import { useConfigStore } from '@/stores/config'
 import { useLogsStore } from '@/stores/logs'
 
+/**
+ * Halaman ekspor PDF (AGENTS.md bagian 11.3 dan 12).
+ *
+ * Ekspor per bulan ditolak selama masih ada hari yang belum lengkap, sesuai
+ * aturan "setiap hari kosong wajib punya alasan sebelum ekspor": tombol
+ * dinonaktifkan dan daftar hari belum lengkap ditampilkan per bulan. Server
+ * juga menolak dengan 422 bila dipanggil langsung.
+ */
 export function ExportPage() {
   const config = useConfigStore((s) => s.config)
   const logs = useLogsStore((s) => s.data)
@@ -26,6 +35,7 @@ export function ExportPage() {
   }
 
   const months = buildMonthGroups(config.magang.mulai ?? '', config.magang.selesai ?? '')
+  const range: MagangRange = { mulai: config.magang.mulai, selesai: config.magang.selesai }
 
   if (months.length === 0) {
     return (
@@ -100,7 +110,9 @@ export function ExportPage() {
               }).length,
             0,
           )
+          const incomplete = monthIncompleteDates(month, logs.days, range)
           const isExporting = exporting === month.key
+          const blocked = incomplete.length > 0
 
           return (
             <div
@@ -115,11 +127,21 @@ export function ExportPage() {
                 <p className="mt-0.5 text-[11px] text-text-dim">
                   {dayCount} hari, {filledCount} terisi
                 </p>
+                {blocked ? (
+                  <p
+                    id={`export-blocked-${month.key}`}
+                    className="mt-0.5 flex items-center gap-1 text-[11px] text-status-warn-text"
+                  >
+                    <TriangleAlert className="size-3 shrink-0" strokeWidth={1.75} />
+                    {incomplete.length} hari belum lengkap
+                  </p>
+                ) : null}
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                disabled={isExporting}
+                disabled={isExporting || blocked}
+                aria-describedby={blocked ? `export-blocked-${month.key}` : undefined}
                 onClick={() => exportMonth(month.key)}
               >
                 {isExporting ? (
