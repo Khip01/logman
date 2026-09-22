@@ -48,13 +48,33 @@ test('rail selalu tampil dan drawer bisa dibuka lalu ditutup', async ({ page }) 
   // Konten tetap bisa diklik di desktop (tidak ada backdrop yang memblokir).
   await page.locator('h1').first().click()
 
-  // Buka drawer dari tombol di rail.
-  await rail.getByRole('button', { name: 'Buka sidebar' }).click()
+  // Buka drawer dari tombol logo di rail.
+  await page.getByTestId('sidebar-open-logo').click()
   const drawer = page.getByTestId('sidebar-drawer')
   await expect(drawer).toBeVisible()
 
-  // Tutup drawer dari dalam drawer, rail tetap ada.
-  await drawer.getByRole('button', { name: 'Tutup sidebar' }).click()
+  // Tutup drawer dari tombol di dalam drawer, rail tetap ada.
+  await drawer.getByRole('button', { name: 'Tutup sidebar', exact: true }).click()
   await expect(drawer).toBeHidden()
   await expect(rail).toBeVisible()
+})
+
+test('drawer bisa dibuka dari strip bawah dan ditutup dengan Escape', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByTestId('sidebar-open-strip').click()
+  const drawer = page.getByTestId('sidebar-drawer')
+  await expect(drawer).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  await expect(drawer).toBeHidden()
+})
+
+test('rail punya ikon Pengaturan dan Ekspor yang bisa diklik', async ({ page }) => {
+  await page.goto('/')
+  const rail = page.getByTestId('sidebar-rail')
+
+  await expect(rail.getByRole('button', { name: 'Pengaturan' })).toBeVisible()
+  await rail.getByRole('button', { name: 'Ekspor' }).click()
+  await expect(page.getByRole('heading', { name: 'Ekspor PDF' })).toBeVisible()
 })

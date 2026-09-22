@@ -155,15 +155,15 @@ test.describe('ekspor PDF', () => {
     await clearLogs(request)
     await page.goto('/export')
     await expect(page.getByText(/hari belum lengkap/).first()).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Ekspor' }).first()).toBeDisabled()
+    await expect(page.getByRole('main').getByRole('button', { name: 'Ekspor' })).toBeDisabled()
   })
 
   test('tombol Ekspor di UI mengunduh PDF setelah bulan lengkap', async ({ page, request }) => {
     await fillSeptember(request)
     await page.goto('/export')
-    await expect(page.getByRole('button', { name: 'Ekspor' }).first()).toBeEnabled()
+    await expect(page.getByRole('main').getByRole('button', { name: 'Ekspor' })).toBeEnabled()
     const downloadPromise = page.waitForEvent('download', { timeout: 60_000 })
-    await page.getByRole('button', { name: 'Ekspor' }).first().click()
+    await page.getByRole('main').getByRole('button', { name: 'Ekspor' }).click()
     const download = await downloadPromise
     expect(download.suggestedFilename()).toMatch(/^LogBook_.+\.pdf$/)
   })

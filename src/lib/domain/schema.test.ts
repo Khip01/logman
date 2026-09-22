@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyDayPatch,
+  applyNamaMingguPatch,
   DEFAULT_ALASAN,
   DEFAULT_MITRA,
   DEFAULT_PROGRAM_STUDI,
@@ -89,6 +90,44 @@ describe('parseConfig', () => {
     expect(value.alasan).toEqual(['Izin'])
     expect(value.ukuranKertas).toBe('F4')
     expect(issues).toEqual([])
+  })
+
+  it('default format jam 24, dev UI mati, dan penanda tangan kosong', () => {
+    const { value } = parseConfig({})
+    expect(value.formatJam).toBe('24')
+    expect(value.tampilkanDevUi).toBe(false)
+    expect(value.dosenPembimbing).toBe('')
+    expect(value.pembimbingLapangan).toEqual([])
+    expect(value.pembimbingLapanganDefault).toBeNull()
+  })
+
+  it('membaca setelan format jam dan dev UI', () => {
+    const { value } = parseConfig({ formatJam: '12', tampilkanDevUi: true })
+    expect(value.formatJam).toBe('12')
+    expect(value.tampilkanDevUi).toBe(true)
+  })
+
+  it('menolak format jam tidak dikenal dan dev UI bukan boolean', () => {
+    const { value } = parseConfig({ formatJam: '13', tampilkanDevUi: 'ya' })
+    expect(value.formatJam).toBe('24')
+    expect(value.tampilkanDevUi).toBe(false)
+  })
+
+  it('membersihkan daftar pembimbing dan menyelesaikan default', () => {
+    const { value } = parseConfig({
+      pembimbingLapangan: ['  Budi ', 'budi', '', 'Siti'],
+      pembimbingLapanganDefault: 'Siti',
+    })
+    expect(value.pembimbingLapangan).toEqual(['Budi', 'Siti'])
+    expect(value.pembimbingLapanganDefault).toBe('Siti')
+  })
+
+  it('jatuh ke pembimbing pertama bila default tidak ada di daftar', () => {
+    const { value } = parseConfig({
+      pembimbingLapangan: ['Budi', 'Siti'],
+      pembimbingLapanganDefault: 'Andi',
+    })
+    expect(value.pembimbingLapanganDefault).toBe('Budi')
   })
 
   it('menolak tanggal tidak valid dan mencatat issue', () => {
@@ -180,6 +219,60 @@ describe('parseLogData', () => {
     })
     expect(Object.keys(value.days)).toEqual(['2026-09-21'])
     expect(issues.length).toBe(2)
+  })
+
+  it('membaca override nama penanda tangan per minggu', () => {
+    const { value } = parseLogData({
+      days: {},
+      namaPenandaTangan: {
+        '2026-W36': { mahasiswa: 'Ani', pembimbing: 'Siti' },
+        '2026-W37': { mahasiswa: '' },
+      },
+    })
+    expect(value.namaPenandaTangan).toEqual({
+      '2026-W36': { mahasiswa: 'Ani', pembimbing: 'Siti' },
+    })
+  })
+
+  it('memberi peta kosong bila field tidak ada', () => {
+    const { value } = parseLogData({ days: {} })
+    expect(value.namaPenandaTangan).toEqual({})
+  })
+})
+
+describe('applyNamaMingguPatch', () => {
+  it('menambah override baru', () => {
+    const { data, changed } = applyNamaMingguPatch(defaultLogData(), '2026-W36', {
+      mahasiswa: 'Ani',
+    })
+    expect(changed).toEqual(['2026-W36'])
+    expect(data.namaPenandaTangan['2026-W36']).toEqual({ mahasiswa: 'Ani' })
+  })
+
+  it('menggabungkan field pada minggu yang sama', () => {
+    const first = applyNamaMingguPatch(defaultLogData(), '2026-W36', { mahasiswa: 'Ani' }).data
+    const { data } = applyNamaMingguPatch(first, '2026-W36', { pembimbing: 'Siti' })
+    expect(data.namaPenandaTangan['2026-W36']).toEqual({ mahasiswa: 'Ani', pembimbing: 'Siti' })
+  })
+
+  it('menghapus field dengan null atau string kosong', () => {
+    const first = applyNamaMingguPatch(defaultLogData(), '2026-W36', {
+      mahasiswa: 'Ani',
+      pembimbing: 'Siti',
+    }).data
+    const { data } = applyNamaMingguPatch(first, '2026-W36', { pembimbing: '' })
+    expect(data.namaPenandaTangan['2026-W36']).toEqual({ mahasiswa: 'Ani' })
+  })
+
+  it('membuang minggu bila seluruh field kosong', () => {
+    const first = applyNamaMingguPatch(defaultLogData(), '2026-W36', { mahasiswa: 'Ani' }).data
+    const { data } = applyNamaMingguPatch(first, '2026-W36', { mahasiswa: null })
+    expect(data.namaPenandaTangan['2026-W36']).toBeUndefined()
+  })
+
+  it('mengabaikan weekId kosong', () => {
+    const { changed } = applyNamaMingguPatch(defaultLogData(), '   ', { mahasiswa: 'Ani' })
+    expect(changed).toEqual([])
   })
 })
 

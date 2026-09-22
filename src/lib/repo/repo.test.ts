@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultConfig } from '@/lib/domain/schema'
+import { defaultConfig, defaultLogData } from '@/lib/domain/schema'
 import { mergeDayPatches } from '@/stores/logs'
 import { InMemoryConfigRepository, InMemoryLogRepository } from './types'
 
@@ -35,13 +35,18 @@ describe('InMemoryLogRepository', () => {
   it('replaceAll menimpa seluruh data', async () => {
     const repo = new InMemoryLogRepository()
     await repo.patchDays({ '2026-09-21': { kegiatan: 'Lama' } })
-    await repo.replaceAll({
-      version: 1,
-      updatedAt: new Date().toISOString(),
-      days: {},
-    })
+    await repo.replaceAll(defaultLogData())
     const data = await repo.load()
     expect(data.days).toEqual({})
+  })
+
+  it('menyimpan override nama penanda tangan per minggu', async () => {
+    const repo = new InMemoryLogRepository()
+    const result = await repo.patchNamaMinggu('2026-W36', { pembimbing: 'Siti' })
+    expect(result.changed).toEqual(['2026-W36'])
+
+    const data = await repo.load()
+    expect(data.namaPenandaTangan['2026-W36']).toEqual({ pembimbing: 'Siti' })
   })
 
   it('tidak membocorkan referensi internal', async () => {

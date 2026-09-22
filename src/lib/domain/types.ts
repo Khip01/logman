@@ -3,6 +3,8 @@
  * diuji tanpa React (AGENTS.md bagian 4 dan 14).
  */
 
+import type { JamFormat } from './jamFormat'
+
 export type DayOfWeek = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu'
 
 /** Status pengisian sebuah hari. Lihat AGENTS.md bagian 11.3. */
@@ -74,6 +76,34 @@ export interface AppConfig {
   tierAnimasi: string
   ukuranKertas: UkuranKertas
   folderExport: string
+  /** Format tampilan jam di UI. Nilai tersimpan tetap 24 jam format titik. */
+  formatJam: JamFormat
+  /** Menampilkan menu dan route pengembangan. Default mati. */
+  tampilkanDevUi: boolean
+  /** Nama default Dosen Pembimbing untuk blok tanda tangan. */
+  dosenPembimbing: string
+  /** Daftar nama Pembimbing Lapangan yang bisa dipilih per minggu. */
+  pembimbingLapangan: string[]
+  /** Nama Pembimbing Lapangan yang terpilih secara default. Null bila daftar kosong. */
+  pembimbingLapanganDefault: string | null
+}
+
+/**
+ * Override nama penanda tangan untuk satu minggu. Field yang kosong jatuh ke default
+ * config. Mahasiswa defaultnya `profil.nama`, dosen defaultnya `dosenPembimbing`, dan
+ * pembimbing defaultnya `pembimbingLapanganDefault`.
+ */
+export interface NamaMinggu {
+  mahasiswa?: string
+  dosen?: string
+  pembimbing?: string
+}
+
+/** Default penanda tangan dari config, dipakai saat sebuah minggu tidak punya override. */
+export interface PenandaTanganDefaults {
+  mahasiswa: string
+  dosen: string
+  pembimbing: string
 }
 
 /**
@@ -88,4 +118,9 @@ export interface LogData {
   updatedAt: string
   /** Entri hari, dikunci oleh tanggal ISO `YYYY-MM-DD`. */
   days: Record<string, DayEntry>
+  /**
+   * Override nama penanda tangan per minggu, dikunci oleh weekId. Bila sebuah minggu
+   * tidak ada di sini, nama diambil dari default config. Lihat domain/pembimbing.ts.
+   */
+  namaPenandaTangan: Record<string, NamaMinggu>
 }

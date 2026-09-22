@@ -40,11 +40,21 @@
   /* Harus memenuhi kontras AA 4.5:1 di atas kertas putih untuk teks 11-12px.
      #666666 memberi rasio sekitar 5.7:1. Nilai lama #9a9a9a hanya 2.8:1. */
   --doc-muted: #666666;
+
+  /*
+   * Tabel dokumen di LAYAR mengikuti tema aktif (AGENTS.md bagian 11.2). Nilai ini
+   * hanya alias dari token tema, sehingga tetap satu sumber kebenaran. Saat cetak,
+   * @media print menimpanya kembali ke kertas putih di globals.css.
+   */
+  --doc-surface: var(--bg-card);
+  --doc-surface-head: var(--bg-card-hover);
+  --doc-line: var(--border-color);
 }
 
 /* ---------------------------------------------------------------- GELAP */
 
 [data-theme="hitam-pekat"] {
+  color-scheme: dark;
   --bg-body: #050505;
   --bg-sidebar: #0d0d0d;
   --bg-card: #121212;
@@ -70,6 +80,7 @@
 }
 
 [data-theme="hitam-abu"] {
+  color-scheme: dark;
   --bg-body: #0f1115;
   --bg-sidebar: #16181d;
   --bg-card: #1b1e24;
@@ -95,6 +106,7 @@
 }
 
 [data-theme="hitam-pastel"] {
+  color-scheme: dark;
   --bg-body: #14121a;
   --bg-sidebar: #1b1822;
   --bg-card: #211d2a;
@@ -122,6 +134,7 @@
 /* --------------------------------------------------------------- TERANG */
 
 [data-theme="putih-bersih"] {
+  color-scheme: light;
   --bg-body: #ffffff;
   --bg-sidebar: #f7f7f7;
   --bg-card: #ffffff;
@@ -147,6 +160,7 @@
 }
 
 [data-theme="putih-pastel"] {
+  color-scheme: light;
   --bg-body: #fbfaff;
   --bg-sidebar: #f4f2fb;
   --bg-card: #ffffff;
@@ -172,6 +186,7 @@
 }
 
 [data-theme="putih-tulang"] {
+  color-scheme: light;
   --bg-body: #faf8f2;
   --bg-sidebar: #f3f0e6;
   --bg-card: #fffdf7;
@@ -197,6 +212,7 @@
 }
 
 [data-theme="putih-gdocs"] {
+  color-scheme: light;
   --bg-body: #f8f9fa;
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
@@ -222,6 +238,7 @@
 }
 
 [data-theme="putih-word"] {
+  color-scheme: light;
   --bg-body: #ffffff;
   --bg-sidebar: #f3f3f3;
   --bg-card: #ffffff;
@@ -247,6 +264,7 @@
 }
 
 [data-theme="word-dark"] {
+  color-scheme: dark;
   --bg-body: #1f1f1f;
   --bg-sidebar: #262626;
   --bg-card: #2d2d2d;

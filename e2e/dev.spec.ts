@@ -1,5 +1,37 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { type APIRequestContext, expect, test } from '@playwright/test'
+
+/**
+ * Halaman dev sekarang di balik toggle "tampilkanDevUi" di Pengaturan (AGENTS.md
+ * bagian 11.4). Test ini menyalakan toggle lewat API lebih dulu agar route /dev/*
+ * tidak diblokir, lalu mengembalikannya ke default di akhir.
+ */
+
+const API = 'http://127.0.0.1:5198'
+
+async function setTampilkanDevUi(request: APIRequestContext, value: boolean) {
+  const current = (await (await request.get(`${API}/api/config`)).json()) as {
+    config: Record<string, unknown>
+  }
+  await request.put(`${API}/api/config`, {
+    data: { config: { ...current.config, tampilkanDevUi: value } },
+  })
+}
+
+test.beforeEach(async ({ request }) => {
+  await setTampilkanDevUi(request, true)
+})
+
+test.afterAll(async ({ request }) => {
+  await setTampilkanDevUi(request, false)
+})
+
+test('route dev diblokir saat toggle dev mati', async ({ page, request }) => {
+  await setTampilkanDevUi(request, false)
+  await page.goto('/dev/components')
+  // Dialihkan ke Log Book; halaman galeri tidak dirender.
+  await expect(page.getByRole('heading', { name: 'Galeri Komponen' })).toBeHidden()
+})
 
 test('galeri komponen menampilkan seluruh seksi', async ({ page }) => {
   await page.goto('/dev/components')

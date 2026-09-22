@@ -26,9 +26,9 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
   const jamDefault = useConfigStore((s) => s.config.jamDefault)
 
   return (
-    <div className="border border-doc-border bg-doc-paper print:border-0">
-      <div className="flex items-center justify-between gap-2 border-b border-doc-border px-3 py-2 no-print">
-        <span className="font-doc text-[12px] font-semibold text-doc-ink">
+    <div className="theme-t border border-doc-line bg-doc-surface print:border-0 print:bg-doc-paper">
+      <div className="flex items-center justify-between gap-2 border-b border-doc-line px-3 py-2 no-print">
+        <span className="font-doc text-[12px] font-semibold text-text-primary">
           M{week.weekOfMonth} - {formatWeekRange(week.startDate)}
         </span>
         <WeekProgress dates={week.days.map((d) => d.date)} />

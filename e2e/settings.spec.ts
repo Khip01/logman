@@ -1,5 +1,21 @@
 import { expect, type Page, test } from '@playwright/test'
 
+const API = 'http://127.0.0.1:5198'
+
+/**
+ * Tier animasi dikembalikan ke `penuh` sebelum tiap test. data-e2e persist antar run,
+ * sehingga tanpa reset test animasi bisa gagal karena tier sudah bernilai sama dengan
+ * yang akan diklik (tidak ada perubahan berarti tidak ada animasi).
+ */
+test.beforeEach(async ({ request }) => {
+  const current = (await (await request.get(`${API}/api/config`)).json()) as {
+    config: Record<string, unknown>
+  }
+  await request.put(`${API}/api/config`, {
+    data: { config: { ...current.config, tierAnimasi: 'penuh' } },
+  })
+})
+
 /** Menghitung pemanggilan document.startViewTransition selama sesi halaman. */
 async function installViewTransitionCounter(page: Page) {
   await page.addInitScript(() => {

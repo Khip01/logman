@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { AppProviders } from '@/motion/AppProviders'
 import { Combobox } from './Combobox'
+import { DateInput } from './DateInput'
 import { SegmentedControl } from './SegmentedControl'
 import { Switch } from './Switch'
+import { TimePicker } from './TimePicker'
 
 function renderWithProviders(node: React.ReactNode) {
   return render(<AppProviders>{node}</AppProviders>)
@@ -92,5 +94,64 @@ describe('Combobox', () => {
     await user.type(screen.getByRole('combobox'), 'Dinas Luar')
     await user.click(await screen.findByRole('option', { name: 'Gunakan "Dinas Luar"' }))
     expect(onChange).toHaveBeenCalledWith('Dinas Luar')
+  })
+})
+
+describe('TimePicker', () => {
+  it('menampilkan nilai 24 jam apa adanya', () => {
+    renderWithProviders(
+      <TimePicker value="08.00" onChange={() => {}} format="24" label="Jam uji" />,
+    )
+    expect(screen.getByLabelText('Jam uji')).toHaveValue('08.00')
+  })
+
+  it('menampilkan nilai 12 jam dengan AM/PM', () => {
+    renderWithProviders(
+      <TimePicker value="16.30" onChange={() => {}} format="12" label="Jam uji" />,
+    )
+    expect(screen.getByLabelText('Jam uji')).toHaveValue('4.30 PM')
+  })
+
+  it('menormalkan masukan 24 jam menjadi format titik', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    renderWithProviders(<TimePicker value="" onChange={onChange} format="24" label="Jam uji" />)
+
+    const input = screen.getByLabelText('Jam uji')
+    await user.type(input, '7:05')
+    await user.tab()
+    expect(onChange).toHaveBeenCalledWith('07.05')
+  })
+
+  it('memilih jam dan menit dari popover', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    renderWithProviders(
+      <TimePicker value="08.00" onChange={onChange} format="24" label="Jam uji" />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Buka pemilih jam' }))
+    await user.click(await screen.findByRole('option', { name: '09' }))
+    expect(onChange).toHaveBeenCalledWith('09.00')
+  })
+
+  it('menyediakan toggle AM/PM pada format 12', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    renderWithProviders(
+      <TimePicker value="08.00" onChange={onChange} format="12" label="Jam uji" />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Buka pemilih jam' }))
+    await user.click(await screen.findByRole('button', { name: 'PM' }))
+    expect(onChange).toHaveBeenCalledWith('20.00')
+  })
+})
+
+describe('DateInput', () => {
+  it('merender input tanggal dengan tombol pemilih', () => {
+    render(<DateInput aria-label="Tanggal mulai" value="2026-09-01" onChange={() => {}} />)
+    expect(screen.getByLabelText('Tanggal mulai')).toHaveValue('2026-09-01')
+    expect(screen.getByRole('button', { name: 'Buka pemilih tanggal' })).toBeInTheDocument()
   })
 })

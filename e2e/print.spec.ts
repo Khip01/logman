@@ -26,6 +26,9 @@ test.describe('preview cetak dokumen', () => {
     await setConfig(request, {
       magang: { mulai: '2026-09-01', selesai: '2026-09-30' },
       ukuranKertas: 'A4',
+      dosenPembimbing: '',
+      pembimbingLapangan: [],
+      pembimbingLapanganDefault: null,
     })
   })
 
@@ -79,5 +82,48 @@ test.describe('preview cetak dokumen', () => {
     await page.emulateMedia({ media: 'print' })
     await expect(page.getByTestId('print-signature')).toBeVisible()
     await expect(page.getByTestId('print-identity')).toBeHidden()
+  })
+
+  test('nama penanda tangan minggu terakhir muncul di blok tanda tangan', async ({
+    page,
+    request,
+  }) => {
+    await setConfig(request, {
+      dosenPembimbing: 'Dr. Budi Santoso',
+      pembimbingLapangan: ['Siti Aminah'],
+      pembimbingLapanganDefault: 'Siti Aminah',
+    })
+    await page.goto('/')
+    await page.getByRole('tab').last().click()
+
+    const signature = page.getByTestId('print-signature')
+    await expect(signature).toContainText('(Dr. Budi Santoso)')
+    await expect(signature).toContainText('(Siti Aminah)')
+  })
+
+  test('nama penanda tangan bisa disesuaikan per minggu dari Log Book', async ({
+    page,
+    request,
+  }) => {
+    await setConfig(request, {
+      pembimbingLapangan: ['Siti Aminah', 'Andi Wijaya'],
+      pembimbingLapanganDefault: 'Siti Aminah',
+    })
+    await page.goto('/')
+    await page.getByRole('tab').last().click()
+
+    const pembimbing = page.getByLabel('Pembimbing Lapangan')
+    await pembimbing.fill('Andi Wijaya')
+    await pembimbing.press('Enter')
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+
+    await expect(page.getByTestId('print-signature')).toContainText('(Andi Wijaya)')
+
+    // Pilihan tersimpan di logs.json per minggu.
+    const logs = (await (await request.get(`${API}/api/logs`)).json()) as {
+      data: { namaPenandaTangan: Record<string, { pembimbing?: string }> }
+    }
+    const values = Object.values(logs.data.namaPenandaTangan)
+    expect(values.some((entry) => entry.pembimbing === 'Andi Wijaya')).toBe(true)
   })
 })

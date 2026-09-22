@@ -17,7 +17,15 @@ async function setRange(request: APIRequestContext, mulai: string, selesai: stri
     config: Record<string, unknown>
   }
   await request.put(`${API}/api/config`, {
-    data: { config: { ...current.config, magang: { mulai, selesai } } },
+    data: {
+      config: {
+        ...current.config,
+        magang: { mulai, selesai },
+        // Format jam dikembalikan ke 24 jam agar test normalisasi tidak terpengaruh
+        // sisa setelan 12 jam dari spec lain (data-e2e persist antar run).
+        formatJam: '24',
+      },
+    },
   })
 }
 

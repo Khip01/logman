@@ -22,6 +22,8 @@ interface ComboboxProps {
   createLabel?: (value: string) => string
   className?: string
   disabled?: boolean
+  /** Nama aksesibilitas input, dipakai bila tidak dibungkus label eksternal. */
+  'aria-label'?: string
 }
 
 /** Satu baris pada daftar dropdown: pilihan biasa atau aksi membuat nilai baru. */
@@ -55,6 +57,7 @@ export function Combobox({
   createLabel = (v) => `Gunakan "${v}"`,
   className,
   disabled,
+  'aria-label': ariaLabel,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -144,6 +147,7 @@ export function Combobox({
         disabled={disabled}
         placeholder={placeholder}
         role="combobox"
+        aria-label={ariaLabel}
         aria-expanded={open}
         aria-controls={listId}
         aria-autocomplete="list"

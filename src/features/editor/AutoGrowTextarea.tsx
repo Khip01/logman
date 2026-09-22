@@ -61,9 +61,9 @@ export function AutoGrowTextarea({
       onKeyDown={onKeyDown}
       className={cn(
         'block w-full resize-none border-0 bg-transparent p-0',
-        'text-[12px] leading-relaxed text-doc-ink outline-none',
+        'text-[12px] leading-relaxed text-text-main print:text-doc-ink outline-none',
         'whitespace-pre-wrap break-words',
-        'placeholder:text-doc-muted',
+        'placeholder:text-text-dim print:placeholder:text-doc-muted',
         'disabled:cursor-not-allowed',
         className,
       )}

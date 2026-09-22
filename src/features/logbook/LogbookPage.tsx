@@ -18,6 +18,7 @@ import {
   PrintSignature,
   weekPosition,
 } from './DocumentPrintChrome'
+import { SignatureNames } from './SignatureNames'
 
 /**
  * Halaman Log Book: navigasi bulan dan minggu plus editor langsung per sel
@@ -138,10 +139,16 @@ export function LogbookPage() {
           </div>
 
           {activeWeek ? (
+            <div className="no-print">
+              <SignatureNames weekId={activeWeek.id} />
+            </div>
+          ) : null}
+
+          {activeWeek ? (
             <WeekEditorTable week={activeWeek} monthKey={activeMonth.key} range={range} />
           ) : null}
 
-          {printPosition?.isLast ? <PrintSignature /> : null}
+          {printPosition?.isLast && activeWeek ? <PrintSignature weekId={activeWeek.id} /> : null}
         </>
       )}
     </div>

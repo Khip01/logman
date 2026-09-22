@@ -29,6 +29,8 @@ test.describe('mode seed', () => {
     await setConfig(request, {
       magang: { mulai: '2026-09-01', selesai: '2026-09-30' },
       folderExport: '',
+      // Halaman seed ada di bawah /dev, jadi toggle UI dev harus menyala.
+      tampilkanDevUi: true,
     })
     await clearLogs(request)
   })

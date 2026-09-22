@@ -47,6 +47,9 @@
   --color-doc-border: var(--doc-border);
   --color-doc-header: var(--doc-header-bg);
   --color-doc-muted: var(--doc-muted);
+  --color-doc-surface: var(--doc-surface);
+  --color-doc-surface-head: var(--doc-surface-head);
+  --color-doc-line: var(--doc-line);
 
   --font-sans:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
@@ -190,6 +193,10 @@
  * Tabel dokumen Log Book. Sengaja dibuat sederhana: border 1 px, tanpa sudut
  * membulat, tanpa bayangan. Lihat AGENTS.md bagian 11.2.
  *
+ * Di LAYAR, warna tabel mengikuti tema aktif (surface, garis, dan teks) supaya tidak
+ * tampak sebagai kotak putih di tema gelap. Saat CETAK, @media print di bawah
+ * mengembalikannya ke kertas putih sesuai template resmi.
+ *
  * Tinggi baris minimum 1.80 cm dengan aturan `atLeast`: baris TUMBUH mengikuti isi.
  * Pada tabel HTML, `height` pada sel berlaku sebagai tinggi minimum, sehingga baris
  * memanjang sendiri saat textarea tumbuh.
@@ -199,17 +206,18 @@
   border-collapse: collapse;
   font-family: var(--font-doc);
   font-size: 12pt;
-  color: var(--doc-ink);
+  color: var(--text-main);
+  background: var(--doc-surface);
 }
 
 .doc-table th,
 .doc-table td {
-  border: 1px solid var(--doc-border);
+  border: 1px solid var(--doc-line);
   vertical-align: top;
 }
 
 .doc-table thead th {
-  background: var(--doc-header-bg);
+  background: var(--doc-surface-head);
   text-align: center;
   font-weight: 700;
 }
@@ -280,8 +288,24 @@
     overflow: visible;
   }
 
+  /*
+   * Tabel dokumen kembali ke kertas putih saat cetak, apa pun tema layar yang aktif.
+   * Ini menjaga hasil cetak dan PDF tetap sesuai template resmi (AGENTS.md bagian 11.1).
+   * Urutan selektor naik dari spesifisitas rendah ke tinggi agar tidak menurun.
+   */
+  .doc-table {
+    color: var(--doc-ink);
+    background: var(--doc-paper);
+  }
+
+  .doc-table th,
+  .doc-table td {
+    border-color: var(--doc-border);
+  }
+
   /* Shading header tabel wajib ikut tercetak, sesuai template (bagian 11.1). */
   .doc-table thead th {
+    background: var(--doc-header-bg);
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

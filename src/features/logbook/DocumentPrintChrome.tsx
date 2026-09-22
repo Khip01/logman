@@ -1,5 +1,7 @@
+import { resolveNamaMinggu } from '@/lib/domain/pembimbing'
 import type { MonthGroup, WeekEntry } from '@/lib/domain/types'
 import { useConfigStore } from '@/stores/config'
+import { useLogsStore } from '@/stores/logs'
 
 /**
  * Bagian dokumen yang hanya tampil saat dicetak (AGENTS.md bagian 12).
@@ -85,8 +87,25 @@ export function PrintIdentity() {
   )
 }
 
-/** Blok tanda tangan, hanya pada minggu terakhir (sama seperti PDF). */
-export function PrintSignature() {
+/**
+ * Blok tanda tangan, hanya pada minggu terakhir (seperti PDF).
+ *
+ * Nama diambil dari resolver yang sama dengan PDF: override minggu bila ada, jika tidak
+ * default dari Pengaturan. Nama kosong ditampilkan sebagai titik-titik, siap diisi tangan.
+ */
+export function PrintSignature({ weekId }: { weekId: string }) {
+  const profilNama = useConfigStore((s) => s.config.profil.nama)
+  const dosenPembimbing = useConfigStore((s) => s.config.dosenPembimbing)
+  const pembimbingDefault = useConfigStore((s) => s.config.pembimbingLapanganDefault)
+  const override = useLogsStore((s) => s.data.namaPenandaTangan[weekId])
+  const { mahasiswa, dosen, pembimbing } = resolveNamaMinggu(override, {
+    mahasiswa: profilNama,
+    dosen: dosenPembimbing,
+    pembimbing: pembimbingDefault ?? '',
+  })
+
+  const label = (nama: string) => `(${nama || '...........................'})`
+
   return (
     <div
       data-testid="print-signature"
@@ -95,7 +114,7 @@ export function PrintSignature() {
       <div className="mx-auto mb-6 w-[45%] text-center">
         <p>Mahasiswa,</p>
         <div className="h-[60px]" aria-hidden="true" />
-        <p>(...........................)</p>
+        <p>{label(mahasiswa)}</p>
       </div>
       <div>
         <p className="text-left">Mengetahui,</p>
@@ -103,12 +122,12 @@ export function PrintSignature() {
           <div className="w-[45%] text-center">
             <p>Dosen Pembimbing,</p>
             <div className="h-[60px]" aria-hidden="true" />
-            <p>(...........................)</p>
+            <p>{label(dosen)}</p>
           </div>
           <div className="w-[45%] text-center">
             <p>Pembimbing Lapangan,</p>
             <div className="h-[60px]" aria-hidden="true" />
-            <p>(...........................)</p>
+            <p>{label(pembimbing)}</p>
           </div>
         </div>
       </div>

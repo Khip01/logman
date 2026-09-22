@@ -109,7 +109,7 @@ test.describe('navigasi bulan dan minggu', () => {
 
   test('sidebar drawer menandai minggu aktif dan bisa memilih minggu', async ({ page }) => {
     await page.goto('/')
-    await page.getByTestId('sidebar-rail').getByRole('button', { name: 'Buka sidebar' }).click()
+    await page.getByTestId('sidebar-open-logo').click()
 
     const drawer = page.getByTestId('sidebar-drawer')
     await expect(drawer).toBeVisible()
@@ -122,7 +122,7 @@ test.describe('navigasi bulan dan minggu', () => {
     await minggu.click()
     await expect(page.getByRole('tab', { selected: true })).toContainText('M2')
 
-    await drawer.getByRole('button', { name: 'Tutup sidebar' }).click()
+    await drawer.getByRole('button', { name: 'Tutup sidebar', exact: true }).click()
     await expect(drawer).toBeHidden()
   })
 })

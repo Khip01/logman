@@ -1,5 +1,6 @@
 import { Clock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { defaultJamDefault } from '@/lib/domain/schema'
 import type { DayOfWeek, JamDefault } from '@/lib/domain/types'
 import { useConfigStore } from '@/stores/config'
@@ -19,10 +20,14 @@ const HARI_ORDER: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 's
 
 /**
  * Jam default per hari (AGENTS.md bagian 5.1). Nilai ini dipakai bila jam pada form
- * editor dikosongkan. Format selalu titik, misal 08.00.
+ * editor dikosongkan. Nilai selalu disimpan 24 jam format titik, misal 08.00.
+ *
+ * Format tampilan 24 atau 12 jam diatur di sini dan hanya memengaruhi cara jam
+ * dimasukkan dan ditampilkan di UI. Dokumen cetak dan PDF tetap 24 jam format titik.
  */
 export function JamDefaultSection() {
   const jamDefault = useConfigStore((s) => s.config.jamDefault)
+  const formatJam = useConfigStore((s) => s.config.formatJam)
   const update = useConfigStore((s) => s.update)
 
   function setJam(hari: DayOfWeek, field: 'masuk' | 'pulang', value: string) {
@@ -40,8 +45,20 @@ export function JamDefaultSection() {
         Jam Default
       </h2>
       <p className="mb-3 text-[12px] text-text-muted">
-        Dipakai saat jam pada form dikosongkan. Format titik, misal 08.00.
+        Dipakai saat jam pada form dikosongkan. Nilai disimpan 24 jam format titik, misal 08.00.
       </p>
+
+      <div className="mb-4 max-w-xs">
+        <SegmentedControl
+          aria-label="Format jam"
+          options={[
+            { value: '24', label: '24 Jam' },
+            { value: '12', label: '12 Jam (AM/PM)' },
+          ]}
+          value={formatJam}
+          onValueChange={(value) => update({ formatJam: value === '12' ? '12' : '24' })}
+        />
+      </div>
 
       <div className="border border-border-base">
         <div className="grid grid-cols-[6rem_1fr_1fr] gap-3 border-b border-border-base bg-bg-card px-3 py-2 text-[11px] uppercase tracking-wide text-text-dim">
@@ -58,11 +75,13 @@ export function JamDefaultSection() {
             <JamInput
               label={`Jam masuk ${HARI_LABEL[hari]}`}
               value={jamDefault[hari].masuk}
+              format={formatJam}
               onCommit={(value) => setJam(hari, 'masuk', value)}
             />
             <JamInput
               label={`Jam pulang ${HARI_LABEL[hari]}`}
               value={jamDefault[hari].pulang}
+              format={formatJam}
               onCommit={(value) => setJam(hari, 'pulang', value)}
             />
           </div>

@@ -5,7 +5,12 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { monthIncompleteDates } from '../src/lib/domain/editor'
-import { applyDayPatch, parseConfig, parseLogData } from '../src/lib/domain/schema'
+import {
+  applyDayPatch,
+  applyNamaMingguPatch,
+  parseConfig,
+  parseLogData,
+} from '../src/lib/domain/schema'
 import type { AppConfig, DayEntry, LogData } from '../src/lib/domain/types'
 import { createServerLogger, readRecentLogs } from './logger'
 import { buildExportFileName, exportMonthToPdf } from './pdf'
@@ -118,6 +123,32 @@ app.patch('/api/logs', async (c) => {
 
   const current = loadLogs()
   const { data, changed } = applyDayPatch(current, body.patch)
+  persistLogs(data, traceId, changed)
+
+  return c.json({ ok: true, savedAt: data.updatedAt, changed })
+})
+
+/**
+ * Menyimpan override nama penanda tangan satu minggu (AGENTS.md bagian 11.5).
+ * Body: { weekId: string, patch: { mahasiswa?, dosen?, pembimbing? } }. Field bernilai
+ * null atau string kosong dihapus, sehingga minggu itu kembali memakai default config.
+ */
+app.patch('/api/logs/nama-minggu', async (c) => {
+  const traceId = log.newTrace()
+  const body = (await c.req.json().catch(() => null)) as {
+    weekId?: string
+    patch?: Record<string, string | null>
+  } | null
+
+  if (!body?.weekId || typeof body.weekId !== 'string') {
+    return c.json({ error: 'Field weekId wajib diisi.' }, 400)
+  }
+  if (!body.patch || typeof body.patch !== 'object') {
+    return c.json({ error: 'Body harus berisi objek patch.' }, 400)
+  }
+
+  const current = loadLogs()
+  const { data, changed } = applyNamaMingguPatch(current, body.weekId, body.patch)
   persistLogs(data, traceId, changed)
 
   return c.json({ ok: true, savedAt: data.updatedAt, changed })

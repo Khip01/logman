@@ -1,5 +1,5 @@
-import { applyDayPatch } from '@/lib/domain/schema'
-import type { AppConfig, DayEntry, LogData } from '@/lib/domain/types'
+import { applyDayPatch, applyNamaMingguPatch, defaultLogData } from '@/lib/domain/schema'
+import type { AppConfig, DayEntry, LogData, NamaMinggu } from '@/lib/domain/types'
 
 /**
  * Kontrak akses data (AGENTS.md bagian 5.4, prinsip DIP).
@@ -25,6 +25,11 @@ export interface LogRepository {
   load(): Promise<LogData>
   /** Menyimpan patch sebagian. Hanya tanggal di dalam patch yang dikirim. */
   patchDays(patch: Record<string, Partial<DayEntry> | null>): Promise<SaveResult>
+  /** Menyimpan override nama penanda tangan satu minggu. */
+  patchNamaMinggu(
+    weekId: string,
+    patch: Partial<Record<keyof NamaMinggu, string | null>>,
+  ): Promise<SaveResult>
   /** Menimpa seluruh data. Dipakai mode seed dan pemulihan dari backup. */
   replaceAll(data: LogData): Promise<SaveResult>
 }
@@ -58,11 +63,7 @@ export class InMemoryLogRepository implements LogRepository {
   private data: LogData
 
   constructor(initial?: LogData) {
-    this.data = initial ?? {
-      version: 1,
-      updatedAt: new Date(0).toISOString(),
-      days: {},
-    }
+    this.data = initial ?? defaultLogData()
   }
 
   load(): Promise<LogData> {
@@ -71,6 +72,15 @@ export class InMemoryLogRepository implements LogRepository {
 
   patchDays(patch: Record<string, Partial<DayEntry> | null>): Promise<SaveResult> {
     const { data, changed } = applyDayPatch(this.data, patch)
+    this.data = data
+    return Promise.resolve({ ok: true, savedAt: data.updatedAt, changed })
+  }
+
+  patchNamaMinggu(
+    weekId: string,
+    patch: Partial<Record<keyof NamaMinggu, string | null>>,
+  ): Promise<SaveResult> {
+    const { data, changed } = applyNamaMingguPatch(this.data, weekId, patch)
     this.data = data
     return Promise.resolve({ ok: true, savedAt: data.updatedAt, changed })
   }

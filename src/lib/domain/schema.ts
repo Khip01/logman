@@ -1,5 +1,12 @@
 import { sanitizeAlasan } from './alasan'
 import { isIsoDate } from './date'
+import { isJamFormat } from './jamFormat'
+import {
+  resolvePembimbingDefault,
+  sanitizeNamaMinggu,
+  sanitizeNamaPenandaTangan,
+  sanitizePembimbing,
+} from './pembimbing'
 import type {
   AppConfig,
   DayEntry,
@@ -8,6 +15,7 @@ import type {
   JamDefault,
   JamDefaultHarian,
   LogData,
+  NamaMinggu,
   Profil,
   RentangMagang,
   UkuranKertas,
@@ -109,6 +117,11 @@ export function defaultConfig(): AppConfig {
     tierAnimasi: 'penuh',
     ukuranKertas: 'A4',
     folderExport: '',
+    formatJam: '24',
+    tampilkanDevUi: false,
+    dosenPembimbing: '',
+    pembimbingLapangan: [],
+    pembimbingLapanganDefault: null,
   }
 }
 
@@ -117,6 +130,7 @@ export function defaultLogData(): LogData {
     version: LOGS_VERSION,
     updatedAt: new Date(0).toISOString(),
     days: {},
+    namaPenandaTangan: {},
   }
 }
 
@@ -131,6 +145,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
+}
+
+function asBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }
 
 /**
@@ -183,6 +201,16 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     ? (input.ukuranKertas as UkuranKertas)
     : base.ukuranKertas
 
+  const formatJam = isJamFormat(input.formatJam) ? input.formatJam : base.formatJam
+
+  const pembimbingLapangan = Array.isArray(input.pembimbingLapangan)
+    ? sanitizePembimbing(input.pembimbingLapangan)
+    : base.pembimbingLapangan
+  const pembimbingLapanganDefault = resolvePembimbingDefault(
+    pembimbingLapangan,
+    input.pembimbingLapanganDefault,
+  )
+
   const config: AppConfig = {
     profil,
     magang: { mulai, selesai } as RentangMagang,
@@ -194,6 +222,11 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     tierAnimasi: asString(input.tierAnimasi, base.tierAnimasi),
     ukuranKertas,
     folderExport: asString(input.folderExport, base.folderExport),
+    formatJam,
+    tampilkanDevUi: asBoolean(input.tampilkanDevUi, base.tampilkanDevUi),
+    dosenPembimbing: asString(input.dosenPembimbing, base.dosenPembimbing),
+    pembimbingLapangan,
+    pembimbingLapanganDefault,
   }
 
   return { value: config, issues }
@@ -251,9 +284,48 @@ export function parseLogData(input: unknown): ValidationResult<LogData> {
   const updatedAt =
     typeof input.updatedAt === 'string' ? input.updatedAt : new Date(0).toISOString()
 
+  const namaPenandaTangan = sanitizeNamaPenandaTangan(input.namaPenandaTangan)
+
   return {
-    value: { version: LOGS_VERSION, updatedAt, days },
+    value: { version: LOGS_VERSION, updatedAt, days, namaPenandaTangan },
     issues,
+  }
+}
+
+/**
+ * Memperbarui override nama penanda tangan satu minggu. Field yang diberikan `null`
+ * atau string kosong dihapus, sehingga minggu itu kembali memakai default config.
+ * Mengembalikan `changed` berisi weekId bila benar-benar berubah.
+ */
+export function applyNamaMingguPatch(
+  current: LogData,
+  weekId: string,
+  patch: Partial<Record<keyof NamaMinggu, string | null>>,
+): { data: LogData; changed: string[] } {
+  if (weekId.trim() === '') return { data: current, changed: [] }
+
+  const merged: Record<string, unknown> = { ...(current.namaPenandaTangan[weekId] ?? {}) }
+  for (const [field, value] of Object.entries(patch)) {
+    if (value == null || value.trim() === '') {
+      delete merged[field]
+    } else {
+      merged[field] = value
+    }
+  }
+
+  const cleaned = sanitizeNamaMinggu(merged)
+  const namaPenandaTangan = { ...current.namaPenandaTangan }
+
+  if (Object.keys(cleaned).length === 0) {
+    if (!(weekId in namaPenandaTangan)) return { data: current, changed: [] }
+    delete namaPenandaTangan[weekId]
+  } else {
+    namaPenandaTangan[weekId] = cleaned
+  }
+
+  return {
+    data: { ...current, namaPenandaTangan, updatedAt: new Date().toISOString() },
+    changed: [weekId],
   }
 }
 

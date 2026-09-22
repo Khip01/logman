@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { useRoute } from '@/app/router'
+import { lazy, Suspense, useEffect } from 'react'
+import { navigate, useRoute } from '@/app/router'
 import {
   useBootstrapData,
   useDeriveMonths,
@@ -11,6 +11,7 @@ import { FeatureErrorBoundary } from '@/components/shared/FeatureErrorBoundary'
 import { Shell } from '@/components/shared/Shell'
 import { Spinner } from '@/components/ui/Spinner'
 import { AppProviders } from '@/motion/AppProviders'
+import { useConfigStore } from '@/stores/config'
 
 /**
  * Code splitting per route (AGENTS.md bagian 13). Halaman berat dan halaman dev
@@ -78,8 +79,20 @@ export function App() {
   useDeriveMonths()
   useFlushOnHidden()
   const path = useRoute()
+  const configLoaded = useConfigStore((s) => s.loaded)
+  const tampilkanDevUi = useConfigStore((s) => s.config.tampilkanDevUi)
 
-  const match = ROUTES.find((route) => route.path === path)
+  // Route pengembangan diblokir bila toggle dev mati (AGENTS.md bagian 11.4): URL
+  // dikembalikan ke Log Book, dan selama transisi halaman Log Book yang ditampilkan.
+  // Blokir HANYA setelah config termuat, supaya nilai default sementara tidak salah
+  // mengalihkan halaman sebelum setelan sebenarnya terbaca.
+  const blockedDev = configLoaded && path.startsWith('/dev') && !tampilkanDevUi
+
+  useEffect(() => {
+    if (blockedDev) navigate('/', { replace: true })
+  }, [blockedDev])
+
+  const match = blockedDev ? ROUTES[0] : ROUTES.find((route) => route.path === path)
   const breadcrumb = match?.breadcrumb ?? ['Tidak ditemukan']
   const element = match?.element ?? <NotFound />
   const boundaryName = match?.path ?? 'not-found'

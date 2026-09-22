@@ -6,6 +6,7 @@ import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari, monthLabel } from '../src/lib/domain/date'
 import { displayJam, effectiveStatus, JAM_STRIP } from '../src/lib/domain/editor'
 import { PAGE_MARGIN_CM, paperSizeCss } from '../src/lib/domain/paper'
+import { type ResolvedNama, resolveNamaMinggu } from '../src/lib/domain/pembimbing'
 import type { AppConfig, DayEntry, LogData, WeekEntry } from '../src/lib/domain/types'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -88,13 +89,14 @@ function renderWeekTable(
   `
 }
 
-function renderSignatureBlock(): string {
+function renderSignatureBlock(names: ResolvedNama): string {
+  const label = (nama: string) => `(${escapeHtml(nama) || '...........................'})`
   return `
     <div class="signature-block">
       <div class="sig-student">
         <p>Mahasiswa,</p>
         <div class="sig-space"></div>
-        <p>(...........................)</p>
+        <p>${label(names.mahasiswa)}</p>
       </div>
       <div class="sig-know">
         <p>Mengetahui,</p>
@@ -102,12 +104,12 @@ function renderSignatureBlock(): string {
           <div class="sig-col">
             <p>Dosen Pembimbing,</p>
             <div class="sig-space"></div>
-            <p>(...........................)</p>
+            <p>${label(names.dosen)}</p>
           </div>
           <div class="sig-col">
             <p>Pembimbing Lapangan,</p>
             <div class="sig-space"></div>
-            <p>(...........................)</p>
+            <p>${label(names.pembimbing)}</p>
           </div>
         </div>
       </div>
@@ -153,6 +155,16 @@ export function buildExportHtml(options: {
 
   const pageSize = paperSizeCss(config.ukuranKertas)
 
+  const lastWeek = month.weeks[month.weeks.length - 1]
+  const signatureNames = resolveNamaMinggu(
+    lastWeek ? logs.namaPenandaTangan[lastWeek.id] : undefined,
+    {
+      mahasiswa: config.profil.nama,
+      dosen: config.dosenPembimbing,
+      pembimbing: config.pembimbingLapanganDefault ?? '',
+    },
+  )
+
   let pagesHtml = ''
   for (let i = 0; i < month.weeks.length; i++) {
     const week = month.weeks[i]
@@ -165,7 +177,7 @@ export function buildExportHtml(options: {
         <h2 class="doc-subtitle">${escapeHtml(month.label)} - Minggu ${week.weekOfMonth}</h2>
         ${i === 0 ? renderIdentity(config) : ''}
         ${renderWeekTable(week, logs.days, config.jamDefault)}
-        ${isLast ? renderSignatureBlock() : ''}
+        ${isLast ? renderSignatureBlock(signatureNames) : ''}
       </div>
     `
   }

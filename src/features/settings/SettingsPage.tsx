@@ -1,4 +1,5 @@
 import { Palette, Sparkles, UserRound } from 'lucide-react'
+import { DateInput } from '@/components/ui/DateInput'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -10,6 +11,8 @@ import { MOTION_TIERS, THEMES, useUiStore } from '@/stores/ui'
 import { AlasanSection } from './AlasanSection'
 import { DokumenEksporSection } from './DokumenEksporSection'
 import { JamDefaultSection } from './JamDefaultSection'
+import { PenandaTanganSection } from './PenandaTanganSection'
+import { TampilanDevSection } from './TampilanDevSection'
 import { TierPreview } from './TierPreview'
 
 export function SettingsPage() {
@@ -71,9 +74,8 @@ export function SettingsPage() {
             label="Tanggal mulai magang"
             description="Daftar Log Book dibuat otomatis dari rentang ini."
           >
-            <Input
+            <DateInput
               id="set-mulai"
-              type="date"
               value={config.magang.mulai ?? ''}
               onChange={(event) =>
                 update({ magang: { ...config.magang, mulai: event.target.value } })
@@ -81,9 +83,8 @@ export function SettingsPage() {
             />
           </Field>
           <Field htmlFor="set-selesai" label="Tanggal selesai magang">
-            <Input
+            <DateInput
               id="set-selesai"
-              type="date"
               value={config.magang.selesai ?? ''}
               onChange={(event) =>
                 update({ magang: { ...config.magang, selesai: event.target.value } })
@@ -152,7 +153,9 @@ export function SettingsPage() {
 
       <JamDefaultSection />
       <AlasanSection />
+      <PenandaTanganSection />
       <DokumenEksporSection />
+      <TampilanDevSection />
     </div>
   )
 }

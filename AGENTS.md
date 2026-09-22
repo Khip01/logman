@@ -236,7 +236,12 @@ Aturan penempatan (jangan dilanggar):
   "tema": "hitam-pekat",
   "tierAnimasi": "penuh",
   "ukuranKertas": "A4",
-  "folderExport": "string (path lokal)"
+  "folderExport": "string (path lokal)",
+  "formatJam": "24",
+  "tampilkanDevUi": false,
+  "dosenPembimbing": "string",
+  "pembimbingLapangan": ["string", "..."],
+  "pembimbingLapanganDefault": "string atau null"
 }
 ```
 
@@ -245,6 +250,16 @@ Aturan penempatan (jangan dilanggar):
 - `alasan` adalah daftar yang bisa dikelola user. Selain dropdown, user boleh mengetik
   teks bebas yang tidak ada di daftar.
 - `jamDefault` per hari. Bila user mengosongkan jam pada form, nilai default ini dipakai.
+- `formatJam` hanya memengaruhi cara jam DITAMPILKAN dan DIMASUKKAN di UI, nilainya `24`
+  atau `12`. Nilai jam yang disimpan selalu 24 jam format titik (`08.00`), dan dokumen
+  cetak serta PDF selalu 24 jam format titik sesuai template resmi.
+- `tampilkanDevUi` default `false`. Bila mati, menu Dev di sidebar disembunyikan DAN
+  route `/dev/*` diblokir (dialihkan ke Log Book). Menyala hanya saat user mengaktifkan
+  opsi di Settings.
+- `dosenPembimbing` nama default Dosen Pembimbing untuk blok tanda tangan.
+- `pembimbingLapangan` daftar nama pembimbing lapangan yang bisa dipilih per minggu.
+  `pembimbingLapanganDefault` nama yang terpilih secara default, selalu salah satu dari
+  daftar atau null bila daftar kosong.
 
 ### 5.2 `data/logs.json` (satu file untuk semua log)
 
@@ -253,6 +268,10 @@ Aturan penempatan (jangan dilanggar):
 - Struktur internal bebas dirancang, namun harus mendukung: identifikasi minggu,
   tanggal tiap hari, jam masuk, jam pulang, isi kegiatan, status hari (terisi, kosong,
   libur, sakit, izin), dan alasan bila kosong.
+- Menyimpan juga `namaPenandaTangan`: peta `weekId` ke override nama penanda tangan
+  (`mahasiswa`, `dosen`, `pembimbing`). Field yang tidak ada jatuh ke default config.
+  Nama mahasiswa defaultnya `profil.nama`, dosen defaultnya `dosenPembimbing`, dan
+  pembimbing defaultnya `pembimbingLapanganDefault`.
 - Perubahan disimpan otomatis (lihat bagian 7).
 
 ### 5.3 Backup
@@ -265,6 +284,8 @@ Aturan penempatan (jangan dilanggar):
 
 - Interface `LogRepository` dan `ConfigRepository` di `src/lib/repo/`.
 - Implementasi `HttpLogRepository` untuk runtime, `InMemoryLogRepository` untuk test dan CI.
+- `LogRepository.patchDays` menyimpan perubahan hari, `patchNamaMinggu` menyimpan
+  override nama penanda tangan satu minggu, `replaceAll` menimpa seluruh data.
 - CI dan test TIDAK boleh menyentuh filesystem nyata.
 - Menambah backend baru tidak boleh mengubah UI.
 
@@ -456,6 +477,11 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
   kustom: toggle switch, segmented control, kartu pilihan, slider.
 - Semua token warna hanya di `src/styles/tokens.css`. DILARANG menulis nilai hex warna
   langsung di komponen.
+- Setiap blok tema menetapkan `color-scheme` (`dark` untuk tema gelap, `light` untuk
+  tema terang). Ini membuat kontrol native browser (misal pemilih tanggal, scrollbar,
+  autofill) memakai palet yang benar. Tanpa ini, ikon pemilih tanggal nyaris tak
+  terlihat di sebagian tema terang. Kontrol native yang masih kurang jelas diganti
+  komponen bertema (lihat `DateInput` dan `TimePicker` di bagian 10.1).
 - Area dokumen A4 tetap bersih: monokrom, tanpa aksen, tanpa animasi. Preview harus sama
   dengan hasil cetak.
 
@@ -469,10 +495,15 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
   - Dasar: `Button`, `Card` (+ Header/Title/Description/Content/Footer), `Badge`,
     `Separator`, `Kbd`, `Spinner`, `EmptyState`.
   - Form: `Input`, `Textarea`, `Label`, `Field`, `Switch`, `Checkbox`, `Slider`,
-    `Select`, `Combobox`, `SegmentedControl`.
+    `Select`, `Combobox`, `SegmentedControl`, `DateInput`, `TimePicker`.
   - Overlay: `Dialog`, `Popover`, `Tooltip` (+ `SimpleTooltip`).
 - `Combobox` mendukung pilih dari daftar DAN teks bebas. Ini dipakai untuk kolom alasan
-  hari kosong (bagian 11.3).
+  hari kosong (bagian 11.3) dan pemilih Pembimbing Lapangan (bagian 11.5).
+- `DateInput` menyembunyikan indikator kalender bawaan browser (yang warnanya mengikuti
+  `color-scheme` dan nyaris tak terlihat di sebagian tema) dan memakai ikon Lucide
+  bertema. Ikon tetap membuka pemilih bawaan lewat `showPicker` bila didukung.
+- `TimePicker` adalah input jam dengan pemicu popover berisi grid jam, menit, dan toggle
+  AM/PM pada format 12 jam. Nilai yang disimpan selalu 24 jam format titik.
 - `SegmentedControl` memakai shared layout Motion untuk indikator geser. Selalu beri
   `aria-label`.
 - Tombol bahaya memakai varian `danger` bergaya outline merah. Latar merah solid dengan
@@ -524,10 +555,13 @@ Fakta terverifikasi dari template:
   panjang (misal `field-sizing: content` dengan `white-space: nowrap`).
 - Kolom Kegiatan berlebar tetap dan membungkus ke baris baru (`white-space: pre-wrap`),
   TIDAK melar mengikuti konten. Hanya kolom ini yang berperilaku demikian.
-- Tabel dirender simple: border 1 px, tanpa sudut membulat, tanpa bayangan berlebih,
-  header shading `#D0CECE`. Hindari tampilan tabel HTML kuno yang jelek.
-- Format jam memakai titik, misal `08.00`, sesuai template. `input type="time"` boleh
-  dipakai di internal, tetapi tampilan ke user wajib format titik.
+- Tabel dirender simple: border 1 px, tanpa sudut membulat, tanpa bayangan berlebih.
+  Di LAYAR, warna tabel (surface, garis, teks) mengikuti tema aktif agar tidak tampak
+  sebagai kotak putih di tema gelap. Saat CETAK, tabel kembali ke kertas putih dengan
+  header shading `#D0CECE` sesuai template. Hindari tampilan tabel HTML kuno yang jelek.
+- Format jam DISIMPAN memakai titik 24 jam, misal `08.00`, sesuai template. Tampilan di
+  UI mengikuti `formatJam` (24 atau 12 jam) dan bisa diisi lewat `TimePicker`; dokumen
+  cetak dan PDF selalu 24 jam format titik.
 - Tanggal ditulis format Indonesia, misal `Senin, 5 Januari 2026`.
 - Navigasi keyboard: Tab berpindah antar sel, Enter menambah baris baru di kolom Kegiatan.
 
@@ -546,10 +580,33 @@ Fakta terverifikasi dari template:
 
 - Sidebar bersifat overlay: menumpuk DI ATAS konten dengan backdrop, TIDAK mendorong
   lebar konten.
-- Saat collapse, sidebar menjadi rail sempit berisi teks 3 huruf bulan.
+- Saat collapse, sidebar menjadi rail sempit yang selalu tampil. Rail berisi tombol logo,
+  ikon aksi cepat (Pengaturan dan Ekspor) yang tetap terjangkau walau drawer tertutup,
+  dan teks 3 huruf bulan dengan pemisah antar kelompok.
 - Klik ikon bulan akan memperluas daftar minggu di bulan itu (M1, M2, ...). User tetap
   bisa memilih minggu walau sidebar dalam kondisi tertutup.
+- Tiga cara membuka/menutup: tombol logo dan strip vertikal lebar rail di bawah membuka;
+  strip di tepi kanan drawer, tombol tutup, dan backdrop menutup; tombol Escape menutup.
+  Area klik strip sengaja besar agar pointer tidak perlu presisi.
+- Menu dan route `/dev/*` hanya muncul bila `tampilkanDevUi` menyala (default mati).
+  Saat mati, URL `/dev/*` dialihkan ke Log Book.
 - Animasi sidebar memakai spring dan stagger.
+
+### 11.5 Nama penanda tangan
+
+- Blok tanda tangan dokumen berisi tiga nama: Mahasiswa, Dosen Pembimbing, dan
+  Pembimbing Lapangan.
+- Mahasiswa defaultnya `profil.nama`. Dosen defaultnya `config.dosenPembimbing` (satu
+  nama). Pembimbing Lapangan defaultnya `config.pembimbingLapanganDefault`, dipilih dari
+  daftar `config.pembimbingLapangan` yang bisa berisi lebih dari satu nama.
+- Daftar Pembimbing Lapangan dikelola di Settings: tambah lewat tombol plus, hapus lewat
+  tombol silang, dan tandai satu sebagai default.
+- Ketiga nama bisa disesuaikan PER MINGGU di halaman Log Book. Override disimpan di
+  `logs.json` (`namaPenandaTangan`), dan mengosongkan sebuah field berarti kembali ke
+  default config.
+- Resolusi nama memakai satu fungsi murni bersama (`resolveNamaMinggu` di
+  `src/lib/domain/pembimbing.ts`) yang dipakai preview cetak dan `server/pdf.ts`, supaya
+  layar dan PDF selalu sama.
 
 ---
 
@@ -564,7 +621,9 @@ Fakta terverifikasi dari template:
 - Ekspor menghasilkan PDF PER BULAN, multi-halaman. Page break per minggu.
 - Bila satu minggu melebihi tinggi satu halaman, letterhead tetap tampil di setiap
   halaman, sesuai perilaku template asli.
-- Kop surat dan blok tanda tangan ikut lengkap di dokumen.
+- Kop surat dan blok tanda tangan ikut lengkap di dokumen. Nama pada blok tanda tangan
+  (Mahasiswa, Dosen Pembimbing, Pembimbing Lapangan) diambil dari `resolveNamaMinggu`
+  yang sama dengan preview cetak, sehingga layar dan PDF selalu konsisten (bagian 11.5).
 - Preview cetak di browser memakai elemen print-only: kop surat, judul dan subjudul
   dokumen, tabel identitas pada minggu pertama, dan blok tanda tangan pada minggu
   terakhir. Chrome aplikasi (sidebar, header, status bar, navigator, banner) memakai
@@ -825,6 +884,9 @@ Catatan CI:
 9. Testing: Vitest, Playwright, snapshot, a11y, harness performa, `/dev/perf`.
 10. Audit animasi saat build dan workflow CI.
 11. Polish: error boundary per fitur, logging, README, sinkronisasi dokumen ini.
+12. Fase 11 (di luar roadmap, dari kritik pemilik): tabel bertema, rail sidebar yang
+    lengkap dengan strip buka/tutup, gate dev UI, time picker kustom dan format 12/24,
+    warna kontrol native bertema, serta nama penanda tangan global dan per minggu.
 
 ---
 
@@ -854,8 +916,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 10 (polish: logging konsisten, README, sinkronisasi dokumen)
-  selesai. Seluruh roadmap bagian 18 tuntas; tidak ada fase berikutnya.
+- Fase saat ini: 11 (perbaikan UI hasil kritik pemilik) selesai. Seluruh roadmap
+  bagian 18 tuntas; fase 11 adalah iterasi lanjutan setelah roadmap.
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -1072,8 +1134,30 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (192 test), Playwright (62 test),
     audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
     (JS awal 142.9 KB gzip).
+  - Fase 11 perbaikan UI hasil kritik pemilik:
+    - Tabel Log Book bertema di layar lewat token `--doc-surface`, `--doc-surface-head`,
+      `--doc-line` (alias token tema), dan dikembalikan ke kertas putih di `@media print`.
+    - `color-scheme` per tema di `tokens.css`, plus `DateInput` (ikon kalender Lucide
+      bertema) untuk pemilih tanggal.
+    - Rail sidebar diperkaya: ikon Pengaturan dan Ekspor selalu tampil, pemisah antar
+      kelompok, dan strip buka lebar rail di bawah. Drawer bisa ditutup dari strip tepi,
+      tombol, backdrop, atau Escape.
+    - Menu dan route `/dev/*` di balik `tampilkanDevUi` (default mati), dengan toggle di
+      Settings seksi "Tampilan". Route diblokir bila mati.
+    - `TimePicker` kustom bertema dengan grid jam, menit, dan toggle AM/PM. Format jam
+      12/24 diatur di `JamDefaultSection`; nilai selalu disimpan 24 jam format titik.
+    - Nama penanda tangan: config `dosenPembimbing`, `pembimbingLapangan`,
+      `pembimbingLapanganDefault`, seksi `PenandaTanganSection`, override per minggu di
+      `logs.json` lewat `applyNamaMingguPatch` dan `PATCH /api/logs/nama-minggu`, UI
+      `SignatureNames` di Log Book, dan dipakai `PrintSignature` serta `server/pdf.ts`.
+    - Unit test baru: `jamFormat.test.ts`, `pembimbing.test.ts`, dan tambahan kasus
+      `schema.test.ts`, `repo.test.ts`, `ui.test.tsx`; e2e baru untuk sidebar, format jam,
+      pembimbing, dan nama penanda tangan per minggu.
+  - Verifikasi lulus: lint, typecheck, Vitest (254 test), Playwright (70 test),
+    audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
+    (JS awal 145.0 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 10 tuntas; seluruh roadmap bagian 18 selesai).
+  - tidak ada (fase 11 tuntas; seluruh roadmap bagian 18 selesai).
 - Berikutnya:
   - Pemakaian normal dan pemeliharaan. Bila ada perilaku baru, tambah sesuai
     aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.

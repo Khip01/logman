@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createDebouncedSaver } from '@/lib/autosave/debouncedSaver'
-import { applyDayPatch, defaultLogData } from '@/lib/domain/schema'
-import type { DayEntry, LogData } from '@/lib/domain/types'
+import { applyDayPatch, applyNamaMingguPatch, defaultLogData } from '@/lib/domain/schema'
+import type { DayEntry, LogData, NamaMinggu } from '@/lib/domain/types'
 import { log } from '@/lib/log'
 import { getRepositories } from '@/lib/repo'
 import { useSaveStatusStore } from '@/stores/saveStatus'
@@ -15,6 +15,12 @@ import { useSaveStatusStore } from '@/stores/saveStatus'
 
 export type DayPatch = Record<string, Partial<DayEntry> | null>
 
+/** Patch nama penanda tangan satu minggu. Field null atau kosong menghapus override. */
+export interface NamaMingguPatch {
+  weekId: string
+  patch: Partial<Record<keyof NamaMinggu, string | null>>
+}
+
 interface LogsState {
   data: LogData
   loaded: boolean
@@ -25,6 +31,8 @@ interface LogsState {
   setDay: (date: string, patch: Partial<DayEntry>) => void
   /** Mengubah banyak hari sekaligus. */
   setDays: (patch: DayPatch) => void
+  /** Mengubah override nama penanda tangan satu minggu. */
+  setNamaMinggu: (weekId: string, patch: Partial<Record<keyof NamaMinggu, string | null>>) => void
   /** Menimpa seluruh data, dipakai mode seed. */
   replaceAll: (data: LogData) => Promise<void>
   flush: () => Promise<void>
@@ -78,6 +86,38 @@ const saver = createDebouncedSaver<DayPatch>({
   },
 })
 
+/** Saver terpisah untuk nama penanda tangan, agar tidak mencampur tipe payload. */
+const namaSaver = createDebouncedSaver<NamaMingguPatch>({
+  delayMs: 500,
+  merge: (pending, incoming) => {
+    // Hanya gabungkan bila minggu sama; kalau beda, tulis yang terakhir dijadwalkan.
+    if (pending.weekId !== incoming.weekId) return incoming
+    return { weekId: incoming.weekId, patch: { ...pending.patch, ...incoming.patch } }
+  },
+  save: async ({ weekId, patch }) => {
+    const traceId = log.newTrace()
+    try {
+      await getRepositories().logs.patchNamaMinggu(weekId, patch)
+      log.info('logs.namaMinggu', 'Nama penanda tangan minggu tersimpan.', {
+        traceId,
+        data: { minggu: weekId },
+      })
+    } catch (error) {
+      log.error('logs.namaMinggu', 'Gagal menyimpan nama penanda tangan minggu.', {
+        traceId,
+        data: { minggu: weekId, pesan: error instanceof Error ? error.message : String(error) },
+      })
+      throw error
+    }
+  },
+  onStateChange: (state, detail) => {
+    const status = useSaveStatusStore.getState()
+    if (state === 'saved') status.markSaved()
+    else if (state === 'error') status.markError(detail?.message ?? 'Gagal menyimpan perubahan.')
+    else status.setState(state)
+  },
+})
+
 export const useLogsStore = create<LogsState>((set, get) => ({
   data: defaultLogData(),
   loaded: false,
@@ -115,6 +155,13 @@ export const useLogsStore = create<LogsState>((set, get) => ({
     saver.schedule(patch)
   },
 
+  setNamaMinggu: (weekId, patch) => {
+    const current = get().data
+    const { data } = applyNamaMingguPatch(current, weekId, patch)
+    set({ data })
+    namaSaver.schedule({ weekId, patch })
+  },
+
   replaceAll: async (data) => {
     const traceId = log.newTrace()
     await getRepositories().logs.replaceAll(data)
@@ -127,5 +174,6 @@ export const useLogsStore = create<LogsState>((set, get) => ({
 
   flush: async () => {
     await saver.flush()
+    await namaSaver.flush()
   },
 }))

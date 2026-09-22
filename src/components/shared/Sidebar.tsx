@@ -12,7 +12,7 @@ import {
   Sprout,
 } from 'lucide-react'
 import { AnimatePresence, m } from 'motion/react'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { navigate } from '@/app/router'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
 import { formatWeekRange } from '@/lib/domain/calendar'
@@ -23,6 +23,7 @@ import {
   sidebarVariants,
   staggerListVariants,
 } from '@/motion/presets'
+import { useConfigStore } from '@/stores/config'
 import { useLogbookStore } from '@/stores/logbook'
 import { useUiStore } from '@/stores/ui'
 
@@ -34,6 +35,12 @@ interface NavItem {
 
 const MAIN_NAV: NavItem[] = [
   { label: 'Log Book', path: '/', icon: BookOpen },
+  { label: 'Pengaturan', path: '/settings', icon: Settings },
+  { label: 'Ekspor', path: '/export', icon: Download },
+]
+
+/** Ikon aksi yang selalu tampil di rail, agar Pengaturan dan Ekspor tetap terjangkau. */
+const RAIL_ACTIONS: NavItem[] = [
   { label: 'Pengaturan', path: '/settings', icon: Settings },
   { label: 'Ekspor', path: '/export', icon: Download },
 ]
@@ -51,9 +58,14 @@ interface SidebarProps {
 
 /**
  * Sidebar terdiri dari dua bagian (AGENTS.md bagian 11.4):
- * - Rail statis selebar 52 px yang selalu tampil berisi label bulan 3 huruf.
+ * - Rail statis selebar 52 px yang selalu tampil berisi aksi cepat dan label bulan.
  * - Drawer yang meluncur menumpuk di atas konten saat dibuka.
  * Tinggi dan lebar tidak dianimasikan, hanya transform dan opacity.
+ *
+ * Tiga cara membuka/menutup (AGENTS.md bagian 11.4):
+ * - Tombol logo dan strip vertikal di rail bawah membuka drawer.
+ * - Strip di tepi kanan drawer, tombol tutup, dan backdrop menutup drawer.
+ * - Tombol Escape menutup drawer.
  */
 export function Sidebar({ activePath }: SidebarProps) {
   const collapsed = useUiStore((s) => s.sidebarCollapsed)
@@ -62,15 +74,31 @@ export function Sidebar({ activePath }: SidebarProps) {
   const setActiveMonth = useLogbookStore((s) => s.setActiveMonth)
   const activeWeekId = useLogbookStore((s) => s.activeWeekId)
   const selectWeek = useLogbookStore((s) => s.selectWeek)
+  const tampilkanDevUi = useConfigStore((s) => s.config.tampilkanDevUi)
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
 
-  function openDrawerAt(key: string | null) {
+  const openDrawer = useCallback(() => {
     useUiStore.getState().setSidebarCollapsed(false)
-    if (key) {
-      setActiveMonth(key)
-      setOpenMonths((prev) => ({ ...prev, [key]: true }))
+  }, [])
+
+  const closeDrawer = useCallback(() => {
+    useUiStore.getState().setSidebarCollapsed(true)
+  }, [])
+
+  // Escape menutup drawer, kecuali ada dialog atau popover yang sedang terbuka.
+  useEffect(() => {
+    if (collapsed) return
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      const overlay = document.querySelector(
+        '[role="dialog"][data-state="open"], [data-slot="popover-content"]',
+      )
+      if (overlay) return
+      closeDrawer()
     }
-  }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [collapsed, closeDrawer])
 
   function toggleMonth(key: string) {
     setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -98,7 +126,7 @@ export function Sidebar({ activePath }: SidebarProps) {
               initial="hidden"
               animate="visible"
               exit="exit"
-              onClick={() => useUiStore.getState().setSidebarCollapsed(true)}
+              onClick={closeDrawer}
               className="theme-t no-print fixed inset-0 z-40 cursor-default bg-bg-overlay lg:hidden"
             />
 
@@ -127,7 +155,7 @@ export function Sidebar({ activePath }: SidebarProps) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => useUiStore.getState().setSidebarCollapsed(true)}
+                  onClick={closeDrawer}
                   aria-label="Tutup sidebar"
                   className="theme-t grid size-7 shrink-0 place-items-center border border-border-base text-text-muted hover:border-border-light hover:text-text-primary"
                 >
@@ -215,15 +243,22 @@ export function Sidebar({ activePath }: SidebarProps) {
                   })}
                 </m.ul>
 
-                <p className="px-2 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-text-dim">
-                  Dev
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {DEV_NAV.map((item) => (
-                    <NavButton key={item.path} item={item} activePath={activePath} />
-                  ))}
-                </div>
+                {tampilkanDevUi ? (
+                  <>
+                    <p className="px-2 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-text-dim">
+                      Dev
+                    </p>
+                    <div className="flex flex-col gap-0.5">
+                      {DEV_NAV.map((item) => (
+                        <NavButton key={item.path} item={item} activePath={activePath} />
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </div>
+
+              {/* Strip tepi kanan drawer: tarik ke kiri atau klik untuk menutup. */}
+              <DrawerGrabStrip onClose={closeDrawer} />
             </m.aside>
           </>
         ) : null}
@@ -245,14 +280,21 @@ export function Sidebar({ activePath }: SidebarProps) {
         >
           <button
             type="button"
-            onClick={() => openDrawerAt(null)}
+            onClick={openDrawer}
             aria-label="Buka sidebar"
+            data-testid="sidebar-open-logo"
             className="theme-t grid size-7 place-items-center bg-accent text-[13px] font-black text-accent-text"
           >
             L
           </button>
         </div>
-
+        {/* Aksi cepat: Pengaturan dan Ekspor tetap tersedia saat drawer tertutup. */}
+        <div className="flex w-full shrink-0 flex-col items-center gap-1 py-2">
+          {RAIL_ACTIONS.map((item) => (
+            <RailIconButton key={item.path} item={item} activePath={activePath} />
+          ))}
+        </div>
+        <div className="w-6 shrink-0 border-t border-border-base" aria-hidden />
         <div className="flex flex-1 flex-col items-center gap-1 overflow-y-auto py-2">
           {months.length === 0 ? (
             <PanelLeftOpen className="mt-2 size-4 text-text-dim" strokeWidth={1.75} />
@@ -300,8 +342,78 @@ export function Sidebar({ activePath }: SidebarProps) {
             </Popover>
           ))}
         </div>
+        {/*
+          Strip buka selebar rail yang memanjang ke bawah. Area kliknya sengaja besar
+          agar pointer tidak perlu presisi (AGENTS.md bagian 11.4).
+        */}
+        <button
+          type="button"
+          onClick={openDrawer}
+          aria-label="Buka sidebar lewat strip"
+          data-testid="sidebar-open-strip"
+          className="theme-t group flex h-16 w-full shrink-0 flex-col items-center justify-center gap-1 border-t border-border-base text-text-dim hover:bg-bg-card hover:text-text-primary"
+        >
+          <span className="h-4 w-px bg-border-light" aria-hidden />
+          <ChevronRight className="size-4" strokeWidth={1.75} />
+        </button>
       </nav>
     </>
+  )
+}
+
+/** Tombol ikon 36x36 untuk rail, dengan keadaan aktif mengikuti path. */
+function RailIconButton({ item, activePath }: { item: NavItem; activePath: string }) {
+  const Icon = item.icon
+  const isActive = activePath === item.path
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(item.path)}
+      aria-label={item.label}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'theme-t grid h-9 w-9 shrink-0 place-items-center border',
+        isActive
+          ? 'border-border-light bg-bg-card text-text-primary'
+          : 'border-transparent text-text-muted hover:border-border-base hover:text-text-primary',
+      )}
+    >
+      <Icon className="size-4" strokeWidth={1.75} />
+    </button>
+  )
+}
+
+/**
+ * Strip pegangan di tepi kanan drawer. Klik menutup, tarik ke kiri juga menutup.
+ * Area selebar 14 px dengan tinggi penuh, cukup besar untuk pointer (bagian 11.4).
+ */
+function DrawerGrabStrip({ onClose }: { onClose: () => void }) {
+  const startX = useRef<number | null>(null)
+
+  return (
+    <button
+      type="button"
+      aria-label="Tutup sidebar lewat strip"
+      data-testid="sidebar-grab-strip"
+      onClick={onClose}
+      onPointerDown={(event) => {
+        startX.current = event.clientX
+        event.currentTarget.setPointerCapture(event.pointerId)
+      }}
+      onPointerMove={(event) => {
+        if (startX.current === null) return
+        if (event.clientX - startX.current < -40) {
+          startX.current = null
+          onClose()
+        }
+      }}
+      onPointerUp={() => {
+        startX.current = null
+      }}
+      className="theme-t absolute inset-y-0 right-0 grid w-3.5 cursor-ew-resize place-items-center text-text-dim hover:bg-bg-card hover:text-text-primary"
+    >
+      <span className="h-10 w-px bg-border-light" aria-hidden />
+    </button>
   )
 }
 

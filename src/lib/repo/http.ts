@@ -1,5 +1,5 @@
 import { CONFIG_VERSION } from '@/lib/domain/schema'
-import type { AppConfig, LogData } from '@/lib/domain/types'
+import type { AppConfig, LogData, NamaMinggu } from '@/lib/domain/types'
 import type {
   BackupInfo,
   BackupRepository,
@@ -72,6 +72,16 @@ export class HttpLogRepository implements LogRepository {
     return requestJson<SaveResult>(`${this.baseUrl}/api/logs`, {
       method: 'PATCH',
       body: JSON.stringify({ patch }),
+    })
+  }
+
+  patchNamaMinggu(
+    weekId: string,
+    patch: Partial<Record<keyof NamaMinggu, string | null>>,
+  ): Promise<SaveResult> {
+    return requestJson<SaveResult>(`${this.baseUrl}/api/logs/nama-minggu`, {
+      method: 'PATCH',
+      body: JSON.stringify({ weekId, patch }),
     })
   }
 

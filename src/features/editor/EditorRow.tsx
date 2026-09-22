@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { TimePicker } from '@/components/ui/TimePicker'
 import {
   displayJam,
   JAM_STRIP,
@@ -7,7 +7,7 @@ import {
   patchKegiatan,
   showsJamStrip,
 } from '@/lib/domain/editor'
-import { normalizeJam } from '@/lib/domain/schema'
+import type { JamFormat } from '@/lib/domain/jamFormat'
 import type { DayEntry } from '@/lib/domain/types'
 import { bumpRender } from '@/lib/utils/perf'
 import { useConfigStore } from '@/stores/config'
@@ -53,27 +53,23 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
   const stored = useLogsStore((s) => s.data.days[date])
   const setDay = useLogsStore((s) => s.setDay)
   const alasanOptions = useConfigStore((s) => s.config.alasan)
+  const formatJam = useConfigStore((s) => s.config.formatJam)
 
   const day = stored ?? emptyDay(date)
   const strip = showsJamStrip(day)
   const adaAlasan = Boolean(day.alasan && !day.kegiatan)
 
-  function commitJam(field: 'masuk' | 'pulang', raw: string) {
-    const trimmed = raw.trim()
-    if (trimmed === '') {
-      setDay(date, { [field]: null })
-      return
-    }
-    const normalized = normalizeJam(trimmed)
-    if (normalized === null) return
-    setDay(date, { [field]: normalized })
+  function commitJam(field: 'masuk' | 'pulang', normalized: string) {
+    setDay(date, { [field]: normalized === '' ? null : normalized })
   }
 
   return (
     <tr data-testid={`editor-row-${date}`} data-disabled={disabled ? 'true' : 'false'}>
       <th scope="row" className="doc-cell-fit px-2 py-1.5 text-left font-normal">
-        <span className="block text-[12px] text-doc-ink">{hariLabel}</span>
-        <span className="block text-[11px] text-doc-muted">{tanggalLabel}</span>
+        <span className="block text-[12px] text-text-main print:text-doc-ink">{hariLabel}</span>
+        <span className="block text-[11px] text-text-muted print:text-doc-muted">
+          {tanggalLabel}
+        </span>
       </th>
 
       <JamCell
@@ -81,6 +77,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
         ariaLabel={`Jam masuk ${hariLabel} ${tanggalLabel}`}
         value={day.masuk}
         placeholder={jamDefault.masuk}
+        format={formatJam}
         strip={strip}
         disabled={disabled}
         onCommit={commitJam}
@@ -91,23 +88,24 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
         ariaLabel={`Jam pulang ${hariLabel} ${tanggalLabel}`}
         value={day.pulang}
         placeholder={jamDefault.pulang}
+        format={formatJam}
         strip={strip}
         disabled={disabled}
         onCommit={commitJam}
       />
       <td className="doc-cell-wrap px-2 py-1.5">
         {disabled ? (
-          <p className="text-[12px] text-doc-muted print:text-doc-ink">
+          <p className="text-[12px] text-text-muted print:text-doc-ink">
             {day.kegiatan || day.alasan || ''}
           </p>
         ) : adaAlasan ? (
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[12px] text-doc-ink">{day.alasan}</p>
+            <p className="text-[12px] text-text-main print:text-doc-ink">{day.alasan}</p>
             <button
               type="button"
               aria-label={`Hapus alasan ${tanggalLabel}`}
               onClick={() => setDay(date, patchAlasan(''))}
-              className="mt-0.5 grid size-5 shrink-0 place-items-center text-doc-muted no-print hover:text-doc-ink"
+              className="mt-0.5 grid size-5 shrink-0 place-items-center text-text-muted no-print hover:text-text-primary"
             >
               <X className="size-3.5" strokeWidth={2} />
             </button>
@@ -136,20 +134,18 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
 }
 
 /**
- * Sel jam borderless dengan format titik. Dikomit saat blur atau Enter.
+ * Sel jam dengan format mengikuti setelan Pengaturan (24 atau 12 jam).
  *
- * Nilai ditahan sebagai state lokal selama mengetik, lalu disinkronkan kembali ke nilai
- * tersimpan setelah commit. Ini penting agar tampilan mencerminkan bentuk yang sudah
- * dinormalkan (misal "08:30" menjadi "08.30"), bukan teks mentah yang diketik user.
- *
- * Untuk status Sakit dan Izin, jam ditampilkan sebagai strip dan tidak dapat diisi
- * (AGENTS.md bagian 11.3).
+ * Pengetikan dan pemilihan lewat `TimePicker`, yang menormalkan ke 24 jam format titik
+ * sebelum dikomit. Untuk status Sakit dan Izin, jam ditampilkan sebagai strip dan tidak
+ * dapat diisi (AGENTS.md bagian 11.3).
  */
 function JamCell({
   field,
   ariaLabel,
   value,
   placeholder,
+  format,
   strip,
   disabled,
   onCommit,
@@ -158,21 +154,16 @@ function JamCell({
   ariaLabel: string
   value: string | null
   placeholder: string
+  format: JamFormat
   strip: boolean
   disabled: boolean
-  onCommit: (field: 'masuk' | 'pulang', raw: string) => void
+  onCommit: (field: 'masuk' | 'pulang', normalized: string) => void
 }) {
-  const [draft, setDraft] = useState(value ?? '')
-
-  useEffect(() => {
-    setDraft(value ?? '')
-  }, [value])
-
   if (disabled) {
     return (
       <td className="doc-cell-fit px-2 py-1.5 text-center">
         {/* Layar: nilai tersimpan saja. Cetak: fallback ke jam default, sama seperti PDF. */}
-        <span className="text-[12px] text-doc-muted print:hidden">
+        <span className="text-[12px] text-text-muted print:hidden">
           {strip ? JAM_STRIP : (value ?? '')}
         </span>
         <span className="hidden text-[12px] text-doc-ink print:inline">
@@ -185,25 +176,20 @@ function JamCell({
   if (strip) {
     return (
       <td className="doc-cell-fit px-2 py-1.5 text-center">
-        <span className="text-[12px] text-doc-ink">{JAM_STRIP}</span>
+        <span className="text-[12px] text-text-main print:text-doc-ink">{JAM_STRIP}</span>
       </td>
     )
   }
 
   return (
     <td className="doc-cell-fit px-2 py-1.5 text-center">
-      <input
-        type="text"
-        inputMode="numeric"
-        aria-label={ariaLabel}
-        value={draft}
+      <TimePicker
+        variant="cell"
+        value={value ?? ''}
         placeholder={placeholder}
-        className="w-full border-0 bg-transparent p-0 text-center text-[12px] text-doc-ink outline-none placeholder:text-doc-muted print:hidden"
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={(event) => onCommit(field, event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') event.currentTarget.blur()
-        }}
+        format={format}
+        label={ariaLabel}
+        onChange={(next) => onCommit(field, next)}
       />
       {/* Placeholder tidak ikut tercetak, jadi sediakan teks jam untuk mode cetak. */}
       <span className="hidden text-[12px] text-doc-ink print:inline">

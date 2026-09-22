@@ -41,13 +41,16 @@ jadi `./run test:e2e:seed` dan `./run test:e2e:perf` juga berlaku.
 
 ## Halaman
 
-- `/` Log Book: navigasi bulan dan minggu, editor langsung per sel.
-- `/settings` Pengaturan: profil, rentang magang, jam default, alasan, tema,
-  ukuran kertas, tier animasi.
+- `/` Log Book: navigasi bulan dan minggu, editor langsung per sel, dan penyesuaian
+  nama penanda tangan per minggu (mahasiswa, dosen, pembimbing).
+- `/settings` Pengaturan: profil, rentang magang, jam default (termasuk format jam 12
+  atau 24), daftar pembimbing lapangan, alasan, tema, ukuran kertas, tier animasi, dan
+  tampilan dev.
 - `/export` Ekspor PDF per bulan. Ekspor ditolak selama ada hari yang belum
   lengkap (belum ada kegiatan maupun alasan).
 - `/dev/components`, `/dev/motion`, `/dev/perf`, `/dev/seed`: halaman dev untuk
-  pengujian dan pengukuran.
+  pengujian dan pengukuran. Menu dan halaman ini hanya bisa dibuka bila opsi
+  "Tampilkan menu Dev" di Pengaturan menyala (default mati).
 
 ## Gate kualitas
 
@@ -65,9 +68,9 @@ Sebelum menandai pekerjaan selesai, semua gate ini lulus:
 
 Data runtime tersimpan lokal dan tidak masuk git:
 
-- `data/config.json`: profil, rentang magang, jam default, alasan, tema,
-  ukuran kertas, tier animasi.
-- `data/logs.json`: entri kegiatan harian.
+- `data/config.json`: profil, rentang magang, jam default, format jam, daftar
+  pembimbing lapangan, alasan, tema, ukuran kertas, tier animasi, tampilan dev.
+- `data/logs.json`: entri kegiatan harian dan nama penanda tangan per minggu.
 - `data/backups/`: rotasi backup sebelum penulisan.
 - `data/logs/`: log aplikasi JSON lines dengan `traceId`.
 - `data/exports/`: hasil PDF bila `folderExport` dikosongkan.
