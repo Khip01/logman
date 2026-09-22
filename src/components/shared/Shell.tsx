@@ -17,6 +17,12 @@ interface ShellProps {
  * Kerangka aplikasi. Sidebar bersifat overlay (AGENTS.md bagian 11.4), sehingga
  * lebar konten hanya dipengaruhi oleh rail sempit, bukan oleh drawer yang terbuka.
  *
+ * Susunan tinggi: baris atas (rail + konten) mengambil sisa ruang, lalu status bar
+ * FULL WIDTH di paling bawah. Rail dan drawer sama-sama berhenti di atas status bar
+ * (`bottom-[var(--statusbar-height)]`), sehingga tepi bawah keduanya sejajar dengan
+ * tepi atas status bar. Tanpa ini, rail yang full height dan drawer yang tidak akan
+ * membentuk "notch" di sudut kiri bawah.
+ *
  * Shell juga menulis aturan @page runtime (#logman-page-style) mengikuti ukuran
  * kertas dari config, agar preview cetak browser dan PDF ekspor memakai ukuran
  * yang sama (AGENTS.md bagian 12).
@@ -41,32 +47,34 @@ export function Shell({ activePath, breadcrumb, children }: ShellProps) {
   }, [ukuranKertas])
 
   return (
-    <div className="flex h-full w-full">
-      <Sidebar activePath={activePath} />
+    <div className="flex h-full w-full flex-col">
+      <div className="flex min-h-0 flex-1">
+        <Sidebar activePath={activePath} />
 
-      <div
-        className="app-frame flex h-full min-w-0 flex-1 flex-col"
-        style={{ marginLeft: 'var(--sidebar-rail-width)' }}
-      >
-        <TopHeader breadcrumb={breadcrumb} />
+        <div
+          className="app-frame flex min-h-0 min-w-0 flex-1 flex-col"
+          style={{ marginLeft: 'var(--sidebar-rail-width)' }}
+        >
+          <TopHeader breadcrumb={breadcrumb} />
 
-        <main className="app-main relative min-h-0 flex-1 overflow-y-auto">
-          <AnimatePresence mode="wait">
-            <m.div
-              key={activePath}
-              variants={pageVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="min-h-full"
-            >
-              {children}
-            </m.div>
-          </AnimatePresence>
-        </main>
-
-        <StatusBar />
+          <main className="app-main relative min-h-0 flex-1 overflow-y-auto">
+            <AnimatePresence mode="wait">
+              <m.div
+                key={activePath}
+                variants={pageVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="min-h-full"
+              >
+                {children}
+              </m.div>
+            </AnimatePresence>
+          </main>
+        </div>
       </div>
+
+      <StatusBar />
     </div>
   )
 }

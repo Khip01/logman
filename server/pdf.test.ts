@@ -148,6 +148,24 @@ describe('buildExportHtml', () => {
     expect(html).toContain('@page { size: 215mm 330mm; margin: 2.54cm; }')
   })
 
+  it('memakai font dokumen dari config', () => {
+    const times = buildExportHtml({
+      config: makeConfig({ fontDokumen: 'times' }),
+      logs: makeLogs(),
+      monthKey: '2026-09',
+      letterheadUri,
+    })
+    expect(times).toContain('font-family: "Times New Roman", Times, serif;')
+
+    const arial = buildExportHtml({
+      config: makeConfig({ fontDokumen: 'arial' }),
+      logs: makeLogs(),
+      monthKey: '2026-09',
+      letterheadUri,
+    })
+    expect(arial).toContain('font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;')
+  })
+
   it('memakai default penanda tangan dari config', () => {
     const config = makeConfig({
       dosenPembimbing: 'Dr. Budi Santoso',

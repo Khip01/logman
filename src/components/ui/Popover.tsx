@@ -6,6 +6,14 @@ export const Popover = PopoverPrimitive.Root
 export const PopoverTrigger = PopoverPrimitive.Trigger
 export const PopoverAnchor = PopoverPrimitive.Anchor
 
+/**
+ * Isi popover.
+ *
+ * WAJIB memakai portal. Konten popover yang di-render di tempat akan berada di dalam
+ * elemen ber-`zoom` (skala tampilan konten, AGENTS.md bagian 11.2). Perhitungan posisi
+ * `position: fixed` mengabaikan zoom, jadi popover akan tampil jauh dari pemicunya saat
+ * skala bukan 1. Portal memindahkannya keluar dari konteks zoom tersebut.
+ */
 export function PopoverContent({
   className,
   align = 'start',

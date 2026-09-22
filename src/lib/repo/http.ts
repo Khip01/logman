@@ -4,7 +4,10 @@ import type {
   BackupInfo,
   BackupRepository,
   ConfigRepository,
+  EnvInfo,
+  EnvRepository,
   LogRepository,
+  PickFolderResult,
   SaveResult,
 } from './types'
 import { RepositoryError } from './types'
@@ -105,6 +108,21 @@ export class HttpBackupRepository implements BackupRepository {
     return requestJson<{ ok: boolean; restored: string }>(`${this.baseUrl}/api/backups/restore`, {
       method: 'POST',
       body: JSON.stringify({ file }),
+    })
+  }
+}
+
+export class HttpEnvRepository implements EnvRepository {
+  constructor(private readonly baseUrl = '') {}
+
+  info(): Promise<EnvInfo> {
+    return requestJson<EnvInfo>(`${this.baseUrl}/api/env`)
+  }
+
+  pickFolder(current: string): Promise<PickFolderResult> {
+    return requestJson<PickFolderResult>(`${this.baseUrl}/api/pick-folder`, {
+      method: 'POST',
+      body: JSON.stringify({ current }),
     })
   }
 }

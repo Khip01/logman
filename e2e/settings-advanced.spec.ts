@@ -30,6 +30,8 @@ test.describe('settings lanjutan', () => {
     // dianggap perubahan walau data-e2e masih menyimpan hasil run sebelumnya.
     await setConfig(request, {
       formatJam: '24',
+      fontDokumen: 'times',
+      contentScale: 1,
       jamDefault: {
         senin: { masuk: '08.00', pulang: '16.00' },
         selasa: { masuk: '08.00', pulang: '16.00' },
@@ -98,12 +100,23 @@ test.describe('settings lanjutan', () => {
     expect(config.alasan).not.toContain('Wawancara')
   })
 
-  test('ukuran kertas dan folder ekspor tersimpan ke config.json', async ({ page, request }) => {
+  test('ukuran kertas dan folder ekspor lewat dialog tersimpan ke config.json', async ({
+    page,
+    request,
+  }) => {
     const dataDir = await resolveDataDir(request)
     await page.goto('/settings')
 
     await page.getByRole('radio', { name: 'F4' }).click()
-    await page.getByLabel('Folder ekspor').fill('/tmp/opencode/logman-export')
+
+    // Input path sengaja hanya-baca; pengisian lewat dialog folder native. Dialog
+    // di-stub supaya test deterministik tanpa bergantung desktop user.
+    await page.route('**/api/pick-folder', (route) =>
+      route.fulfill({ json: { path: '/tmp/opencode/logman-export' } }),
+    )
+    await page.getByTestId('folder-export-browse').click()
+
+    await expect(page.getByTestId('folder-export-input')).toHaveValue('/tmp/opencode/logman-export')
     await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
 
     const config = JSON.parse(readFileSync(join(dataDir, 'config.json'), 'utf8')) as {
@@ -115,12 +128,80 @@ test.describe('settings lanjutan', () => {
 
     await page.reload()
     await expect(page.getByRole('radio', { name: 'F4' })).toHaveAttribute('aria-checked', 'true')
-    await expect(page.getByLabel('Folder ekspor')).toHaveValue('/tmp/opencode/logman-export')
+    await expect(page.getByTestId('folder-export-input')).toHaveValue('/tmp/opencode/logman-export')
+  })
+
+  test('folder ekspor bisa direset ke default lewat tombol reset', async ({ page, request }) => {
+    await setConfig(request, { folderExport: '/tmp/opencode/logman-export' })
+    await page.goto('/settings')
+
+    // Tombol reset hanya muncul bila path sudah bukan default.
+    const reset = page.getByTestId('folder-export-reset')
+    await expect(reset).toBeVisible()
+    await reset.click()
+
+    await expect(page.getByTestId('folder-export-input')).toHaveValue('')
+    await expect(reset).toBeHidden()
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+  })
+
+  test('placeholder folder ekspor menampilkan path default dari server', async ({ page }) => {
+    await page.goto('/settings')
+    await expect(page.getByTestId('folder-export-input')).toHaveAttribute(
+      'placeholder',
+      /Default: .+exports$/,
+    )
+  })
+
+  test('dialog folder yang tidak didukung membuka mode isi manual', async ({ page }) => {
+    await page.goto('/settings')
+
+    await page.route('**/api/pick-folder', (route) =>
+      route.fulfill({ json: { unsupported: true } }),
+    )
+    await page.getByTestId('folder-export-browse').click()
+
+    await expect(page.getByText('Dialog folder tidak tersedia', { exact: false })).toBeVisible()
+    const input = page.getByTestId('folder-export-input')
+    await expect(input).toHaveAttribute('aria-readonly', 'false')
+    await input.fill('/tmp/opencode/manual')
+    await expect(input).toHaveValue('/tmp/opencode/manual')
+  })
+
+  test('setelan font dokumen mengubah atribut data-doc-font', async ({ page }) => {
+    await page.goto('/settings')
+    await expect(page.locator('html')).toHaveAttribute('data-doc-font', 'times')
+
+    await page.getByRole('radio', { name: 'Arial' }).click()
+    await expect(page.locator('html')).toHaveAttribute('data-doc-font', 'arial')
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+  })
+
+  test('skala tampilan konten mengubah variabel --content-scale', async ({ page }) => {
+    await page.goto('/settings')
+
+    await page.getByRole('radio', { name: 'Besar', exact: true }).click()
+    await expect(page.locator('html')).toHaveCSS('--content-scale', '1.15')
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+
+    // Nilai benar-benar tersimpan di config.
+    await page.reload()
+    await expect(page.getByRole('radio', { name: 'Besar', exact: true })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 
   test('pola nama file tampil di seksi dokumen', async ({ page }) => {
     await page.goto('/settings')
     await expect(page.getByText('LogBook_', { exact: false })).toBeVisible()
+  })
+
+  test('versi aplikasi tampil di status bar', async ({ page }) => {
+    await page.goto('/settings')
+    const version = page.getByTestId('app-version')
+    await expect(version).toBeVisible()
+    await expect(version).toContainText(/logman v\d+\.\d+\.\d+/)
   })
 
   test('file config tetap valid dan ada', async ({ request }) => {

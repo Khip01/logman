@@ -3,6 +3,7 @@ import { navigate, useRoute } from '@/app/router'
 import {
   useBootstrapData,
   useDeriveMonths,
+  useDocPreferenceEffect,
   useFlushOnHidden,
   useUiPreferenceSync,
 } from '@/app/useAppData'
@@ -77,6 +78,7 @@ export function App() {
   useBootstrapData()
   useUiPreferenceSync()
   useDeriveMonths()
+  useDocPreferenceEffect()
   useFlushOnHidden()
   const path = useRoute()
   const configLoaded = useConfigStore((s) => s.loaded)

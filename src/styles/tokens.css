@@ -22,6 +22,19 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /*
+   * Font layer dokumen (AGENTS.md bagian 10). Default Times New Roman sesuai template
+   * resmi; user boleh menggantinya ke Arial lewat Pengaturan. Atribut data-doc-font
+   * dipasang runtime di <html>, sehingga tidak perlu re-render React.
+   */
+  --doc-font-family: "Times New Roman", Times, serif;
+
+  /*
+   * Skala ukuran konten Log Book di layar (AGENTS.md bagian 11.2). Hanya memengaruhi
+   * tampilan layar; dokumen cetak dan PDF selalu memakai ukuran resmi template.
+   */
+  --content-scale: 1;
+
   /* Warna status (identik di semua tema) */
   --status-ok: #22c55e;
   --status-ok-bg: rgba(34, 197, 94, 0.1);
@@ -49,6 +62,18 @@
   --doc-surface: var(--bg-card);
   --doc-surface-head: var(--bg-card-hover);
   --doc-line: var(--border-color);
+}
+
+/*
+ * Font dokumen. Nilai rangkaian font SAMA dengan FONT_DOKUMEN_STACK di
+ * src/lib/domain/dokumen.ts supaya layar, preview cetak, dan PDF tidak pernah berbeda.
+ */
+[data-doc-font="times"] {
+  --doc-font-family: "Times New Roman", Times, serif;
+}
+
+[data-doc-font="arial"] {
+  --doc-font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
 }
 
 /* ---------------------------------------------------------------- GELAP */

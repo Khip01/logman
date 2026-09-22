@@ -1,4 +1,5 @@
 import { AlertTriangle, Check, Circle, Loader2 } from 'lucide-react'
+import { appVersion } from '@/lib/appVersion'
 import { cn } from '@/lib/utils/cn'
 import { type SaveState, useSaveStatusStore } from '@/stores/saveStatus'
 
@@ -61,9 +62,9 @@ export function StatusBar() {
 
       <div className="flex items-center gap-3 text-text-dim">
         {savedTime ? <span>Tersimpan {savedTime}</span> : null}
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1" data-testid="app-version">
           <Circle className="size-2" aria-hidden />
-          logman
+          logman v{appVersion()}
         </span>
       </div>
     </footer>

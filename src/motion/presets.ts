@@ -63,6 +63,20 @@ export const segmentIndicatorTransition: Transition = {
   mass: 0.6,
 }
 
+/**
+ * Transisi untuk animasi hentakan (misal durasi di atas tombol yang bergeser).
+ *
+ * CATATAN ATURAN: transisi ini TIDAK mengubah properti tata letak. Ia hanya dipakai
+ * pada sumbu `y` (yang diterjemahkan Motion menjadi `transform: translateY`), sehingga
+ * tetap patuh pada aturan "hanya transform dan opacity" (AGENTS.md bagian 8.2).
+ */
+export const popTransition: Transition = {
+  type: 'spring',
+  stiffness: 480,
+  damping: 30,
+  mass: 0.5,
+}
+
 export interface TierPreviewVariants {
   window: Variants
   panel: Variants

@@ -3,6 +3,7 @@
  * diuji tanpa React (AGENTS.md bagian 4 dan 14).
  */
 
+import type { ContentScale, FontDokumen } from './dokumen'
 import type { JamFormat } from './jamFormat'
 
 export type DayOfWeek = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu'
@@ -78,6 +79,10 @@ export interface AppConfig {
   folderExport: string
   /** Format tampilan jam di UI. Nilai tersimpan tetap 24 jam format titik. */
   formatJam: JamFormat
+  /** Font layer dokumen (cetak, preview, PDF). UI aplikasi tidak terpengaruh. */
+  fontDokumen: FontDokumen
+  /** Skala ukuran tampilan konten Log Book di layar. Cetak dan PDF tidak terpengaruh. */
+  contentScale: ContentScale
   /** Menampilkan menu dan route pengembangan. Default mati. */
   tampilkanDevUi: boolean
   /** Nama default Dosen Pembimbing untuk blok tanda tangan. */

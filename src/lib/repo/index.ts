@@ -1,4 +1,9 @@
-import { HttpBackupRepository, HttpConfigRepository, HttpLogRepository } from './http'
+import {
+  HttpBackupRepository,
+  HttpConfigRepository,
+  HttpEnvRepository,
+  HttpLogRepository,
+} from './http'
 
 /**
  * Instance repository untuk runtime. UI hanya boleh mengakses lewat sini, bukan
@@ -11,12 +16,14 @@ export interface Repositories {
   config: HttpConfigRepository
   logs: HttpLogRepository
   backups: HttpBackupRepository
+  env: HttpEnvRepository
 }
 
 let current: Repositories = {
   config: new HttpConfigRepository(),
   logs: new HttpLogRepository(),
   backups: new HttpBackupRepository(),
+  env: new HttpEnvRepository(),
 }
 
 export function getRepositories(): Repositories {
@@ -28,5 +35,10 @@ export function setRepositories(next: Partial<Repositories>): void {
   current = { ...current, ...next }
 }
 
-export { HttpBackupRepository, HttpConfigRepository, HttpLogRepository } from './http'
+export {
+  HttpBackupRepository,
+  HttpConfigRepository,
+  HttpEnvRepository,
+  HttpLogRepository,
+} from './http'
 export * from './types'

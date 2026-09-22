@@ -93,6 +93,26 @@ export function useDeriveMonths(): void {
 }
 
 /**
+ * Menerapkan preferensi tampilan dokumen ke elemen <html> sebagai atribut dan custom
+ * property, sehingga CSS yang menangani sisanya tanpa re-render React:
+ * - `data-doc-font` memilih rangkaian font layer dokumen (Times atau Arial).
+ * - `--content-scale` mengatur skala ukuran konten Log Book di layar.
+ * Dokumen cetak dan PDF tidak terpengaruh skala, karena @media print menolaknya.
+ */
+export function useDocPreferenceEffect(): void {
+  const fontDokumen = useConfigStore((s) => s.config.fontDokumen)
+  const contentScale = useConfigStore((s) => s.config.contentScale)
+
+  useEffect(() => {
+    document.documentElement.dataset.docFont = fontDokumen
+  }, [fontDokumen])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--content-scale', String(contentScale))
+  }, [contentScale])
+}
+
+/**
  * Menyimpan perubahan yang tertunda saat tab disembunyikan atau ditutup, agar
  * perubahan tidak hilang (AGENTS.md bagian 7).
  */

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -6,7 +7,15 @@ import { defineConfig } from 'vite'
 const WEB_PORT = 5199
 const API_PORT = 5198
 
+/** Versi aplikasi dibaca dari package.json agar status bar tidak pernah basi. */
+const pkg = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'),
+) as { version?: string }
+
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version ?? '0.0.0'),
+  },
   plugins: [
     react({
       // React Compiler: auto-memoization, menghilangkan kebutuhan useMemo/useCallback

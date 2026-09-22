@@ -54,7 +54,7 @@
   --font-sans:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-  --font-doc: "Times New Roman", Times, serif;
+  --font-doc: var(--doc-font-family);
 
   --radius-none: 0;
 }
@@ -204,8 +204,18 @@
 .doc-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--font-doc);
-  font-size: 12pt;
+  /*
+   * Di LAYAR tabel memakai font UI (Inter) agar konsisten dengan seluruh aplikasi.
+   * Font dokumen (Times New Roman atau Arial) hanya dipakai saat CETAK dan pada PDF,
+   * karena itu override-nya ada di @media print (AGENTS.md bagian 10 dan 11.2).
+   */
+  font-family: var(--font-sans);
+  /*
+   * Ukuran dasar dokumen di LAYAR. 12pt (16px) dikali skala konten pilihan user, supaya
+   * teks Log Book bisa dibesarkan tanpa ikut memperbesar UI aplikasi. Saat cetak, ukuran
+   * dikunci kembali ke 12pt resmi pada @media print.
+   */
+  font-size: calc(16px * var(--content-scale));
   color: var(--text-main);
   background: var(--doc-surface);
 }
@@ -242,6 +252,18 @@
 .doc-cell-wrap {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/*
+ * Skala konten Log Book di layar (AGENTS.md bagian 11.2). Memakai `zoom` supaya seluruh
+ * isi konten (teks, padding, garis tabel) membesar proporsional, tanpa menyentuh UI
+ * aplikasi di luar halaman Log Book. `zoom` adalah properti statis, bukan animasi.
+ *
+ * Saat CETAK, skala dinolkan agar dokumen memakai ukuran resmi template. Ini berlaku
+ * juga untuk preview cetak browser.
+ */
+.content-scaled {
+  zoom: var(--content-scale, 1);
 }
 
 /* --------------------------------------------------------------- CETAK */
@@ -288,6 +310,11 @@
     overflow: visible;
   }
 
+  /* Preview cetak selalu ukuran resmi, terlepas dari skala konten layar. */
+  .content-scaled {
+    zoom: 1;
+  }
+
   /*
    * Tabel dokumen kembali ke kertas putih saat cetak, apa pun tema layar yang aktif.
    * Ini menjaga hasil cetak dan PDF tetap sesuai template resmi (AGENTS.md bagian 11.1).
@@ -296,6 +323,10 @@
   .doc-table {
     color: var(--doc-ink);
     background: var(--doc-paper);
+    /* Font dokumen (Times atau Arial) hanya berlaku di sini, bukan di layar. */
+    font-family: var(--font-doc);
+    /* Ukuran dokumen dikunci ke 12pt resmi, apa pun skala konten layar (bagian 11.2). */
+    font-size: 12pt;
   }
 
   .doc-table th,

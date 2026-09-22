@@ -84,73 +84,78 @@ export function LogbookPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10 print:mx-0 print:max-w-none print:px-0 print:py-0">
-      <div className="mb-6 flex items-center gap-3 no-print">
-        <FileText className="size-5 text-text-muted" strokeWidth={1.75} />
-        <h1 className="text-[17px] font-semibold text-text-primary">Log Book</h1>
-      </div>
-
-      {errorLogs ? (
-        <div className="mb-6 border border-status-error bg-status-error-bg px-3 py-2 text-[12px] text-status-error-text no-print">
-          Gagal memuat data log: {errorLogs}
+    <div className="content-scaled">
+      <div className="mx-auto max-w-3xl px-6 py-10 print:mx-0 print:max-w-none print:px-0 print:py-0">
+        <div className="mb-6 flex items-center gap-3 no-print">
+          <FileText className="size-5 text-text-muted" strokeWidth={1.75} />
+          <h1 className="text-[17px] font-semibold text-text-primary">Log Book</h1>
         </div>
-      ) : null}
 
-      <div className="mb-8 grid gap-3 no-print sm:grid-cols-2">
-        <InfoRow icon={UserRound} label="Nama" value={profil.nama || 'Belum diisi'} />
-        <InfoRow icon={FileText} label="NIM" value={profil.nim || 'Belum diisi'} />
-        <InfoRow
-          icon={CalendarRange}
-          label="Rentang magang"
-          value={`${magang.mulai} sampai ${magang.selesai}`}
-        />
-        <InfoRow icon={Ruler} label="Hari terisi" value={`${jumlahHari} hari`} />
-      </div>
-
-      {!activeMonth ? (
-        <EmptyState
-          icon={CalendarRange}
-          headingLevel={2}
-          title="Belum ada minggu"
-          description="Rentang magang terlalu pendek atau tidak valid, sehingga belum ada minggu yang bisa ditampilkan."
-        />
-      ) : (
-        <>
-          <PrintLetterhead />
-          {activeWeek ? (
-            <PrintDocHeading monthLabel={activeMonth.label} weekOfMonth={activeWeek.weekOfMonth} />
-          ) : null}
-          {printPosition?.isFirst ? <PrintIdentity /> : null}
-
-          <div className="no-print">
-            <MonthNavigator
-              month={activeMonth}
-              canPrev={activeIndex > 0}
-              canNext={activeIndex < months.length - 1}
-              onPrev={() => goToMonth(-1)}
-              onNext={() => goToMonth(1)}
-              onSelectWeek={(weekId) => selectWeek(weekId, activeMonth.key)}
-              activeWeekId={activeWeek?.id ?? null}
-            />
+        {errorLogs ? (
+          <div className="mb-6 border border-status-error bg-status-error-bg px-3 py-2 text-[12px] text-status-error-text no-print">
+            Gagal memuat data log: {errorLogs}
           </div>
+        ) : null}
 
-          <div className="no-print">
-            <ValidationBanner month={activeMonth} range={range} />
-          </div>
+        <div className="mb-8 grid gap-3 no-print sm:grid-cols-2">
+          <InfoRow icon={UserRound} label="Nama" value={profil.nama || 'Belum diisi'} />
+          <InfoRow icon={FileText} label="NIM" value={profil.nim || 'Belum diisi'} />
+          <InfoRow
+            icon={CalendarRange}
+            label="Rentang magang"
+            value={`${magang.mulai} sampai ${magang.selesai}`}
+          />
+          <InfoRow icon={Ruler} label="Hari terisi" value={`${jumlahHari} hari`} />
+        </div>
 
-          {activeWeek ? (
+        {!activeMonth ? (
+          <EmptyState
+            icon={CalendarRange}
+            headingLevel={2}
+            title="Belum ada minggu"
+            description="Rentang magang terlalu pendek atau tidak valid, sehingga belum ada minggu yang bisa ditampilkan."
+          />
+        ) : (
+          <>
+            <PrintLetterhead />
+            {activeWeek ? (
+              <PrintDocHeading
+                monthLabel={activeMonth.label}
+                weekOfMonth={activeWeek.weekOfMonth}
+              />
+            ) : null}
+            {printPosition?.isFirst ? <PrintIdentity /> : null}
+
             <div className="no-print">
-              <SignatureNames weekId={activeWeek.id} />
+              <MonthNavigator
+                month={activeMonth}
+                canPrev={activeIndex > 0}
+                canNext={activeIndex < months.length - 1}
+                onPrev={() => goToMonth(-1)}
+                onNext={() => goToMonth(1)}
+                onSelectWeek={(weekId) => selectWeek(weekId, activeMonth.key)}
+                activeWeekId={activeWeek?.id ?? null}
+              />
             </div>
-          ) : null}
 
-          {activeWeek ? (
-            <WeekEditorTable week={activeWeek} monthKey={activeMonth.key} range={range} />
-          ) : null}
+            <div className="no-print">
+              <ValidationBanner month={activeMonth} range={range} />
+            </div>
 
-          {printPosition?.isLast && activeWeek ? <PrintSignature weekId={activeWeek.id} /> : null}
-        </>
-      )}
+            {activeWeek ? (
+              <div className="no-print">
+                <SignatureNames weekId={activeWeek.id} />
+              </div>
+            ) : null}
+
+            {activeWeek ? (
+              <WeekEditorTable week={activeWeek} monthKey={activeMonth.key} range={range} />
+            ) : null}
+
+            {printPosition?.isLast && activeWeek ? <PrintSignature weekId={activeWeek.id} /> : null}
+          </>
+        )}
+      </div>
     </div>
   )
 }

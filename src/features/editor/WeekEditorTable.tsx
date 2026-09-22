@@ -28,7 +28,7 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
   return (
     <div className="theme-t border border-doc-line bg-doc-surface print:border-0 print:bg-doc-paper">
       <div className="flex items-center justify-between gap-2 border-b border-doc-line px-3 py-2 no-print">
-        <span className="font-doc text-[12px] font-semibold text-text-primary">
+        <span className="text-[12px] font-semibold text-text-primary print:font-doc">
           M{week.weekOfMonth} - {formatWeekRange(week.startDate)}
         </span>
         <WeekProgress dates={week.days.map((d) => d.date)} />

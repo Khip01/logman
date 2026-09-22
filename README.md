@@ -41,11 +41,13 @@ jadi `./run test:e2e:seed` dan `./run test:e2e:perf` juga berlaku.
 
 ## Halaman
 
-- `/` Log Book: navigasi bulan dan minggu, editor langsung per sel, dan penyesuaian
-  nama penanda tangan per minggu (mahasiswa, dosen, pembimbing).
+- `/` Log Book: navigasi bulan dan minggu, editor langsung per sel, penyesuaian nama
+  penanda tangan per minggu (mahasiswa, dosen, pembimbing), dan pengaturan skala
+  tampilan konten.
 - `/settings` Pengaturan: profil, rentang magang, jam default (termasuk format jam 12
-  atau 24), daftar pembimbing lapangan, alasan, tema, ukuran kertas, tier animasi, dan
-  tampilan dev.
+  atau 24), daftar pembimbing lapangan, alasan, tema, ukuran kertas, font dokumen
+  (Times New Roman atau Arial), skala konten, folder ekspor lewat dialog folder, tier
+  animasi, dan tampilan dev.
 - `/export` Ekspor PDF per bulan. Ekspor ditolak selama ada hari yang belum
   lengkap (belum ada kegiatan maupun alasan).
 - `/dev/components`, `/dev/motion`, `/dev/perf`, `/dev/seed`: halaman dev untuk
@@ -68,8 +70,9 @@ Sebelum menandai pekerjaan selesai, semua gate ini lulus:
 
 Data runtime tersimpan lokal dan tidak masuk git:
 
-- `data/config.json`: profil, rentang magang, jam default, format jam, daftar
-  pembimbing lapangan, alasan, tema, ukuran kertas, tier animasi, tampilan dev.
+- `data/config.json`: profil, rentang magang, jam default, format jam, font dokumen,
+  skala konten, daftar pembimbing lapangan, alasan, tema, ukuran kertas, tier animasi,
+  tampilan dev.
 - `data/logs.json`: entri kegiatan harian dan nama penanda tangan per minggu.
 - `data/backups/`: rotasi backup sebelum penulisan.
 - `data/logs/`: log aplikasi JSON lines dengan `traceId`.

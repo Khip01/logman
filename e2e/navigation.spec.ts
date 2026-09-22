@@ -107,22 +107,97 @@ test.describe('navigasi bulan dan minggu', () => {
     await expect(page.getByRole('tab', { selected: true })).toContainText('M1')
   })
 
-  test('sidebar drawer menandai minggu aktif dan bisa memilih minggu', async ({ page }) => {
+  test('sidebar drawer menandai minggu aktif dan bisa memilih minggu', async ({
+    page,
+    request,
+  }) => {
+    // Rentang dikunci supaya jumlah minggu di September deterministik, dan dev UI
+    // dimatikan agar daftar nav dev tidak ikut terbaca sebagai bulan atau minggu.
+    const current = (await (await request.get('/api/config')).json()) as {
+      config: Record<string, unknown>
+    }
+    await request.put('/api/config', {
+      data: {
+        config: {
+          ...current.config,
+          magang: { mulai: '2026-08-31', selesai: '2026-09-12' },
+          tampilkanDevUi: false,
+        },
+      },
+    })
+
     await page.goto('/')
     await page.getByTestId('sidebar-open-logo').click()
 
     const drawer = page.getByTestId('sidebar-drawer')
     await expect(drawer).toBeVisible()
 
-    // September 2026 punya dua minggu pada rentang ini (M1 31 Agu, M2 7 Sep).
-    await drawer.getByRole('button', { name: 'September 2026' }).click()
+    // Menekan item bulan hanya membuka daftar minggunya, TIDAK memilih bulan. Minggu
+    // di dalamnya sudah terlihat karena bulan aktif dibuka otomatis.
+    const september = drawer.getByRole('button', { name: 'September 2026' })
+    await expect(september).toHaveAttribute('aria-expanded', 'true')
     const minggu = drawer.getByRole('button', { name: /^M2/ }).first()
     await expect(minggu).toBeVisible()
+
+    // Menekan item bulan lagi menutup daftar minggunya.
+    await september.click()
+    await expect(september).toHaveAttribute('aria-expanded', 'false')
+    await expect(drawer.getByRole('button', { name: /^M2/ })).toHaveCount(0)
+    await september.click()
 
     await minggu.click()
     await expect(page.getByRole('tab', { selected: true })).toContainText('M2')
 
-    await drawer.getByRole('button', { name: 'Tutup sidebar', exact: true }).click()
+    await drawer.getByTestId('sidebar-collapse-strip').click()
     await expect(drawer).toBeHidden()
+  })
+
+  test('bulan ditandai aktif hanya pada bulan minggu terpilih, dan tidak menutup bulan lain', async ({
+    page,
+    request,
+  }) => {
+    const current = (await (await request.get('/api/config')).json()) as {
+      config: Record<string, unknown>
+    }
+    await request.put('/api/config', {
+      data: {
+        config: {
+          ...current.config,
+          magang: { mulai: '2026-07-01', selesai: '2026-09-30' },
+          tampilkanDevUi: false,
+        },
+      },
+    })
+
+    await page.goto('/')
+    await page.getByTestId('sidebar-open-logo').click()
+    const drawer = page.getByTestId('sidebar-drawer')
+    await expect(drawer).toBeVisible()
+
+    // Tepat satu bulan ditandai aktif, mengikuti minggu yang sedang dipilih.
+    const aktif = drawer.locator('button[data-active="true"]')
+    await expect(aktif).toHaveCount(1)
+    await expect(aktif).toHaveText('September 2026')
+
+    // Buka pula Juli dan Agustus.
+    const juli = drawer.getByRole('button', { name: 'Juli 2026' })
+    const agustus = drawer.getByRole('button', { name: 'Agustus 2026' })
+    await juli.click()
+    await agustus.click()
+    await expect(juli).toHaveAttribute('aria-expanded', 'true')
+    await expect(agustus).toHaveAttribute('aria-expanded', 'true')
+
+    // Bulan aktif TIDAK ikut berubah walau bulan lain dibuka.
+    await expect(aktif).toHaveCount(1)
+    await expect(aktif).toHaveText('September 2026')
+
+    // Pilih minggu di Agustus: penanda aktif pindah ke Agustus.
+    await agustus.locator('xpath=following-sibling::ul[1]//button[contains(., "M2")]').click()
+    await expect(aktif).toHaveCount(1)
+    await expect(aktif).toHaveText('Agustus 2026')
+
+    // Semua bulan yang tadi terbuka TETAP terbuka, tidak ada yang ditutup otomatis.
+    await expect(juli).toHaveAttribute('aria-expanded', 'true')
+    await expect(agustus).toHaveAttribute('aria-expanded', 'true')
   })
 })

@@ -53,8 +53,8 @@ test('rail selalu tampil dan drawer bisa dibuka lalu ditutup', async ({ page }) 
   const drawer = page.getByTestId('sidebar-drawer')
   await expect(drawer).toBeVisible()
 
-  // Tutup drawer dari tombol di dalam drawer, rail tetap ada.
-  await drawer.getByRole('button', { name: 'Tutup sidebar', exact: true }).click()
+  // Tutup drawer dari tombol collapse di dasar drawer, rail tetap ada.
+  await drawer.getByTestId('sidebar-collapse-strip').click()
   await expect(drawer).toBeHidden()
   await expect(rail).toBeVisible()
 })
@@ -70,11 +70,49 @@ test('drawer bisa dibuka dari strip bawah dan ditutup dengan Escape', async ({ p
   await expect(drawer).toBeHidden()
 })
 
-test('rail punya ikon Pengaturan dan Ekspor yang bisa diklik', async ({ page }) => {
-  await page.goto('/')
+test('rail punya ikon Log Book, Pengaturan, dan Ekspor yang bisa diklik', async ({ page }) => {
+  await page.goto('/settings')
   const rail = page.getByTestId('sidebar-rail')
 
-  await expect(rail.getByRole('button', { name: 'Pengaturan' })).toBeVisible()
-  await rail.getByRole('button', { name: 'Ekspor' }).click()
+  await expect(rail.getByTestId('rail-logbook')).toBeVisible()
+  await expect(rail.getByTestId('rail-settings')).toBeVisible()
+
+  await rail.getByTestId('rail-logbook').click()
+  await expect(page.getByRole('heading', { name: 'Log Book' })).toBeVisible()
+
+  await rail.getByTestId('rail-export').click()
   await expect(page.getByRole('heading', { name: 'Ekspor PDF' })).toBeVisible()
+})
+
+test('drawer membuka bulan aktif dan menandai minggu yang sedang dibuka', async ({
+  page,
+  request,
+}) => {
+  // Rentang dikunci supaya bulan dan minggu aktif deterministik, dan dev UI dimatikan
+  // agar daftar nav drawer tidak mengganggu pencarian elemen.
+  const current = (await (await request.get('/api/config')).json()) as {
+    config: Record<string, unknown>
+  }
+  await request.put('/api/config', {
+    data: {
+      config: {
+        ...current.config,
+        magang: { mulai: '2026-09-01', selesai: '2026-10-31' },
+        tampilkanDevUi: false,
+      },
+    },
+  })
+
+  await page.goto('/')
+  await page.getByTestId('sidebar-open-logo').click()
+
+  const drawer = page.getByTestId('sidebar-drawer')
+  await expect(drawer).toBeVisible()
+
+  // Bulan aktif terbuka sendiri, jadi daftar minggunya langsung terlihat.
+  const activeMonth = drawer.getByRole('button', { name: /September 2026/ })
+  await expect(activeMonth).toHaveAttribute('aria-expanded', 'true')
+
+  // Minggu yang sedang dibuka ditandai aria-current.
+  await expect(drawer.locator('[aria-current="true"]')).toHaveCount(1)
 })

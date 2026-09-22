@@ -14,6 +14,7 @@ import {
 import type { AppConfig, DayEntry, LogData } from '../src/lib/domain/types'
 import { createServerLogger, readRecentLogs } from './logger'
 import { buildExportFileName, exportMonthToPdf } from './pdf'
+import { pickFolder, resolveStartDir } from './pickFolder'
 import {
   backupBeforeWrite,
   createPaths,
@@ -95,6 +96,9 @@ app.get('/api/health', (c) =>
 
 app.get('/api/config', (c) => c.json({ config: loadConfig() }))
 
+/** Informasi lingkungan untuk UI, misal folder ekspor default (AGENTS.md bagian 12). */
+app.get('/api/env', (c) => c.json({ exportsDir: paths.exportsDir }))
+
 app.put('/api/config', async (c) => {
   const traceId = log.newTrace()
   const body = (await c.req.json().catch(() => null)) as { config?: unknown } | null
@@ -169,6 +173,25 @@ app.put('/api/logs', async (c) => {
 
 app.get('/api/backups', (c) => c.json({ backups: listBackups(paths) }))
 
+/**
+ * Membuka dialog folder native untuk field "Folder ekspor" (AGENTS.md bagian 12).
+ * Direktori awal mengikuti isi field: path yang valid bila ada, selain itu folder
+ * ekspor default. Jadi dialog tidak pernah membuka home atau root tanpa alasan.
+ */
+app.post('/api/pick-folder', async (c) => {
+  const traceId = log.newTrace()
+  const body = (await c.req.json().catch(() => null)) as { current?: unknown } | null
+  const startDir = resolveStartDir(body?.current, paths.exportsDir)
+  const result = await pickFolder(startDir)
+  log.info('folder.pick', 'Dialog folder selesai.', {
+    traceId,
+    data: { startDir, hasil: result.path ?? (result.unsupported ? 'unsupported' : 'cancelled') },
+  })
+  if (result.unsupported) return c.json({ unsupported: true }, 200)
+  if (result.cancelled) return c.json({ cancelled: true })
+  return c.json({ path: result.path })
+})
+
 app.post('/api/backups/restore', async (c) => {
   const traceId = log.newTrace()
   const body = (await c.req.json().catch(() => null)) as { file?: string } | null
@@ -240,7 +263,7 @@ app.post('/api/export', async (c) => {
     )
   }
 
-  const exportDir = config.folderExport || join(dataRoot, 'exports')
+  const exportDir = config.folderExport || paths.exportsDir
   mkdirSync(exportDir, { recursive: true })
   const fileName = buildExportFileName(config.profil.nim, body.monthKey)
   const outputPath = join(exportDir, fileName)
@@ -278,7 +301,7 @@ app.get('/api/export/download', async (c) => {
   }
 
   const config = loadConfig()
-  const exportDir = config.folderExport || join(dataRoot, 'exports')
+  const exportDir = config.folderExport || paths.exportsDir
   const filePath = join(exportDir, file)
   if (!existsSync(filePath)) {
     return c.json({ error: 'File tidak ditemukan. Ekspor ulang bulan tersebut.' }, 404)

@@ -45,6 +45,29 @@ export interface BackupRepository {
   restore(file: string): Promise<{ ok: boolean; restored: string }>
 }
 
+/** Informasi lingkungan server yang tidak tersimpan di config. */
+export interface EnvInfo {
+  /** Folder ekspor default (absolut) yang dipakai bila `folderExport` dikosongkan. */
+  exportsDir: string
+}
+
+export interface PickFolderResult {
+  path?: string
+  cancelled?: boolean
+  /** Dialog native tidak tersedia di mesin ini. UI harus menawarkan jalan manual. */
+  unsupported?: boolean
+}
+
+/**
+ * Kemampuan lingkungan: path default server dan dialog folder native. Dipisah dari
+ * repository data karena bukan bagian dari model data, tetapi tetap lewat kontrak agar
+ * UI tidak memanggil fetch langsung (AGENTS.md bagian 5.4).
+ */
+export interface EnvRepository {
+  info(): Promise<EnvInfo>
+  pickFolder(current?: string): Promise<PickFolderResult>
+}
+
 export class RepositoryError extends Error {
   readonly status: number
 
@@ -109,5 +132,18 @@ export class InMemoryConfigRepository implements ConfigRepository {
   save(config: AppConfig): Promise<SaveResult> {
     this.config = structuredClone(config)
     return Promise.resolve({ ok: true, savedAt: new Date().toISOString(), changed: [] })
+  }
+}
+
+/** Implementasi in-memory untuk test: tanpa dialog native, path default statis. */
+export class InMemoryEnvRepository implements EnvRepository {
+  constructor(private readonly exportsDir = '/data/exports') {}
+
+  info(): Promise<EnvInfo> {
+    return Promise.resolve({ exportsDir: this.exportsDir })
+  }
+
+  pickFolder(): Promise<PickFolderResult> {
+    return Promise.resolve({ unsupported: true })
   }
 }

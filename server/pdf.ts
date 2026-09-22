@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
 import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari, monthLabel } from '../src/lib/domain/date'
+import { FONT_DOKUMEN_STACK } from '../src/lib/domain/dokumen'
 import { displayJam, effectiveStatus, JAM_STRIP } from '../src/lib/domain/editor'
 import { PAGE_MARGIN_CM, paperSizeCss } from '../src/lib/domain/paper'
 import { type ResolvedNama, resolveNamaMinggu } from '../src/lib/domain/pembimbing'
@@ -154,6 +155,7 @@ export function buildExportHtml(options: {
   if (!month) throw new Error(`Bulan ${monthKey} tidak ditemukan dalam rentang magang.`)
 
   const pageSize = paperSizeCss(config.ukuranKertas)
+  const fontDokumen = FONT_DOKUMEN_STACK[config.fontDokumen]
 
   const lastWeek = month.weeks[month.weeks.length - 1]
   const signatureNames = resolveNamaMinggu(
@@ -190,7 +192,7 @@ export function buildExportHtml(options: {
   @page { size: ${pageSize}; margin: ${PAGE_MARGIN_CM}cm; }
   * { box-sizing: border-box; }
   body {
-    font-family: "Times New Roman", Times, serif;
+    font-family: ${fontDokumen};
     font-size: 12pt;
     color: #000;
     background: #fff;

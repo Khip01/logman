@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig, defaultLogData } from '@/lib/domain/schema'
 import { mergeDayPatches } from '@/stores/logs'
-import { InMemoryConfigRepository, InMemoryLogRepository } from './types'
+import { InMemoryConfigRepository, InMemoryEnvRepository, InMemoryLogRepository } from './types'
 
 describe('InMemoryLogRepository', () => {
   it('memuat data kosong secara default', async () => {
@@ -70,6 +70,18 @@ describe('InMemoryConfigRepository', () => {
     await repo.save({ ...initial, profil: { ...initial.profil, nama: 'Akhmad' } })
     const after = await repo.load()
     expect(after.profil.nama).toBe('Akhmad')
+  })
+})
+
+describe('InMemoryEnvRepository', () => {
+  it('memberi path ekspor default', async () => {
+    const repo = new InMemoryEnvRepository('/data/exports')
+    expect(await repo.info()).toEqual({ exportsDir: '/data/exports' })
+  })
+
+  it('tidak mendukung dialog native di test', async () => {
+    const repo = new InMemoryEnvRepository()
+    expect(await repo.pickFolder()).toEqual({ unsupported: true })
   })
 })
 

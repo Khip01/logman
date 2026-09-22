@@ -188,11 +188,12 @@ logman/
 │   └── styles/
 │       ├── tokens.css   # 9 tema sebagai CSS custom properties + @theme Tailwind
 │       └── globals.css  # base, scrollbar, print CSS, reduced-motion
-├── server/              # Hono: config, logs, PDF, backup, logging
+├── server/              # Hono: config, logs, PDF, backup, dialog folder, logging
 ├── data/                # data runtime (gitignored)
 │   ├── config.json
 │   ├── logs.json
 │   ├── backups/
+│   ├── exports/         # hasil PDF default bila folderExport dikosongkan
 │   └── logs/            # log aplikasi (JSON lines)
 ├── e2e/                 # Playwright: spec, snapshot, fixture
 ├── scripts/             # audit animasi saat build, utilitas
@@ -236,8 +237,10 @@ Aturan penempatan (jangan dilanggar):
   "tema": "hitam-pekat",
   "tierAnimasi": "penuh",
   "ukuranKertas": "A4",
-  "folderExport": "string (path lokal)",
+  "folderExport": "string (path lokal, kosong berarti pakai default data/exports)",
   "formatJam": "24",
+  "fontDokumen": "times",
+  "contentScale": 1,
   "tampilkanDevUi": false,
   "dosenPembimbing": "string",
   "pembimbingLapangan": ["string", "..."],
@@ -253,6 +256,16 @@ Aturan penempatan (jangan dilanggar):
 - `formatJam` hanya memengaruhi cara jam DITAMPILKAN dan DIMASUKKAN di UI, nilainya `24`
   atau `12`. Nilai jam yang disimpan selalu 24 jam format titik (`08.00`), dan dokumen
   cetak serta PDF selalu 24 jam format titik sesuai template resmi.
+- `fontDokumen` memilih font saat CETAK dan pada PDF (tabel, kop, blok tanda tangan),
+  nilainya `times` atau `arial`. Di layar tabel memakai font UI (Inter), sehingga UI
+  aplikasi selalu konsisten. Nilai rangkaian font disimpan sekali di
+  `FONT_DOKUMEN_STACK` (`src/lib/domain/dokumen.ts`) dan dipakai server PDF, sedangkan
+  `tokens.css` menyalin rangkaian yang sama di `[data-doc-font]`. Keduanya WAJIB sinkron.
+- `contentScale` mengatur skala ukuran konten Log Book di LAYAR, nilai bawaan 1 dengan
+  preset `0.9`, `1`, `1.15`, dan `1.3`. Hanya memengaruhi tampilan layar; dokumen cetak
+  dan PDF selalu 12 pt sesuai template resmi.
+- `folderExport` kosong berarti ekspor ditulis ke folder default `data/exports` di dalam
+  project (tercakup `.gitignore` lewat `data/`).
 - `tampilkanDevUi` default `false`. Bila mati, menu Dev di sidebar disembunyikan DAN
   route `/dev/*` diblokir (dialihkan ke Log Book). Menyala hanya saat user mengaktifkan
   opsi di Settings.
@@ -346,6 +359,10 @@ Catatan implementasi navigasi (fase 5):
   - Ada perubahan (menunggu debounce)
   - Gagal (tampilkan aksi coba lagi)
 - Status bar juga menampilkan status simpan konfigurasi dari Settings.
+- Pojok kanan status bar menampilkan versi aplikasi (`logman v<versi>`). Nilainya
+  dibaca dari `version` di `package.json` lewat `define` di `vite.config.ts`, sehingga
+  tidak pernah basi. Akses dibungkus `appVersion()` di `src/lib/appVersion.ts` supaya
+  dev dan test tetap aman.
 - Autosave menimpa langsung, maka rotasi backup di bagian 5.3 wajib berjalan.
 
 ---
@@ -419,6 +436,24 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
 - `initial={false}` pada komponen `m.*` biasa tidak menyebar ke anak, jadi masih aman
   bila memang perlu mematikan animasi satu elemen saja.
 
+### 8.3.2 Pengecualian `layout` pada tombol yang tinggi mengikuti sisa ruang
+
+Tombol buka/tutup sidebar tingginya mengikuti sisa ruang, sehingga berubah saat daftar
+bulan bertambah atau label bulan dibuka. Aturan "hanya transform dan opacity" tetap
+dipertahankan pada level PROP:
+
+- DILARANG menganimasikan `height`, `width`, `top`, `left`, `margin`, `padding`, dan
+  sejenisnya lewat prop animasi Motion.
+- Untuk perpindahan tinggi, tombol memakai prop `layout` Motion. Perpindahan itu
+  diterapkan lewat `transform` pada elemen pembungkus internal, sehingga tetap patuh
+  pada aturan. Ini juga SATU-SATUNYA kemunculan `layout` dan hanya di dalam
+  `src/components/shared/Sidebar.tsx`.
+- Transisi yang dipakai adalah `popTransition` dari `src/motion/presets.ts`.
+- Konsekuensinya, `LazyMotion` di `src/motion/MotionProvider.tsx` TIDAK memakai mode
+  `strict`, karena strict memblokir fitur `layout` DAN memblokir prop `layout` diam
+  tanpa error. Pengganti penjaganya adalah `scripts/audit-motion.mjs` yang kini ikut
+  menolak impor Motion global dan membatasi prop `layout` di luar Sidebar.
+
 ### 8.4 Arah visual
 
 - Animasi harus terasa ekspresif dan khas, bukan default HTML/CSS dasar.
@@ -484,6 +519,10 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
   komponen bertema (lihat `DateInput` dan `TimePicker` di bagian 10.1).
 - Area dokumen A4 tetap bersih: monokrom, tanpa aksen, tanpa animasi. Preview harus sama
   dengan hasil cetak.
+- Font dan ukuran layer dokumen diatur lewat token `--doc-font-family` dan
+  `--content-scale`, bukan nilai hex atau angka yang ditulis di komponen. Pilihan font
+  dipasang sebagai `data-doc-font` di `<html>`, sedangkan skala konten ditulis sebagai
+  custom property runtime. Lihat bagian 5.1 dan 11.2.
 
 ### 10.1 Primitif UI (`src/components/ui/`)
 
@@ -559,6 +598,22 @@ Fakta terverifikasi dari template:
   Di LAYAR, warna tabel (surface, garis, teks) mengikuti tema aktif agar tidak tampak
   sebagai kotak putih di tema gelap. Saat CETAK, tabel kembali ke kertas putih dengan
   header shading `#D0CECE` sesuai template. Hindari tampilan tabel HTML kuno yang jelek.
+- Ukuran teks tabel di layar adalah 16 px dikali `contentScale`, sehingga user bisa
+  membesarkan konten Log Book tanpa ikut memperbesar UI aplikasi. Saat cetak, ukuran
+  dikunci kembali ke 12 pt resmi lewat `@media print`, jadi hasil cetak tidak pernah
+  ikut membesar.
+- Skala konten diterapkan lewat kelas `.content-scaled` (memakai `zoom`) pada kontainer
+  halaman Log Book, dan dinolkan pada `@media print`. Ini properti statis, bukan animasi.
+- JEBAKAN `zoom` + `position: fixed`: perhitungan posisi fixed mengabaikan `zoom`, jadi
+  elemen fixed (popover, tooltip) akan salah tempat bila berada di dalam pohon ber-zoom.
+  Karena itu SEMUA konten overlay WAJIB memakai portal (sudah diterapkan di
+  `PopoverContent`), dan elemen fixed aplikasi (sidebar, status bar) berada DI LUAR
+  `.content-scaled`.
+- Di LAYAR tabel memakai font UI (`--font-sans`, Inter) agar konsisten dengan seluruh
+  aplikasi. Font dokumen (`fontDokumen`: Times New Roman atau Arial) hanya dipakai saat
+  CETAK dan pada PDF; override `font-family: var(--font-doc)` ada di `@media print`.
+- Sel jam di dalam tabel menampilkan angka dan ikon sebagai satu grup terpusat dengan
+  `gap-1.5`, supaya angka jam tidak menempel ke ikonnya.
 - Format jam DISIMPAN memakai titik 24 jam, misal `08.00`, sesuai template. Tampilan di
   UI mengikuti `formatJam` (24 atau 12 jam) dan bisa diisi lewat `TimePicker`; dokumen
   cetak dan PDF selalu 24 jam format titik.
@@ -579,18 +634,59 @@ Fakta terverifikasi dari template:
 ### 11.4 Navigasi
 
 - Sidebar bersifat overlay: menumpuk DI ATAS konten dengan backdrop, TIDAK mendorong
-  lebar konten.
-- Saat collapse, sidebar menjadi rail sempit yang selalu tampil. Rail berisi tombol logo,
-  ikon aksi cepat (Pengaturan dan Ekspor) yang tetap terjangkau walau drawer tertutup,
-  dan teks 3 huruf bulan dengan pemisah antar kelompok.
-- Klik ikon bulan akan memperluas daftar minggu di bulan itu (M1, M2, ...). User tetap
-  bisa memilih minggu walau sidebar dalam kondisi tertutup.
-- Tiga cara membuka/menutup: tombol logo dan strip vertikal lebar rail di bawah membuka;
-  strip di tepi kanan drawer, tombol tutup, dan backdrop menutup; tombol Escape menutup.
-  Area klik strip sengaja besar agar pointer tidak perlu presisi.
+  lebar konten. Backdrop hanya tampil di viewport sempit (`lg:hidden`).
+- Saat collapse, sidebar menjadi rail sempit selebar 52 px yang selalu tampil, dengan
+  tiga kelompok: tombol logo di atas, ikon aksi cepat (Log Book, Pengaturan, Ekspor)
+  di bawahnya, lalu daftar tombol bulan yang dapat digulir, dan TERAKHIR tombol buka
+  yang tingginya mengisi seluruh sisa ruang sampai dasar rail. Area klik tombol buka
+  sengaja sangat besar supaya pointer tidak perlu presisi.
+- Klik ikon bulan di rail membuka popover berisi minggu bulan itu (M1, M2, ...). Bulan
+  aktif di rail ditandai `aria-current`, dan minggu yang sedang dibuka juga ditandai,
+  sehingga user tidak perlu menebak.
+- Di drawer, menekan item bulan HANYA membuka atau menutup daftar minggunya
+  (`aria-expanded`). Menekan item bulan TIDAK memilih bulan. Bulan yang dipakai
+  mengikuti minggu yang dipilih user, jadi tidak ada dua sumber kebenaran.
+- Drawer mengikuti urutan: header logo, nav utama, area gulir berisi daftar bulan, nav
+  dev (bila menyala), lalu tombol tutup di BASIS drawer. Tombol tutup itu kembar dengan
+  tombol buka di rail: sama-sama memakai ikon garis pemisah plus panah, hanya arahnya
+  berlawanan, dan sama-sama `min-h-20` serta tingginya mengisi sisa ruang. Tidak ada lagi
+  strip di tepi kanan drawer maupun tombol tutup di header.
+- Isi kedua tombol itu selalu di tengah sumbu vertikal tombolnya. Saat tombol tumbuh
+  lebih tinggi dari `min-h-20`, isinya ikut bergeser ke tengah, bukan tertinggal di tepi
+  bawah. `justify-end` DILARANG di sini karena membuat isi menempel ke tepi bawah dan
+  tampak menembus status bar.
+- Tombol tutup di drawer memakai trik penyelarasan: isinya dibungkus SATU container yang
+  lebarnya `--sidebar-rail-width` dan tingginya `h-full`, lalu container itu ditempel ke
+  KANAN tombol (`justify-end` pada tombol, isi di-center di dalam container). Hasilnya
+  ikon tombol tutup sejajar dengan ikon rail saat collapsed, tanpa padding atau margin
+  manual. Ini satu-satunya tempat `justify-end` diizinkan, karena yang di-justify adalah
+  container, bukan isi tombol.
+- Status bar adalah elemen FULL WIDTH di paling bawah. Rail dan drawer sama-sama berhenti
+  di atasnya (`bottom-[var(--statusbar-height)]`), sehingga tepi bawah keduanya sejajar.
+  DILARANG membiarkan rail `inset-y-0` sementara drawer berhenti di atas status bar:
+  kombinasi itu membentuk "notch" di sudut kiri bawah.
+- Label "Bulan" di dalam area gulir memakai `sticky top-0` dengan latar `--bg-sidebar`,
+  sehingga ia menggulir bersama daftar namun berhenti di atas dan tetap terlihat (perilaku
+  sliver). Label ini TIDAK punya margin, padding horizontal, atau garis pemisah sendiri:
+  pemisah antar bagian sudah disediakan border pada blok nav di sekitarnya, dan label
+  tidak boleh terlihat melayang. Daftar bulan punya `min-h-40` supaya tidak pernah terasa
+  sempit saat drawer pendek.
+- Hanya daftar bulan yang dapat digulir. Header, nav dev, dan tombol tutup tetap di
+  tempatnya.
+- Membuka sidebar SELALU membuka bulan yang sedang aktif. Jadi sidebar selalu fokus ke
+  bulan dan minggu yang sedang dilihat user, bukan ke keadaan sebelum refresh.
+- PENANDA BULAN AKTIF (`data-active`) mengikuti BULAN DARI MINGGU YANG SEDANG DIPILIH,
+  bukan status buka/tutup. Tepat SATU bulan ditandai, dan penanda itu tetap ada walau
+  bulannya tertutup maupun bulan lain sedang dibuka. Penanda hanya berpindah saat user
+  memilih minggu di bulan lain. Bulan aktif TIDAK diberi border, latar, atau label
+  tambahan, hanya warna teks yang lebih terang.
+- Membuka atau menutup sebuah bulan TIDAK memilih bulan, dan memilih minggu TIDAK
+  menyentuh keadaan buka/tutup bulan lain. Bulan yang sedang terbuka dibiarkan terbuka
+  sampai user sendiri yang menutupnya. Mekanisme "tutup semua bulan lain" DILARANG.
 - Menu dan route `/dev/*` hanya muncul bila `tampilkanDevUi` menyala (default mati).
   Saat mati, URL `/dev/*` dialihkan ke Log Book.
-- Animasi sidebar memakai spring dan stagger.
+- Animasi sidebar memakai spring dan stagger. Tombol buka/tutup yang tingginya berubah
+  memakai prop `layout` Motion (lihat pengecualian di bagian 8.3.2).
 
 ### 11.5 Nama penanda tangan
 
@@ -632,7 +728,14 @@ Fakta terverifikasi dari template:
   `#logman-page-style` mengikuti config `ukuranKertas`, dari satu sumber di
   `src/lib/domain/paper.ts` yang juga dipakai render PDF server.
 - Pola nama file: `LogBook_<NIM>_<Bulan>-<Tahun>.pdf`.
-- Hasil ekspor disimpan ke folder lokal yang dikonfigurasi di `config.json`.
+- Hasil ekspor disimpan ke folder lokal `folderExport`. Bila kosong, dipakai folder
+  default `data/exports` di dalam project (tercakup `.gitignore`). Path default itu
+  diberikan server lewat `GET /api/env` dan ditampilkan sebagai placeholder field.
+- Field folder ekspor hanya-baca dan diisi lewat dialog folder native yang dibuka
+  SERVER (`POST /api/pick-folder`), karena browser tidak memberi path absolut ke server.
+  Dialog dibuka di lokasi yang sedang diatur bila path itu ada, selain itu di folder
+  default, sehingga tidak pernah membuka home atau root tanpa alasan. Bila dialog native
+  tidak tersedia, server menjawab `unsupported` dan UI berubah menjadi mode isi manual.
 - Data mentah tetap tersimpan sebagai JSON walau tidak diekspor.
 
 ---
@@ -887,6 +990,10 @@ Catatan CI:
 12. Fase 11 (di luar roadmap, dari kritik pemilik): tabel bertema, rail sidebar yang
     lengkap dengan strip buka/tutup, gate dev UI, time picker kustom dan format 12/24,
     warna kontrol native bertema, serta nama penanda tangan global dan per minggu.
+13. Fase 12 (di luar roadmap, dari kritik pemilik kedua): setelan font dokumen dan skala
+    konten, sidebar dengan tombol buka/tutup kembar di dasar rail dan drawer, label
+    Bulan sticky, fokus otomatis ke bulan aktif, pemilih folder ekspor lewat dialog
+    native dengan default `data/exports`, dan versi aplikasi di status bar.
 
 ---
 
@@ -916,8 +1023,8 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 11 (perbaikan UI hasil kritik pemilik) selesai. Seluruh roadmap
-  bagian 18 tuntas; fase 11 adalah iterasi lanjutan setelah roadmap.
+- Fase saat ini: 12 (perbaikan UI lanjutan dari kritik pemilik) selesai. Seluruh roadmap
+  bagian 18 tuntas; fase 11 dan 12 adalah iterasi lanjutan setelah roadmap.
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -1156,8 +1263,53 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (254 test), Playwright (70 test),
     audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
     (JS awal 145.0 KB gzip).
+  - Fase 12 perbaikan UI lanjutan (kritik pemilik kedua):
+    - Setelan font dokumen (`fontDokumen`: Times New Roman atau Arial) yang hanya
+      memengaruhi layer dokumen, plus setelan skala tampilan konten Log Book
+      (`contentScale`) yang hanya memengaruhi layar. Keduanya di
+      `DokumenEksporSection`, diterapkan lewat `data-doc-font` dan `--content-scale`.
+    - Sidebar dirombak: rail kini memuat ikon Log Book, tombol buka berada di dasar
+      rail, drawer punya tombol tutup di dasarnya (kembar dengan tombol buka), strip
+      tepi kanan dan tombol tutup di header dihapus. Label "Bulan" kini sticky di dalam
+      area gulir (sliver), dan membuka drawer selalu membuka bulan aktif.
+    - Bulan aktif di drawer diberi gaya terpilih sendiri (`aria-current`), jadi user
+      tahu bulan mana yang sedang dipakai walau tidak ada bulan yang dibuka.
+    - Folder ekspor: default `data/exports`, field hanya-baca dengan tombol dialog
+      folder native (`POST /api/pick-folder`, `server/pickFolder.ts`), tombol reset ke
+      default, dan fallback mode isi manual bila dialog tidak tersedia.
+    - Versi aplikasi tampil di pojok kanan status bar, dibaca dari `package.json`.
+    - Unit test baru: `dokumen.test.ts`, `pickFolder.test.ts`, dan tambahan
+      `schema.test.ts` serta `repo.test.ts`. E2E baru untuk font dokumen, skala konten,
+      picker folder, reset folder, versi, dan fokus bulan aktif di sidebar.
+    - Catatan aturan baru: prop `layout` Motion hanya boleh di `Sidebar.tsx`
+      (bagian 8.3.2), sehingga `MotionProvider` tidak lagi memakai mode `strict` dan
+      `scripts/audit-motion.mjs` ikut mengawasi prop `layout` dan impor Motion global.
+  - Fase 12b penyempurnaan setelah tinjauan pemilik:
+    - Di LAYAR tabel Log Book kembali memakai font UI (Inter); font dokumen (Times atau
+      Arial) hanya berlaku saat cetak dan pada PDF. Sebelumnya tabel di layar ikut memakai
+      font dokumen, sehingga terlihat tidak konsisten.
+    - Sel jam memusatkan angka dan ikon sebagai satu grup dengan jarak `gap-1.5`, jadi
+      angka tidak lagi menempel ke ikon.
+    - Menekan item bulan hanya membuka/menutup daftar minggunya (`aria-expanded`), TIDAK
+      memilih bulan. Penanda bulan aktif mengikuti bulan dari minggu yang sedang dipilih,
+      tepat satu bulan, dan tetap menyala walau bulannya tertutup.
+    - Memilih minggu TIDAK lagi menutup bulan lain; keadaan buka/tutup tiap bulan
+      dibiarkan apa adanya sampai user sendiri yang menutupnya.
+    - Bulan aktif tidak diberi border, latar, atau label "aktif", hanya teks lebih terang.
+    - Label "Bulan" tidak lagi melayang: tanpa margin, padding horizontal, atau garis
+      pemisah sendiri.
+    - Status bar dijadikan FULL WIDTH di paling bawah; rail dan drawer sama-sama berhenti
+      di atasnya, sehingga tidak ada notch di sudut kiri bawah.
+    - Tombol buka/tutup sidebar memakai ikon garis pemisah plus panah yang sama dan
+      `min-h-20`. Isi tombol tutup dibungkus container selebar rail yang ditempel ke kanan,
+      sehingga ikonnya sejajar dengan ikon rail saat collapsed.
+    - `PopoverContent` dipastikan memakai portal, karena konten fixed di dalam pohon
+      ber-`zoom` (skala konten) akan salah posisi. Aturan ini masuk bagian 11.2.
+  - Verifikasi fase 12 lulus: lint, typecheck, Vitest (278 test), Playwright (78 test),
+    audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
+    (JS awal 145.3 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 11 tuntas; seluruh roadmap bagian 18 selesai).
+  - tidak ada (fase 12 tuntas; seluruh roadmap bagian 18 selesai).
 - Berikutnya:
   - Pemakaian normal dan pemeliharaan. Bila ada perilaku baru, tambah sesuai
     aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.

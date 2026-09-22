@@ -27,6 +27,8 @@ export interface StorePaths {
   logsFile: string
   backupsDir: string
   logsDir: string
+  /** Folder ekspor default bila `folderExport` di config dikosongkan (AGENTS.md bagian 12). */
+  exportsDir: string
 }
 
 export function createPaths(root: string): StorePaths {
@@ -36,11 +38,12 @@ export function createPaths(root: string): StorePaths {
     logsFile: join(root, 'logs.json'),
     backupsDir: join(root, 'backups'),
     logsDir: join(root, 'logs'),
+    exportsDir: join(root, 'exports'),
   }
 }
 
 export function ensureDirs(paths: StorePaths): void {
-  for (const dir of [paths.root, paths.backupsDir, paths.logsDir]) {
+  for (const dir of [paths.root, paths.backupsDir, paths.logsDir, paths.exportsDir]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   }
 }

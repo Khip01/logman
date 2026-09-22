@@ -7,6 +7,8 @@
  *  2. Impor Motion global (`motion` dari 'motion/react') alih-alih `m`.
  *  3. `transition-all` Tailwind atau `transition: all` CSS.
  *  4. Selector `*` dengan transition.
+ *  5. Prop `layout` Motion di luar sidebar. Satu-satunya pengecualian yang disetujui
+ *     ada di src/components/shared/Sidebar.tsx (bagian 8.3.2).
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { extname, join } from 'node:path'
@@ -14,6 +16,9 @@ import { extname, join } from 'node:path'
 const ROOTS = ['src', 'dev']
 const EXTS = new Set(['.ts', '.tsx', '.css'])
 const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git'])
+
+/** Satu-satunya file yang boleh memakai prop `layout` Motion (AGENTS.md bagian 8.3.2). */
+const LAYOUT_ALLOWLIST = ['src/components/shared/Sidebar.tsx']
 
 const FORBIDDEN_ANIMATED = [
   'width',
@@ -92,6 +97,16 @@ function inspect(file) {
           text: line.trim(),
         })
       }
+    }
+
+    // Prop `layout` Motion hanya boleh di sidebar (AGENTS.md bagian 8.3.2).
+    if (!LAYOUT_ALLOWLIST.includes(file.replace(/\\/g, '/')) && /[\s<]layout\s*[=>/]/.test(line)) {
+      violations.push({
+        file,
+        lineNo,
+        rule: 'prop `layout` Motion di luar pengecualian sidebar',
+        text: line.trim(),
+      })
     }
 
     // Properti terlarang di dalam prop animasi.

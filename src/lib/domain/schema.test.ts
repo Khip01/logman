@@ -101,6 +101,29 @@ describe('parseConfig', () => {
     expect(value.pembimbingLapanganDefault).toBeNull()
   })
 
+  it('default font dokumen times dan skala konten normal', () => {
+    const { value } = parseConfig({})
+    expect(value.fontDokumen).toBe('times')
+    expect(value.contentScale).toBe(1)
+  })
+
+  it('membaca font dokumen dan skala konten', () => {
+    const { value } = parseConfig({ fontDokumen: 'arial', contentScale: 1.3 })
+    expect(value.fontDokumen).toBe('arial')
+    expect(value.contentScale).toBe(1.3)
+  })
+
+  it('menolak font dokumen tidak dikenal dan skala di luar rentang', () => {
+    const { value } = parseConfig({ fontDokumen: 'comic', contentScale: 9 })
+    expect(value.fontDokumen).toBe('times')
+    expect(value.contentScale).toBe(1)
+  })
+
+  it('mempertahankan skala angka wajar di luar daftar preset', () => {
+    const { value } = parseConfig({ contentScale: 1.1 })
+    expect(value.contentScale).toBe(1.1)
+  })
+
   it('membaca setelan format jam dan dev UI', () => {
     const { value } = parseConfig({ formatJam: '12', tampilkanDevUi: true })
     expect(value.formatJam).toBe('12')

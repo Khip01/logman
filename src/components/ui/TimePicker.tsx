@@ -94,7 +94,14 @@ export function TimePicker({
 
   return (
     <div className={cn(isCell ? 'flex flex-col items-center' : 'flex flex-col gap-1', className)}>
-      <div className={cn('flex items-center', isCell ? 'w-full' : 'gap-1')}>
+      <div
+        className={cn(
+          'flex items-center',
+          // Sel tabel: isi dipusatkan sebagai satu grup (angka lalu ikon) dengan jarak
+          // yang jelas, supaya angka jam tidak menempel ke ikon (AGENTS.md bagian 11.2).
+          isCell ? 'w-full justify-center gap-1.5' : 'gap-1',
+        )}
+      >
         <input
           type="text"
           inputMode={format === '24' ? 'numeric' : 'text'}
@@ -114,7 +121,7 @@ export function TimePicker({
           }}
           className={cn(
             isCell
-              ? 'w-full border-0 bg-transparent p-0 text-center text-[12px] text-text-main outline-none placeholder:text-text-dim print:hidden'
+              ? 'w-[3.9rem] min-w-0 border-0 bg-transparent p-0 text-right text-[12px] text-text-main outline-none placeholder:text-text-dim print:hidden'
               : cn(inputVariants({ size: 'md' }), 'w-28'),
           )}
         />

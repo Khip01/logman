@@ -1,5 +1,6 @@
 import { sanitizeAlasan } from './alasan'
 import { isIsoDate } from './date'
+import { isContentScale, isFontDokumen, parseContentScale } from './dokumen'
 import { isJamFormat } from './jamFormat'
 import {
   resolvePembimbingDefault,
@@ -118,6 +119,8 @@ export function defaultConfig(): AppConfig {
     ukuranKertas: 'A4',
     folderExport: '',
     formatJam: '24',
+    fontDokumen: 'times',
+    contentScale: 1,
     tampilkanDevUi: false,
     dosenPembimbing: '',
     pembimbingLapangan: [],
@@ -202,6 +205,10 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     : base.ukuranKertas
 
   const formatJam = isJamFormat(input.formatJam) ? input.formatJam : base.formatJam
+  const fontDokumen = isFontDokumen(input.fontDokumen) ? input.fontDokumen : base.fontDokumen
+  const contentScale = isContentScale(input.contentScale)
+    ? input.contentScale
+    : parseContentScale(input.contentScale, base.contentScale)
 
   const pembimbingLapangan = Array.isArray(input.pembimbingLapangan)
     ? sanitizePembimbing(input.pembimbingLapangan)
@@ -223,6 +230,8 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     ukuranKertas,
     folderExport: asString(input.folderExport, base.folderExport),
     formatJam,
+    fontDokumen,
+    contentScale,
     tampilkanDevUi: asBoolean(input.tampilkanDevUi, base.tampilkanDevUi),
     dosenPembimbing: asString(input.dosenPembimbing, base.dosenPembimbing),
     pembimbingLapangan,
