@@ -295,7 +295,7 @@ export function Sidebar({ activePath }: SidebarProps) {
           ))}
         </div>
         <div className="w-6 shrink-0 border-t border-border-base" aria-hidden />
-        <div className="flex flex-1 flex-col items-center gap-1 overflow-y-auto py-2">
+        <div className="flex min-h-0 w-full shrink flex-col items-center gap-1 overflow-y-auto py-2">
           {months.length === 0 ? (
             <PanelLeftOpen className="mt-2 size-4 text-text-dim" strokeWidth={1.75} />
           ) : null}
@@ -343,18 +343,20 @@ export function Sidebar({ activePath }: SidebarProps) {
           ))}
         </div>
         {/*
-          Strip buka selebar rail yang memanjang ke bawah. Area kliknya sengaja besar
-          agar pointer tidak perlu presisi (AGENTS.md bagian 11.4).
+          Strip buka selebar rail yang mengisi SELURUH ruang kosong di bawah daftar
+          bulan, sampai mentok ke daftar bulan. Area kliknya sengaja sangat besar
+          supaya user cukup menekan rail yang sedang collapse tanpa perlu presisi
+          (AGENTS.md bagian 11.4).
         */}
         <button
           type="button"
           onClick={openDrawer}
           aria-label="Buka sidebar lewat strip"
           data-testid="sidebar-open-strip"
-          className="theme-t group flex h-16 w-full shrink-0 flex-col items-center justify-center gap-1 border-t border-border-base text-text-dim hover:bg-bg-card hover:text-text-primary"
+          className="theme-t group flex min-h-16 w-full flex-1 flex-col items-center justify-center gap-2 border-t border-border-base text-text-dim hover:bg-bg-card hover:text-text-primary"
         >
-          <span className="h-4 w-px bg-border-light" aria-hidden />
-          <ChevronRight className="size-4" strokeWidth={1.75} />
+          <span className="h-6 w-px shrink-0 bg-border-light" aria-hidden />
+          <ChevronRight className="size-4 shrink-0" strokeWidth={1.75} />
         </button>
       </nav>
     </>
