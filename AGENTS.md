@@ -666,6 +666,8 @@ Testing dipecah agar debugging tidak menunggu seluruh suite berjalan ber-menit-m
 | `e2e/<spec>.ts` saja | `pnpm playwright test e2e/<spec>.ts` |
 | `dev/DevSeedPage.tsx` | `pnpm playwright test e2e/seed.spec.ts` |
 | Print chrome / print CSS | `pnpm playwright test e2e/print.spec.ts` |
+| `src/lib/utils/perf.ts` / `dev/DevPerfPage.tsx` | `pnpm vitest run src/lib/utils` + `pnpm test:e2e:perf` |
+| Snapshot visual / UI produk | `pnpm test:e2e:visual` (baseline: `--update-snapshots` bila disengaja) |
 | CSS/token tema | `pnpm audit:a11y` (atau spec a11y terkait), bukan full e2e |
 | Animasi/motion | `pnpm audit:motion` + e2e motion/dev terkait |
 
@@ -844,8 +846,9 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 8 (render/preview dokumen, validasi ekspor, mode seed) selesai.
-  Berikutnya fase 9 (snapshot visual, harness performa, isi /dev/perf).
+- Fase saat ini: 9 (snapshot visual, harness performa, /dev/perf) selesai.
+  Berikutnya fase 10 (audit animasi di CI sudah ada; sisanya polish: error
+  boundary per fitur, logging, README, sinkronisasi dokumen, bagian 18 poin 10-11).
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -1025,14 +1028,36 @@ langsung tahu posisinya.
   - Verifikasi lulus: lint, typecheck, Vitest (183 test), Playwright (57 test),
     audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
     (JS awal 143.3 KB gzip).
+  - Fase 9 snapshot visual, harness performa, dan /dev/perf:
+    - `src/lib/utils/perf.ts`: harness DEV-only. `bumpRender` menghitung render
+      per kunci (tanggal baris), monitor `PerformanceObserver` longtask dengan
+      ambang 50 ms, dipaparkan ke `window.__logmanPerf` untuk e2e dan /dev/perf.
+      No-op pada build produksi.
+    - `EditorRow` memanggil `bumpRender(date)` sehingga e2e bisa memastikan satu
+      ketikan hanya me-render baris tanggal terkait (bagian 13).
+    - `/dev/perf` kini menampilkan tiga panel: ukuran bundle (dari
+      `public/bundle-stats.json` yang ditulis `analyze-bundle.mjs`), jumlah render
+      per tanggal, dan daftar long task dengan tombol monitor/reset/bersihkan.
+    - `e2e/perf.spec.ts` (2 test gate): ketikan cepat tanpa long task di atas
+      50 ms (setelah warm-up Vite), dan render count hanya baris target.
+    - `e2e/visual.spec.ts` (3 test gate): screenshot Log Book, Pengaturan, dan
+      Ekspor. Rentang dikunci satu minggu (21-26 Sep 2026), tema putih-bersih,
+      tier mati, animasi dibekukan. Baseline di `e2e/visual.spec.ts-snapshots/`.
+      Perbarui dengan `--update-snapshots` bila perubahan UI disengaja.
+    - CI: job `perf` menjalankan `pnpm test:e2e:perf` (bagian 16 job 6).
+    - `public/bundle-stats.json` masuk `.gitignore`.
+  - Verifikasi lulus: lint, typecheck, Vitest (189 test), Playwright (62 test),
+    audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
+    (JS awal 142.9 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 8 tuntas).
+  - tidak ada (fase 9 tuntas).
 - Berikutnya:
-  - Fase 9: snapshot visual Playwright, harness performa, dan isi `/dev/perf`
-    (bagian 18 poin 9).
+  - Fase 10 polish: error boundary per fitur sudah ada; sisanya logging
+    konsisten, README, dan sinkronisasi dokumen ini (bagian 18 poin 10-11).
 - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.
   - Dev server default: web `http://127.0.0.1:5199`, API `http://127.0.0.1:5198`.
   - Commit GPG signing aktif. Setiap commit otomatis ditandatangani.
-  - Snapshot visual Playwright belum dibuat (dijadwalkan di fase 9).
+  - Snapshot visual Playwright sudah ada untuk 3 halaman produk
+    (`e2e/visual.spec.ts-snapshots/`). Perbarui baseline bila UI berubah disengaja.

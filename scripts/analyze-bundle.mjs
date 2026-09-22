@@ -6,8 +6,11 @@
  * dibuka: entry chunk plus chunk yang di-import statis oleh entry. Chunk hasil
  * code splitting per route (lazy) TIDAK dihitung, karena baru dimuat saat route
  * tersebut dibuka. Keduanya tetap dilaporkan untuk transparansi.
+ *
+ * Hasil juga ditulis ke `public/bundle-stats.json` agar halaman `/dev/perf`
+ * bisa menampilkan angka yang sama tanpa membuka CI (AGENTS.md bagian 15).
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
@@ -82,7 +85,28 @@ console.log(`[bundle] Total JS awal: ${formatKb(initialGzip)} gzip (${formatKb(i
 if (lazyChunks.length > 0) {
   const lazyGzip = lazyChunks.reduce((sum, c) => sum + c.gzip, 0)
   console.log(
-    `[bundle] Chunk lazy (route terpisah, tidak dihitung): ${lazyChunks.length} file, ${formatKb(lazyGzip)} gzip`,
+    `[bundle] Chunk lazy (route terpisah, tidak dihitung): ${lazyChunks.length} file, ${formatKb(lazyGzip)}`,
+  )
+}
+
+// Paparkan hasil terakhir ke /dev/perf (AGENTS.md bagian 15). Kegagalan menulis
+// tidak menggagalkan anggaran bundle.
+try {
+  const stats = {
+    generatedAt: new Date().toISOString(),
+    initialGzip,
+    initialRaw,
+    budgetBytes: BUDGET_BYTES,
+    warnBytes: WARN_BYTES,
+    lazyChunkCount: lazyChunks.length,
+    lazyGzip: lazyChunks.reduce((sum, c) => sum + c.gzip, 0),
+    ok: initialGzip <= BUDGET_BYTES,
+  }
+  writeFileSync('public/bundle-stats.json', `${JSON.stringify(stats, null, 2)}\n`)
+  console.log('[bundle] Stats ditulis ke public/bundle-stats.json.')
+} catch (error) {
+  console.warn(
+    `[bundle] Gagal menulis public/bundle-stats.json: ${error instanceof Error ? error.message : String(error)}`,
   )
 }
 

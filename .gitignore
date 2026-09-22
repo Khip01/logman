@@ -7,6 +7,7 @@ dist/
 dist-ssr/
 *.local
 stats.html
+public/bundle-stats.json
 
 # Runtime data (see AGENTS.md section 5)
 data/

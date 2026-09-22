@@ -9,6 +9,7 @@ import {
 } from '@/lib/domain/editor'
 import { normalizeJam } from '@/lib/domain/schema'
 import type { DayEntry } from '@/lib/domain/types'
+import { bumpRender } from '@/lib/utils/perf'
 import { useConfigStore } from '@/stores/config'
 import { useLogsStore } from '@/stores/logs'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
@@ -46,6 +47,8 @@ export interface EditorRowProps {
 }
 
 export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault }: EditorRowProps) {
+  // Penghitung render harness (AGENTS.md bagian 13). No-op pada build produksi.
+  bumpRender(date)
   // Selector per tanggal: baris lain tidak ikut ter-render saat tanggal ini berubah.
   const stored = useLogsStore((s) => s.data.days[date])
   const setDay = useLogsStore((s) => s.setDay)

@@ -33,6 +33,8 @@
     "test:e2e:data": "playwright test e2e/data.spec.ts",
     "test:e2e:seed": "playwright test e2e/seed.spec.ts",
     "test:e2e:print": "playwright test e2e/print.spec.ts",
+    "test:e2e:perf": "playwright test e2e/perf.spec.ts",
+    "test:e2e:visual": "playwright test e2e/visual.spec.ts",
     "analyze": "vite build && node scripts/analyze-bundle.mjs",
     "audit:motion": "node scripts/audit-motion.mjs",
     "audit:a11y": "node scripts/axe-check.mjs"
