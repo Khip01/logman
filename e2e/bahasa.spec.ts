@@ -10,30 +10,42 @@ import { type APIRequestContext, expect, test } from '@playwright/test'
  * - dokumen cetak TETAP bahasa Indonesia walau antarmuka Inggris, karena mengikuti
  *   template kampus;
  * - pilihan bahasa bertahan setelah muat ulang.
+ *
+ * PENTING: seluruh test di sini membuka halaman Log Book dan mengharapkan editor
+ * benar-benar tampil. Bila rentang magang kosong, halaman justru menampilkan empty state
+ * "Rentang magang belum diatur" dan test gagal. Direktori `data-e2e` dipakai bersama semua
+ * spec dan defaultnya rentang KOSONG, sementara spec lain (misalnya `data.spec.ts`)
+ * sengaja mengosongkannya, jadi rentang DIISI SENDIRI di sini, bukan diwarisi.
  */
 
 test.describe.configure({ mode: 'serial' })
 
-/** Setel bahasa lewat API. Dipakai beforeEach dan afterEach. */
-async function setBahasa(request: APIRequestContext, bahasa: 'id' | 'en') {
-  const current = (await (await request.get('http://127.0.0.1:5198/api/config')).json()) as {
+const API = 'http://127.0.0.1:5198'
+
+/** Rentang tetap agar test tidak bergantung spec lain maupun run sebelumnya. */
+const RENTANG = { mulai: '2026-09-21', selesai: '2026-09-26' }
+
+/** Setel sebagian config lewat API, dengan nilai lain dipertahankan. */
+async function setConfig(request: APIRequestContext, patch: Record<string, unknown>) {
+  const current = (await (await request.get(`${API}/api/config`)).json()) as {
     config: Record<string, unknown>
   }
-  await request.put('http://127.0.0.1:5198/api/config', {
-    data: { config: { ...current.config, bahasa } },
+  await request.put(`${API}/api/config`, {
+    data: { config: { ...current.config, ...patch } },
   })
 }
 
 test.describe('bahasa antarmuka', () => {
   test.beforeEach(async ({ request }) => {
-    // Hermetik: data-e2e persist antar run, jadi bahasa dikembalikan ke default dulu.
-    await setBahasa(request, 'id')
+    // Hermetik: data-e2e persist antar run, jadi bahasa dan rentang dikembalikan ke
+    // nilai yang dibutuhkan test ini lebih dulu.
+    await setConfig(request, { bahasa: 'id', magang: RENTANG })
   })
 
-  // WAJIB: config bertahan setelah run, sehingga bahasa Inggris akan merusak spec
-  // berikutnya yang mencari teks Indonesia.
+  // WAJIB: config bertahan setelah run, sehingga bahasa Inggris ATAU rentang yang diubah
+  // test ini akan merusak spec berikutnya.
   test.afterEach(async ({ request }) => {
-    await setBahasa(request, 'id')
+    await setConfig(request, { bahasa: 'id', magang: RENTANG })
   })
 
   test('default Indonesia dan judul tab memakai nama produk', async ({ page }) => {

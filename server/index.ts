@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { serve } from '@hono/node-server'
@@ -45,6 +45,29 @@ const paths = createPaths(dataRoot)
 ensureDirs(paths)
 const log = createServerLogger(paths.logsDir)
 
+/**
+ * Versi aplikasi untuk endpoint health (AGENTS.md bagian 12).
+ *
+ * Dibaca dari `package.json` agar TIDAK PERNAH basi. Sebelumnya nilai ini ditulis sebagai
+ * string keras, sehingga naik versi di `package.json` bisa lupa diterapkan di sini.
+ * Bila file tidak terbaca atau tidak punya `version`, dipakai '0.0.0' agar server tetap
+ * jalan dan masalahnya tercatat di log.
+ */
+function readAppVersion(): string {
+  try {
+    const pkgPath = join(here, '..', 'package.json')
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: string }
+    return pkg.version ?? '0.0.0'
+  } catch (error) {
+    log.warn('server.version', 'Gagal membaca versi dari package.json.', {
+      data: { pesan: error instanceof Error ? error.message : String(error) },
+    })
+    return '0.0.0'
+  }
+}
+
+const APP_VERSION = readAppVersion()
+
 function loadConfig(): AppConfig {
   const raw = readJson(paths.configFile)
   const { value, issues } = parseConfig(raw)
@@ -88,7 +111,7 @@ app.get('/api/health', (c) =>
   c.json({
     ok: true,
     name: 'logman',
-    version: '0.1.0',
+    version: APP_VERSION,
     time: new Date().toISOString(),
     dataDir: dataRoot,
   }),

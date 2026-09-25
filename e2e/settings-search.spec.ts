@@ -242,8 +242,16 @@ test.describe('pencarian pengaturan', () => {
     await expect(seksi.getByTestId('section-glint')).toHaveCSS('pointer-events', 'none')
 
     const sesudah = await seksi.boundingBox()
-    expect(sesudah?.width).toBe(sebelum?.width)
-    expect(sesudah?.height).toBe(sebelum?.height)
+    /*
+     * Toleransi sub-pixel dipakai dengan sengaja. `boundingBox()` bisa mengembalikan nilai
+     * pecahan yang berbeda di digit terakhir (misalnya 406.500061 vs 406.5) karena
+     * pembulatan render, bukan karena layout bergeser. Pergeseran nyata akibat kilau akan
+     * minimal 1 px, jadi ambang 0.5 px tetap menangkap masalah sungguhan.
+     */
+    const geserW = Math.abs((sesudah?.width ?? 0) - (sebelum?.width ?? 0))
+    const geserH = Math.abs((sesudah?.height ?? 0) - (sebelum?.height ?? 0))
+    expect(geserW, 'lebar seksi bergeser saat kilau berjalan').toBeLessThan(0.5)
+    expect(geserH, 'tinggi seksi bergeser saat kilau berjalan').toBeLessThan(0.5)
   })
 
   /*

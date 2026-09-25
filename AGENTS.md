@@ -1107,10 +1107,9 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 15 (lisensi, dokumentasi, distribusi), 16 (bahasa antarmuka), dan
-  17 (pencarian Pengaturan) selesai. Seluruh roadmap bagian 18 tuntas; fase 11 sampai 17
-  adalah iterasi lanjutan setelah roadmap, dan siap ditandai rilis v0.1.0 atas
-  persetujuan pemilik.
+- Fase saat ini: seluruh fase 0 sampai 17b selesai dan **v0.1.0 SUDAH DITANDATANGANI
+  dan dirilis**. Seluruh roadmap bagian 18 tuntas; fase 11 sampai 17b adalah iterasi
+  lanjutan setelah roadmap.
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -1515,13 +1514,39 @@ langsung tahu posisinya.
     (102 test), audit motion, audit a11y 0 pelanggaran termasuk audit tambahan khusus
     dropdown pencarian dan kilau aktif pada enam tema, anggaran bundle (JS awal
     154.9 KB gzip).
+  - Rilis v0.1.0: `CHANGELOG.md` dikonsolidasikan (blok `Unreleased` dilebur ke
+    `v0.1.0`), tanggal rilis 2026-09-25, dan tag `v0.1.0` dibuat dengan GPG signed lalu
+    di-push. `release.yml` membangun bundle, memeriksa anggaran, dan menerbitkan GitHub
+    Release dengan catatan otomatis (tanpa arsip).
+  - Sumber versi disatukan. `server/index.ts` kini membaca `version` dari `package.json`
+    lewat `readAppVersion()` (dengan fallback `0.0.0` plus peringatan log), bukan lagi
+    string keras. Satu sumber kebenaran versi: `package.json`.
+  - Perbaikan gate e2e setelah CI merah pada commit `58482a9`:
+    - `e2e/bahasa.spec.ts` kini MENGISI SENDIRI rentang magang di `beforeEach` dan
+      memulihkannya di `afterEach`. Sebelumnya spec ini hanya hermetik untuk `bahasa`,
+      padahal testnya membuka Log Book yang butuh rentang terisi. Direktori `data-e2e`
+      dipakai bersama semua spec dan defaultnya rentang KOSONG, sehingga halaman
+      menampilkan empty state dan test gagal di CI.
+    - `e2e/data.spec.ts` menambah `afterEach` yang memulihkan rentang valid, karena spec
+      ini sengaja mengosongkan lalu membalik rentang.
+    - `e2e/perf.spec.ts` memakai ambang long task dari `PERF_LONG_TASK_MS`, dengan default
+      50 ms di lokal dan 200 ms di CI. Runner CI jauh lebih lambat sehingga pekerjaan yang
+      sama bisa tercatat lebih dari dua kali; gate lokal tetap ketat.
+    - `e2e/settings-search.spec.ts` membandingkan ukuran seksi memakai toleransi sub-pixel
+      (< 0.5 px), bukan `toBe`, karena `boundingBox()` bisa berbeda di digit terakhir.
+    - Pelajaran: setiap spec e2e WAJIB memulihkan config yang ia ubah, bukan hanya
+      `bahasa`. `data-e2e` dipakai bersama, jadi apa pun yang ditinggalkan satu spec akan
+      dilihat spec berikutnya.
+  - Verifikasi rilis v0.1.0 lulus: lint, typecheck, Vitest (364 test), Playwright
+    (105 test dari direktori data KOSONG, meniru CI), audit motion, audit a11y 0
+    pelanggaran (7 halaman x 9 tema), anggaran bundle (JS awal 154.9 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 15 dan 16 tuntas; menunggu keputusan pemilik soal tag v0.1.0).
+  - tidak ada (fase 15, 16, 17, dan 17b tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:
   - Pemakaian normal dan pemeliharaan. Bila ada perilaku baru, tambah sesuai
     aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.
-  - Tag rilis v0.1.0 DITUNDA atas permintaan pemilik. Bila disetujui: `git tag -s`,
-    push tag, lalu biarkan `release.yml` membuat GitHub Release dengan catatan otomatis.
+  - Rilis berikutnya: naikkan `version` di `package.json`, pindahkan blok `Unreleased`
+    baru di `CHANGELOG.md` menjadi seksi versi bertanggal, lalu `git tag -s` dan push tag.
   - Deskripsi dan topics repo GitHub diterapkan lewat `gh repo edit` setelah ACC
     pemilik.
   - Catatan terbuka:

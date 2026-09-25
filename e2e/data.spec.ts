@@ -27,7 +27,26 @@ const RUN = Date.now().toString().slice(-6)
 const NAMA = `Akhmad ${RUN}`
 const NIM = `234172${RUN}`
 
+/**
+ * Rentang valid untuk memulihkan config setelah spec ini selesai.
+ *
+ * Spec ini SENGAJA mengosongkan rentang (test pertama) dan membaliknya (test terakhir).
+ * `data-e2e` dipakai bersama semua spec, jadi tanpa pemulihan, spec berikutnya yang
+ * membuka Log Book tanpa mengisi rentang sendiri akan melihat empty state
+ * "Rentang magang belum diatur" dan gagal.
+ */
+const RENTANG_PULIH = { mulai: '2026-09-21', selesai: '2026-09-26' }
+
 test.describe('alur data', () => {
+  test.afterEach(async ({ request }) => {
+    const current = (await (await request.get(`${API}/api/config`)).json()) as {
+      config: Record<string, unknown>
+    }
+    await request.put(`${API}/api/config`, {
+      data: { config: { ...current.config, magang: RENTANG_PULIH } },
+    })
+  })
+
   test('mengisi rentang magang lalu daftar minggu muncul', async ({ page, request }) => {
     // Kosongkan rentang lebih dulu. data-e2e persist antar run, dan bila rentangnya sudah
     // bernilai sama dengan yang akan diisi, tidak ada perubahan yang terdeteksi dan status
