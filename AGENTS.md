@@ -673,6 +673,19 @@ Fakta terverifikasi dari template:
 - Ekspor DITOLAK selama masih ada hari yang belum lengkap: server membalas 422 dengan
   daftar tanggalnya, dan tombol Ekspor di halaman Ekspor dinonaktifkan. Ekspor baru
   jalan setiap hari terisi kegiatan atau punya alasan.
+- PENTING: "hari berisi" adalah SATU konsep yang dipakai beberapa tempat (penghitung
+  progres minggu di `WeekProgress`, ringkasan halaman Ekspor, dan validasi). Selalu
+  gunakan `isDayFilled` dari `src/lib/domain/editor.ts`, JANGAN bandingkan langsung dengan
+  status `'terisi'`. Hari yang diisi ALASAN status efektifnya `'libur'`, `'sakit'`, atau
+  `'izin'`, BUKAN `'terisi'`.
+  - BUG yang pernah terjadi: `WeekProgress` membandingkan langsung dengan `'terisi'`,
+    sehingga hari ber-alasan tidak dihitung dan badge "x/y terisi" tetap nol walaupun
+    barisnya sudah diisi alasan. User mengira pilihan alasan tidak tersimpan, padahal
+    datanya sudah benar di disk. Halaman Ekspor saat itu sudah benar, jadi dua tampilan
+    berbeda pendapat soal data yang sama.
+  - Unit `isDayFilled` di `editor.test.ts` mengunci kesamaan dengan `validateDay`
+    (berisi berarti tidak ada masalah), dan E2E di `editor.spec.ts` mengunci bahwa memilih
+    alasan menaikkan penghitung minggu.
 
 ### 11.4 Navigasi
 
@@ -1549,6 +1562,10 @@ langsung tahu posisinya.
   - Verifikasi rilis v0.1.0 lulus: lint, typecheck, Vitest (364 test), Playwright
     (105 test dari direktori data KOSONG, meniru CI), audit motion, audit a11y 0
     pelanggaran (7 halaman x 9 tema), anggaran bundle (JS awal 154.9 KB gzip).
+  - Perbaikan pasca-rilis v0.1.0: badge "x/y terisi" tidak menghitung hari ber-alasan
+    (lihat bagian 11.3 untuk penyebab dan aturannya). Ditambahkan `isDayFilled` sebagai
+    satu sumber kebenaran, dipakai `WeekProgress` dan halaman Ekspor. Verifikasi ulang
+    lulus: lint, typecheck, Vitest (368 test), Playwright (106 test dari data kosong).
 - Sedang dikerjakan:
   - tidak ada (fase 15, 16, 17, dan 17b tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:

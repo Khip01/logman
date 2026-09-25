@@ -74,6 +74,26 @@ export function validateDay(day: DayEntry): DayIssue[] {
 }
 
 /**
+ * Benar bila hari sudah "berisi", baik lewat kegiatan maupun alasan (AGENTS.md bagian 11.3).
+ *
+ * PENTING: hari yang diisi ALASAN juga dihitung berisi. Status efektif hari ber-alasan
+ * adalah 'libur', 'sakit', atau 'izin', BUKAN 'terisi', sehingga membandingkan langsung
+ * dengan 'terisi' akan salah menghitung hari libur.
+ *
+ * Menerima `undefined` karena pemanggil sering hanya punya `days[date]` yang bisa belum
+ * ada; tanggal tanpa entri dianggap belum berisi.
+ *
+ * Satu fungsi dipakai bersama oleh penghitung progres minggu dan ringkasan halaman Ekspor,
+ * supaya keduanya tidak pernah berbeda pendapat. Sebelumnya keduanya menghitung dengan cara
+ * masing-masing dan hasilnya berbeda: halaman Ekspor sudah menghitung alasan, sedangkan
+ * penghitung minggu belum.
+ */
+export function isDayFilled(day: DayEntry | undefined): boolean {
+  if (!day) return false
+  return effectiveStatus(day) !== 'kosong'
+}
+
+/**
  * Mengumpulkan tanggal yang belum lengkap dari sekumpulan hari.
  *
  * `isEditable` menyaring baris yang memang tidak dapat diisi (bulan lain atau di luar

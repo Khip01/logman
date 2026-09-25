@@ -119,6 +119,28 @@ test.describe('editor per sel', () => {
     await expect(sel.getByText('-', { exact: true }).first()).toBeVisible()
   })
 
+  /*
+   * Regresi: badge "x/y terisi" sebelumnya TIDAK menghitung hari yang diisi ALASAN.
+   * Hari ber-alasan statusnya 'libur'/'sakit'/'izin', bukan 'terisi', sedangkan penghitung
+   * lama membandingkan langsung dengan 'terisi'. Akibatnya badge tetap 0 padahal barisnya
+   * sudah terisi, dan user mengira isian alasan tidak tersimpan.
+   */
+  test('memilih alasan menambah penghitung hari terisi di kartu minggu', async ({ page }) => {
+    await page.goto('/')
+
+    // Kartu minggu memuat enam hari (Senin sampai Sabtu), bukan hanya yang di dalam rentang.
+    const kartu = page.getByTestId('week-progress')
+    await expect(kartu).toHaveText('0 dari 6 terisi')
+
+    const sel = page.getByTestId('editor-row-2026-09-24')
+    await sel.getByRole('combobox').click()
+    await page.getByRole('option', { name: 'Libur Nasional' }).click()
+
+    // Menambah lewat ALASAN harus ikut terhitung, bukan hanya lewat kegiatan.
+    await expect(kartu).toHaveText('1 dari 6 terisi')
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+  })
+
   test('menghapus alasan mengembalikan hari ke kosong', async ({ page }) => {
     await page.goto('/')
 

@@ -4,6 +4,7 @@ import {
   collectIncompleteDates,
   displayJam,
   effectiveStatus,
+  isDayFilled,
   isStripStatus,
   JAM_STRIP,
   monthIncompleteDates,
@@ -92,6 +93,44 @@ describe('displayJam', () => {
 
   it('memakai karakter strip yang bukan em dash', () => {
     expect(JAM_STRIP).toBe('-')
+  })
+})
+
+describe('isDayFilled', () => {
+  it('menghitung hari ber-kegiatan sebagai berisi', () => {
+    expect(isDayFilled(day({ kegiatan: 'Kerja' }))).toBe(true)
+  })
+
+  /*
+   * Regresi: hari yang diisi ALASAN statusnya bukan 'terisi', melainkan 'libur', 'sakit',
+   * atau 'izin'. Penghitung yang membandingkan langsung dengan 'terisi' melaporkan 0
+   * sehingga badge "x/y terisi" tetap nol padahal barisnya sudah diisi alasan.
+   */
+  it('menghitung hari ber-ALASAN sebagai berisi', () => {
+    expect(isDayFilled(day({ alasan: 'Libur Nasional' }))).toBe(true)
+    expect(isDayFilled(day({ alasan: 'Cuti Bersama' }))).toBe(true)
+    expect(isDayFilled(day({ alasan: 'Sakit' }))).toBe(true)
+    expect(isDayFilled(day({ alasan: 'Izin' }))).toBe(true)
+    expect(isDayFilled(day({ alasan: 'Wawancara' }))).toBe(true)
+  })
+
+  it('menghitung hari kosong sebagai belum berisi', () => {
+    expect(isDayFilled(day())).toBe(false)
+    expect(isDayFilled(day({ kegiatan: '   ' }))).toBe(false)
+    // Entri yang belum ada (tanggal tanpa data tersimpan) juga belum berisi.
+    expect(isDayFilled(undefined)).toBe(false)
+  })
+
+  it('sejalan dengan validateDay: berisi berarti tidak ada masalah', () => {
+    const contoh = [
+      day(),
+      day({ kegiatan: 'Kerja' }),
+      day({ alasan: 'Sakit' }),
+      day({ alasan: 'Libur Nasional' }),
+    ]
+    for (const entri of contoh) {
+      expect(validateDay(entri).length === 0).toBe(isDayFilled(entri))
+    }
   })
 })
 

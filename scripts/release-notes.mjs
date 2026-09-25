@@ -26,10 +26,26 @@ if (!tag) {
 
 const baris = readFileSync('CHANGELOG.md', 'utf8').split('\n')
 
-// Cocokkan heading `## v0.1.0 - 2026-09-25` dengan tag. Tag boleh tanpa awalan `v`,
-// dan pencocokan memakai `includes` agar judul seksi yang punya keterangan tetap cocok.
-const versi = tag.replace(/^v/, '')
-const mulai = baris.findIndex((baris) => baris.startsWith('## ') && baris.includes(versi))
+/**
+ * Mencocokkan heading seksi dengan versi tag.
+ *
+ * Heading berbentuk `## v0.1.0 - 2026-09-25` atau `## 0.1.0 - ...`. Versi diambil sebagai
+ * token pertama setelah `## ` lalu awalan `v` dibuang, dan dibandingkan PERSIS.
+ *
+ * JANGAN memakai `includes`: `0.1.0` juga terkandung di `0.10.0`, sehingga rilis 0.10.0
+ * akan salah mengambil catatan 0.1.0.
+ */
+const versiTag = tag.replace(/^v/, '')
+
+function versiDariHeading(baris) {
+  const isi = baris.slice(3).trim()
+  const token = isi.split(/\s+/)[0] ?? ''
+  return token.replace(/^v/, '')
+}
+
+const mulai = baris.findIndex(
+  (baris) => baris.startsWith('## ') && versiDariHeading(baris) === versiTag,
+)
 
 if (mulai === -1) {
   console.error(`[release-notes] Seksi CHANGELOG untuk ${tag} tidak ditemukan.`)

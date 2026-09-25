@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { buildMonthGroups, type MagangRange } from '@/lib/domain/calendar'
-import { monthIncompleteDates } from '@/lib/domain/editor'
+import { isDayFilled, monthIncompleteDates } from '@/lib/domain/editor'
 import { useLocale, useT } from '@/lib/i18n'
 import { useConfigStore } from '@/stores/config'
 import { useLogsStore } from '@/stores/logs'
@@ -104,12 +104,7 @@ export function ExportPage() {
             0,
           )
           const filledCount = month.weeks.reduce(
-            (sum, week) =>
-              sum +
-              week.days.filter((d) => {
-                const entry = logs.days[d.date]
-                return entry?.kegiatan?.trim() || entry?.alasan
-              }).length,
+            (sum, week) => sum + week.days.filter((d) => isDayFilled(logs.days[d.date])).length,
             0,
           )
           const incomplete = monthIncompleteDates(month, logs.days, range)

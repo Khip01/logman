@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- The week progress badge now counts days filled with a reason (Sick, Leave, National
+  Holiday, and custom reasons) as filled. It previously compared against the "filled"
+  status directly, so a day filled with a reason was never counted and the badge stayed at
+  zero even though the row was complete. The Export page already counted these days
+  correctly, so the two views disagreed about the same data.
+
 ## v0.1.0 - 2026-09-25
 
 First release. The full core flow works end to end: fill in the profile, write daily
@@ -82,4 +92,5 @@ activities, and export a print-ready PDF.
 - Document content on screen uses the correct size and spacing, including the gap between
   the time value and its icon.
 
+[Unreleased]: https://github.com/Khip01/logman/compare/v0.1.0...HEAD
 [v0.1.0]: https://github.com/Khip01/logman/releases/tag/v0.1.0
