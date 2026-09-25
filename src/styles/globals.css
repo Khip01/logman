@@ -366,6 +366,46 @@
 }
 
 /*
+ * Peralihan mode baca dan mode edit pada kolom Kegiatan (AGENTS.md bagian 11.6).
+ *
+ * Saat sel TIDAK difokus, user melihat hasil formatnya (`.rt-baca`) dan teks textarea
+ * dibuat tembus pandang. Saat sel DIFOKUS, tampilan hasil disembunyikan dan teks textarea
+ * muncul kembali beserta kursornya, sehingga user mengedit penanda apa adanya.
+ *
+ * Mengapa lewat CSS dan bukan state React: peralihan fokus terjadi sangat sering. Kalau
+ * setiap fokus dan blur me-render ulang baris, ketikan menjadi lambat dan aturan performa
+ * di bagian 13 terlanggar. CSS hanya mengganti tampilan, tanpa satu pun render React.
+ *
+ * Textarea SELALU ada di DOM dan tetap memegang nilainya, jadi aksesibilitas, pembacaan
+ * layar, dan test tetap bekerja seperti sebelumnya.
+ */
+[data-kegiatan] {
+  position: relative;
+}
+
+[data-kegiatan] .rt-baca {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+/* Teks textarea disembunyikan selama tidak difokus, karena hasil format yang tampil. */
+[data-kegiatan] textarea.rt-teks {
+  color: transparent;
+}
+
+[data-kegiatan][data-aktif="true"] .rt-baca {
+  display: none;
+}
+
+[data-kegiatan][data-aktif="true"] textarea.rt-teks {
+  color: var(--text-main);
+}
+
+/*
  * Skala konten Log Book di layar (AGENTS.md bagian 11.2). Memakai `zoom` supaya seluruh
  * isi konten (teks, padding, garis tabel) membesar proporsional, tanpa menyentuh UI
  * aplikasi di luar halaman Log Book. `zoom` adalah properti statis, bukan animasi.
@@ -424,6 +464,21 @@
   /* Preview cetak selalu ukuran resmi, terlepas dari skala konten layar. */
   .content-scaled {
     zoom: 1;
+  }
+
+  /*
+   * Saat mencetak, yang tampil WAJIB hasil formatnya, bukan penanda mentah, dan bukan
+   * textarea yang tembus pandang (AGENTS.md bagian 11.6). Peralihan mode baca dan edit
+   * dimatikan di sini supaya hasil cetak tidak bergantung pada sel mana yang sedang fokus.
+   */
+  [data-kegiatan] .rt-baca {
+    display: block;
+    position: static;
+    color: var(--doc-ink);
+  }
+
+  [data-kegiatan] textarea.rt-teks {
+    display: none;
   }
 
   /*

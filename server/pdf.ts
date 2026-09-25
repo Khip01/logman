@@ -8,18 +8,11 @@ import { FONT_DOKUMEN_STACK } from '../src/lib/domain/dokumen'
 import { displayJam, effectiveStatus, JAM_STRIP } from '../src/lib/domain/editor'
 import { PAGE_MARGIN_CM, paperSizeCss } from '../src/lib/domain/paper'
 import { type ResolvedNama, resolveNamaMinggu } from '../src/lib/domain/pembimbing'
+import { escapeHtml, richTextToHtml } from '../src/lib/domain/richTextHtml'
 import type { AppConfig, DayEntry, LogData, WeekEntry } from '../src/lib/domain/types'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const LETTERHEAD_PATH = join(here, '..', 'public', 'letterhead-polinema.png')
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 function renderLetterhead(): string {
   return `
@@ -64,14 +57,16 @@ function renderWeekTable(
     const def = jamDefault[dowKey] ?? { masuk: '08.00', pulang: '16.00' }
     const masuk = strip ? JAM_STRIP : displayJam(saved.masuk, def.masuk)
     const pulang = strip ? JAM_STRIP : displayJam(saved.pulang, def.pulang)
-    const kegiatan = escapeHtml(saved.kegiatan || saved.alasan || '')
+    // Format teks (tebal, miring, judul) memakai parser yang SAMA dengan layar, sehingga
+    // PDF tidak pernah berbeda dari yang dilihat user (AGENTS.md bagian 11.6).
+    const kegiatan = richTextToHtml(saved.kegiatan || saved.alasan || '')
 
     rows += `
       <tr>
         <td class="cell-hari">${hari}<br/><span class="tanggal">${tanggal}</span></td>
         <td class="cell-jam">${masuk}</td>
         <td class="cell-jam">${pulang}</td>
-        <td class="cell-kegiatan"><div class="kegiatan-wrap">${kegiatan.replace(/\n/g, '<br/>')}</div></td>
+        <td class="cell-kegiatan"><div class="kegiatan-wrap">${kegiatan}</div></td>
       </tr>
     `
   }
@@ -236,6 +231,15 @@ export function buildExportHtml(options: {
   .cell-jam { text-align: center; white-space: nowrap; width: 1%; }
   .cell-kegiatan { width: auto; }
   .kegiatan-wrap { white-space: pre-wrap; word-break: break-word; min-height: 1.6cm; }
+  /*
+   * Format teks pada kolom Kegiatan (AGENTS.md bagian 11.6). Judul dibuat lebih tegas
+   * tanpa mengubah tinggi baris, supaya jumlah halaman PDF tidak melonjak hanya karena
+   * user memakai penanda judul.
+   */
+  .kegiatan-wrap .rt-judul { font-weight: 700; }
+  .kegiatan-wrap .rt-judul-1 { font-size: 1.08em; }
+  .kegiatan-wrap .rt-judul-2 { font-size: 1.03em; }
+  .kegiatan-wrap .rt-judul-3 { font-size: 1em; }
   .signature-block { margin-top: 32px; font-size: 12pt; }
   .sig-know { text-align: left; }
   .sig-columns { display: flex; justify-content: space-between; margin-top: 8px; }

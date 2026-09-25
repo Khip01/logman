@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Text formatting inside the activity cell: bold (`**text**`), italic (`*text*`), and
+  headings (`#`, `##`, `###`), with `Ctrl+B` and `Ctrl+I` shortcuts for the current
+  selection. The cell shows the formatted result while unfocused and the plain text with
+  its markers while editing, so the markers never get in the way but stay editable. The
+  layout height does not change between the two modes. Content is still stored as plain
+  marked-up text, so existing entries keep working and no migration is needed. The same
+  parser feeds both the screen and the PDF, and all text is escaped before it becomes
+  markup, so an entry such as `<script>` is printed as text.
+
 ### Fixed
 
 - The week progress badge now counts days filled with a reason (Sick, Leave, National

@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import { m } from 'motion/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TimePicker } from '@/components/ui/TimePicker'
 import {
   displayJam,
@@ -21,6 +21,7 @@ import { useLogsStore } from '@/stores/logs'
 import { useUiStore } from '@/stores/ui'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { ReasonPicker } from './ReasonPicker'
+import { RichTextView } from './RichTextView'
 
 /**
  * Satu baris hari pada tabel editor (AGENTS.md bagian 11.2 dan 11.3).
@@ -78,6 +79,14 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
   const flashMs = rowFlashDurationSeconds(flashProfile) * 1000
   const rowRef = useRef<HTMLTableRowElement>(null)
   const focusToken = isFocusTarget ? focusRequest.token : undefined
+
+  /*
+   * Mode baca atau mode edit kolom Kegiatan (AGENTS.md bagian 11.6). Saat sel tidak difokus,
+   * yang tampil adalah hasil formatnya; saat difokus, teks dengan penandanya. Status ini
+   * hanya dipakai untuk memberi tanda pada DOM; peralihan tampilannya sendiri dikerjakan
+   * CSS lewat atribut `data-aktif`, supaya fokus dan blur tidak memicu render berlebih.
+   */
+  const [selAktif, setSelAktif] = useState(false)
 
   /*
    * Menggeser baris tujuan ke tengah layar begitu user menekan hari di banner, lalu
@@ -186,12 +195,27 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
             </button>
           </div>
         ) : (
-          <>
+          <div
+            data-kegiatan
+            data-aktif={selAktif ? 'true' : 'false'}
+            data-testid={`rich-${date}`}
+            className="relative"
+          >
+            {/*
+              Hasil format untuk mode baca. Selalu dirender (walau sedang diedit) supaya
+              teks yang memakai penanda tidak pernah hilang dari DOM, dan supaya tidak ada
+              pergeseran tinggi saat peralihan. Di mode edit ia disembunyikan CSS.
+            */}
+            <div className="rt-baca" aria-hidden={selAktif ? 'true' : undefined}>
+              <RichTextView text={day.kegiatan} />
+            </div>
             <AutoGrowTextarea
               aria-label={t('editor.kegiatanLabel', { hari: hariLabel, tanggal: tanggalLabel })}
               value={day.kegiatan}
               placeholder={t('editor.ketikKegiatan')}
               focusToken={focusToken}
+              onFocusChange={setSelAktif}
+              className="rt-teks"
               onChange={(kegiatan) => setDay(date, patchKegiatan(kegiatan))}
             />
             {day.kegiatan.trim() === '' ? (
@@ -202,7 +226,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
                 />
               </div>
             ) : null}
-          </>
+          </div>
         )}
       </td>
     </tr>

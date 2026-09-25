@@ -792,6 +792,49 @@ Fakta terverifikasi dari template:
   `src/lib/domain/pembimbing.ts`) yang dipakai preview cetak dan `server/pdf.ts`, supaya
   layar dan PDF selalu sama.
 
+### 11.6 Format teks kegiatan
+
+Kolom Kegiatan mendukung tiga penanda sederhana. Aturan ini mengikat.
+
+- Penanda yang didukung, sengaja HANYA tiga:
+  - `**tebal**`
+  - `*miring*`
+  - `# judul`, `## judul`, `### judul`. Judul memakai seluruh baris, dan `#` WAJIB
+    diikuti spasi. Empat tanda pagar atau lebih BUKAN judul.
+- Tiga bintang (`***teks***`) berarti tebal DAN miring. Ini muncul secara alami saat user
+  menekan Ctrl+I pada teks yang sudah tebal, jadi wajib didukung. Parser memeriksa `***`
+  SEBELUM `**`, kalau tidak urutannya salah dan hasilnya rusak.
+- Tanda bintang yang bermakna lain HARUS tetap teks biasa. Pembuka miring hanya sah bila
+  diikuti karakter non-spasi, sehingga `2 * 3 * 4` tidak berubah menjadi miring. Penanda
+  yang belum ditutup juga dibiarkan apa adanya, supaya teks tidak berkedip saat diketik.
+- Isi TETAP disimpan sebagai teks polos berpenanda di `logs.json`. Tidak ada HTML, tidak
+  ada migrasi data, dan data lama tetap terbaca.
+- SATU parser dipakai bersama layar dan PDF: `src/lib/domain/richText.ts`. Perender layar
+  (`RichTextView`) menghasilkan elemen React, perender PDF (`richTextHtml.ts`) menghasilkan
+  HTML dengan pelolosan WAJIB. Jangan membuat parser kedua; layar dan PDF tidak boleh
+  berbeda.
+- Parser TIDAK PERNAH menghasilkan HTML. Hanya perender yang menyusun markup, dan selalu
+  meloloskan teks lebih dulu. Isi Log Book berasal dari ketikan user dan ikut tercetak, jadi
+  ini pertahanan yang wajib: teks seperti `<script>` harus tercetak sebagai teks.
+- Peralihan mode baca dan mode edit dikerjakan CSS lewat atribut `data-aktif`, BUKAN state
+  React. Peralihan fokus terjadi sangat sering; kalau setiap fokus dan blur me-render ulang
+  baris, ketikan menjadi lambat dan aturan performa bagian 13 terlanggar.
+- Textarea SELALU ada di DOM dan tetap memegang teks aslinya, sehingga aksesibilitas,
+  pembaca layar, dan test tetap bekerja. Saat sel tidak difokus, teksnya dibuat tembus
+  pandang dan lapisan hasil format yang tampil.
+- UKURAN HURUF dan TINGGI BARIS mode baca WAJIB sama dengan textarea
+  (`text-[12px] leading-[19.5px]`). Kalau berbeda, tinggi sel berubah saat user berpindah
+  mode dan seluruh baris tabel di bawahnya ikut melompat.
+- Saat mencetak, peralihan mode dimatikan: yang tercetak SELALU hasil formatnya, bukan
+  penanda mentah dan bukan textarea tembus pandang, tanpa bergantung pada sel mana yang
+  sedang fokus.
+- Pintasan: Ctrl+B untuk tebal dan Ctrl+I untuk miring, berlaku pada teks yang dipilih.
+  `preventDefault` WAJIB dipanggil, karena Ctrl+B adalah pintasan bawaan browser untuk
+  membuka panel bookmark. Logikanya ada di `richTextShortcut.ts` yang murni dan teruji.
+- Pengujian: unit `richText.test.ts`, `richTextHtml.test.ts` (termasuk pelolosan tag), dan
+  `richTextShortcut.test.ts`; E2E `e2e/rich-text.spec.ts` (penanda tersembunyi, mode edit,
+  kedua pintasan, dan tinggi sel yang tidak berubah).
+
 ---
 
 ## 12. Render dokumen dan ekspor
@@ -1613,6 +1656,30 @@ langsung tahu posisinya.
     `data/`, sehingga isi Log Book pemilik terhapus. Dipulihkan dari backup rotasi
     (16 hari berisi). Aturan pencegahan ditambahkan di bagian 14.4 dan `.gitignore`
     menyediakan `data-agent/`.
+  - Fase 18 format teks kegiatan (permintaan pemilik): lihat bagian 11.6 untuk aturannya.
+    - Modul murni baru `src/lib/domain/richText.ts` (parser penanda, tanpa HTML),
+      `richTextHtml.ts` (perender PDF dengan pelolosan), dan `richTextShortcut.ts`
+      (pintasan Ctrl+B dan Ctrl+I). Semuanya ber-unit test.
+    - Komponen baru `src/features/editor/RichTextView.tsx`. Peralihan mode baca dan edit
+      dikerjakan CSS lewat atribut `data-aktif`, bukan state React, supaya fokus dan blur
+      tidak memicu render berlebih.
+    - `AutoGrowTextarea` menangani pintasan dengan `preventDefault` dan memulihkan posisi
+      kursor setelah nilai berubah. `EditorRow` membungkus kolom Kegiatan dengan penanda
+      `data-kegiatan`.
+    - `server/pdf.ts` memakai parser yang SAMA, sehingga PDF tidak pernah berbeda dari
+      layar. `escapeHtml` dipindah ke `richTextHtml.ts` dan tetap satu-satunya jalan
+      keluar markup.
+    - Tinggi baris dan ukuran huruf mode baca disamakan dengan textarea
+      (`text-[12px] leading-[19.5px]`), supaya baris tabel tidak melompat saat berpindah
+      mode. E2E mengunci hal ini.
+    - BUG yang ditemukan saat pengujian: `***teks***` awalnya dirender sebagai tebal
+      berisi bintang lepas. Parser kini memeriksa `***` lebih dulu. Kasus ini muncul
+      secara alami saat Ctrl+I ditekan pada teks yang sudah tebal.
+    - Verifikasi fase 18 lulus: lint, typecheck, Vitest (418 test), Playwright (112 test
+      dari data kosong), audit motion, audit a11y 0 pelanggaran, anggaran bundle tetap
+      154.9 KB gzip (parser buatan sendiri, tanpa dependensi baru). PDF diperiksa dengan
+      `pdftotext`: penanda hilang, `2 * 3 * 4` tetap teks biasa, dan `<script>` tercetak
+      sebagai teks.
 - Sedang dikerjakan:
   - tidak ada (fase 15, 16, 17, dan 17b tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:
