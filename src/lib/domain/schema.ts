@@ -1,3 +1,4 @@
+import { isLocale } from '@/lib/i18n/locale'
 import { sanitizeAlasan } from './alasan'
 import { isIsoDate } from './date'
 import { isContentScale, isFontDokumen, parseContentScale } from './dokumen'
@@ -121,6 +122,7 @@ export function defaultConfig(): AppConfig {
     formatJam: '24',
     fontDokumen: 'times',
     contentScale: 1,
+    bahasa: 'id',
     tampilkanDevUi: false,
     dosenPembimbing: '',
     pembimbingLapangan: [],
@@ -209,6 +211,7 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
   const contentScale = isContentScale(input.contentScale)
     ? input.contentScale
     : parseContentScale(input.contentScale, base.contentScale)
+  const bahasa = isLocale(input.bahasa) ? input.bahasa : base.bahasa
 
   const pembimbingLapangan = Array.isArray(input.pembimbingLapangan)
     ? sanitizePembimbing(input.pembimbingLapangan)
@@ -232,6 +235,7 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     formatJam,
     fontDokumen,
     contentScale,
+    bahasa,
     tampilkanDevUi: asBoolean(input.tampilkanDevUi, base.tampilkanDevUi),
     dosenPembimbing: asString(input.dosenPembimbing, base.dosenPembimbing),
     pembimbingLapangan,

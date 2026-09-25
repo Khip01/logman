@@ -7,6 +7,7 @@ import { ValidationBanner } from '@/features/editor/ValidationBanner'
 import { WeekEditorTable } from '@/features/editor/WeekEditorTable'
 import { formatWeekRange, type MagangRange } from '@/lib/domain/calendar'
 import type { MonthGroup } from '@/lib/domain/types'
+import { useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { useConfigStore } from '@/stores/config'
 import { useLogbookStore } from '@/stores/logbook'
@@ -32,6 +33,7 @@ import { SignatureNames } from './SignatureNames'
  * memakai no-print. Satu halaman cetak = satu minggu yang sedang dibuka.
  */
 export function LogbookPage() {
+  const t = useT()
   const magang = useConfigStore((s) => s.config.magang)
   const profil = useConfigStore((s) => s.config.profil)
   const loadingLogs = useLogsStore((s) => s.loading)
@@ -51,11 +53,11 @@ export function LogbookPage() {
       <EmptyState
         icon={CalendarRange}
         headingLevel={1}
-        title="Rentang magang belum diatur"
-        description="Atur tanggal mulai dan selesai magang di Pengaturan. Daftar Log Book dibuat otomatis dari rentang tersebut."
+        title={t('logbook.rentangBelumDiatur')}
+        description={t('logbook.rentangBelumDiaturDeskripsi')}
         action={
           <Button variant="primary" onClick={() => navigate('/settings')}>
-            Buka Pengaturan
+            {t('nav.pengaturan')}
           </Button>
         }
       />
@@ -88,32 +90,44 @@ export function LogbookPage() {
       <div className="mx-auto max-w-3xl px-6 py-10 print:mx-0 print:max-w-none print:px-0 print:py-0">
         <div className="mb-6 flex items-center gap-3 no-print">
           <FileText className="size-5 text-text-muted" strokeWidth={1.75} />
-          <h1 className="text-[17px] font-semibold text-text-primary">Log Book</h1>
+          <h1 className="text-[17px] font-semibold text-text-primary">{t('logbook.judul')}</h1>
         </div>
 
         {errorLogs ? (
           <div className="mb-6 border border-status-error bg-status-error-bg px-3 py-2 text-[12px] text-status-error-text no-print">
-            Gagal memuat data log: {errorLogs}
+            {t('logbook.gagalMemuat', { pesan: errorLogs })}
           </div>
         ) : null}
 
         <div className="mb-8 grid gap-3 no-print sm:grid-cols-2">
-          <InfoRow icon={UserRound} label="Nama" value={profil.nama || 'Belum diisi'} />
-          <InfoRow icon={FileText} label="NIM" value={profil.nim || 'Belum diisi'} />
+          <InfoRow
+            icon={UserRound}
+            label={t('logbook.nama')}
+            value={profil.nama || t('logbook.belumDiisi')}
+          />
+          <InfoRow
+            icon={FileText}
+            label={t('logbook.nim')}
+            value={profil.nim || t('logbook.belumDiisi')}
+          />
           <InfoRow
             icon={CalendarRange}
-            label="Rentang magang"
-            value={`${magang.mulai} sampai ${magang.selesai}`}
+            label={t('logbook.rentangMagang')}
+            value={`${magang.mulai} - ${magang.selesai}`}
           />
-          <InfoRow icon={Ruler} label="Hari terisi" value={`${jumlahHari} hari`} />
+          <InfoRow
+            icon={Ruler}
+            label={t('logbook.hariTerisi')}
+            value={t('logbook.hariTerisiNilai', { n: jumlahHari })}
+          />
         </div>
 
         {!activeMonth ? (
           <EmptyState
             icon={CalendarRange}
             headingLevel={2}
-            title="Belum ada minggu"
-            description="Rentang magang terlalu pendek atau tidak valid, sehingga belum ada minggu yang bisa ditampilkan."
+            title={t('logbook.belumAdaMinggu')}
+            description={t('logbook.belumAdaMingguDeskripsi')}
           />
         ) : (
           <>
@@ -180,13 +194,16 @@ function MonthNavigator({
   onSelectWeek,
   activeWeekId,
 }: MonthNavigatorProps) {
+  const t = useT()
+  const locale = useLocale()
+
   return (
     <div className="mb-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <Button
           variant="outline"
           size="icon"
-          aria-label="Bulan sebelumnya"
+          aria-label={t('nav.bulanSebelumnya')}
           disabled={!canPrev}
           onClick={onPrev}
         >
@@ -196,7 +213,7 @@ function MonthNavigator({
         <Button
           variant="outline"
           size="icon"
-          aria-label="Bulan berikutnya"
+          aria-label={t('nav.bulanBerikutnya')}
           disabled={!canNext}
           onClick={onNext}
         >
@@ -204,7 +221,11 @@ function MonthNavigator({
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label={`Minggu ${month.label}`}>
+      <div
+        className="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label={t('logbook.minggu', { label: month.label })}
+      >
         {month.weeks.map((week) => {
           const isActive = week.id === activeWeekId
           return (
@@ -222,7 +243,7 @@ function MonthNavigator({
               )}
             >
               <span className="font-semibold">M{week.weekOfMonth}</span>
-              <span className="ml-2 text-[11px]">{formatWeekRange(week.startDate)}</span>
+              <span className="ml-2 text-[11px]">{formatWeekRange(week.startDate, locale)}</span>
             </button>
           )
         })}

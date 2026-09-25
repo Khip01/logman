@@ -5,6 +5,7 @@ import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { resolveNamaMinggu } from '@/lib/domain/pembimbing'
 import type { NamaMinggu } from '@/lib/domain/types'
+import { useT } from '@/lib/i18n'
 import { useConfigStore } from '@/stores/config'
 import { useLogsStore } from '@/stores/logs'
 
@@ -17,6 +18,7 @@ import { useLogsStore } from '@/stores/logs'
  * tersebut, baik pada preview cetak maupun PDF ekspor.
  */
 export function SignatureNames({ weekId }: { weekId: string }) {
+  const t = useT()
   const profilNama = useConfigStore((s) => s.config.profil.nama)
   const dosenPembimbing = useConfigStore((s) => s.config.dosenPembimbing)
   const daftarPembimbing = useConfigStore((s) => s.config.pembimbingLapangan)
@@ -50,15 +52,15 @@ export function SignatureNames({ weekId }: { weekId: string }) {
     >
       <p className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-text-dim">
         <PenLine className="size-3.5" strokeWidth={1.75} />
-        Nama Penanda Tangan Minggu Ini
+        {t('ttd.judul')}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field htmlFor={`sig-mahasiswa-${weekId}`} label="Mahasiswa">
+        <Field htmlFor={`sig-mahasiswa-${weekId}`} label={t('ttd.mahasiswa')}>
           <Input
             id={`sig-mahasiswa-${weekId}`}
             value={mahasiswa}
-            placeholder={profilNama || 'Nama mahasiswa'}
+            placeholder={profilNama || t('ttd.namaMahasiswa')}
             onChange={(event) => setMahasiswa(event.target.value)}
             onBlur={(event) => commit('mahasiswa', event.target.value)}
             onKeyDown={(event) => {
@@ -67,11 +69,11 @@ export function SignatureNames({ weekId }: { weekId: string }) {
           />
         </Field>
 
-        <Field htmlFor={`sig-dosen-${weekId}`} label="Dosen Pembimbing">
+        <Field htmlFor={`sig-dosen-${weekId}`} label={t('ttd.dosen')}>
           <Input
             id={`sig-dosen-${weekId}`}
             value={dosen}
-            placeholder={dosenPembimbing || 'Nama dosen pembimbing'}
+            placeholder={dosenPembimbing || t('ttd.namaDosen')}
             onChange={(event) => setDosen(event.target.value)}
             onBlur={(event) => commit('dosen', event.target.value)}
             onKeyDown={(event) => {
@@ -80,12 +82,12 @@ export function SignatureNames({ weekId }: { weekId: string }) {
           />
         </Field>
 
-        <Field label="Pembimbing Lapangan">
+        <Field label={t('ttd.pembimbing')}>
           <Combobox
-            aria-label="Pembimbing Lapangan"
+            aria-label={t('ttd.pembimbing')}
             options={daftarPembimbing}
             value={pembimbing}
-            placeholder={pembimbingDefault ?? 'Pilih pembimbing'}
+            placeholder={pembimbingDefault ?? t('ttd.pilihPembimbing')}
             onValueChange={setPembimbing}
             onSelect={(value) => commit('pembimbing', value)}
             onInputBlur={() => commit('pembimbing', pembimbing)}

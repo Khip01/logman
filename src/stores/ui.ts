@@ -5,15 +5,15 @@ import { create } from 'zustand'
  * Lihat AGENTS.md bagian 10.
  */
 export const THEMES = [
-  { id: 'hitam-pekat', label: 'Hitam Pekat', group: 'gelap' },
-  { id: 'hitam-abu', label: 'Hitam Abu', group: 'gelap' },
-  { id: 'hitam-pastel', label: 'Hitam Pastel', group: 'gelap' },
-  { id: 'putih-bersih', label: 'Putih Bersih', group: 'terang' },
-  { id: 'putih-pastel', label: 'Putih Pastel', group: 'terang' },
-  { id: 'putih-tulang', label: 'Putih Tulang', group: 'terang' },
-  { id: 'putih-gdocs', label: 'Putih Google Docs', group: 'terang' },
-  { id: 'putih-word', label: 'Putih Word', group: 'terang' },
-  { id: 'word-dark', label: 'Dark Word', group: 'gelap' },
+  { id: 'hitam-pekat', labelKey: 'tema.hitamPekat', group: 'gelap' },
+  { id: 'hitam-abu', labelKey: 'tema.hitamAbu', group: 'gelap' },
+  { id: 'hitam-pastel', labelKey: 'tema.hitamPastel', group: 'gelap' },
+  { id: 'putih-bersih', labelKey: 'tema.putihBersih', group: 'terang' },
+  { id: 'putih-pastel', labelKey: 'tema.putihPastel', group: 'terang' },
+  { id: 'putih-tulang', labelKey: 'tema.putihTulang', group: 'terang' },
+  { id: 'putih-gdocs', labelKey: 'tema.putihGDocs', group: 'terang' },
+  { id: 'putih-word', labelKey: 'tema.putihWord', group: 'terang' },
+  { id: 'word-dark', labelKey: 'tema.wordDark', group: 'gelap' },
 ] as const
 
 export type ThemeId = (typeof THEMES)[number]['id']

@@ -14,6 +14,8 @@ import { type APIRequestContext, expect, test } from '@playwright/test'
 
 test.describe.configure({ mode: 'serial' })
 
+const API = 'http://127.0.0.1:5198'
+
 async function resolveDataDir(request: APIRequestContext): Promise<string> {
   const response = await request.get('http://127.0.0.1:5198/api/health')
   const body = (await response.json()) as { dataDir: string }
@@ -26,7 +28,17 @@ const NAMA = `Akhmad ${RUN}`
 const NIM = `234172${RUN}`
 
 test.describe('alur data', () => {
-  test('mengisi rentang magang lalu daftar minggu muncul', async ({ page }) => {
+  test('mengisi rentang magang lalu daftar minggu muncul', async ({ page, request }) => {
+    // Kosongkan rentang lebih dulu. data-e2e persist antar run, dan bila rentangnya sudah
+    // bernilai sama dengan yang akan diisi, tidak ada perubahan yang terdeteksi dan status
+    // simpan tetap "Siap", sehingga assertion "Tersimpan" gagal.
+    const current = (await (await request.get(`${API}/api/config`)).json()) as {
+      config: Record<string, unknown>
+    }
+    await request.put(`${API}/api/config`, {
+      data: { config: { ...current.config, magang: { mulai: '', selesai: '' } } },
+    })
+
     await page.goto('/settings')
 
     await page.getByLabel('Tanggal mulai magang').fill('2026-08-01')

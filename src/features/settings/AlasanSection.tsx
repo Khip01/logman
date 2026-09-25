@@ -6,7 +6,9 @@ import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { addAlasan, removeAlasan } from '@/lib/domain/alasan'
 import { DEFAULT_ALASAN } from '@/lib/domain/schema'
+import { useT } from '@/lib/i18n'
 import { useConfigStore } from '@/stores/config'
+import { SettingsSection } from './SettingsSection'
 
 /**
  * Pengelola daftar alasan hari kosong (AGENTS.md bagian 5.1 dan 11.3).
@@ -14,6 +16,7 @@ import { useConfigStore } from '@/stores/config'
  * ini, user tetap boleh mengetik alasan bebas langsung di editor.
  */
 export function AlasanSection() {
+  const t = useT()
   const alasan = useConfigStore((s) => s.config.alasan)
   const update = useConfigStore((s) => s.update)
   const [draft, setDraft] = useState('')
@@ -27,22 +30,15 @@ export function AlasanSection() {
   }
 
   return (
-    <section className="mb-10" data-testid="section-alasan">
-      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-        <ListChecks className="size-4" strokeWidth={1.75} />
-        Alasan Hari Kosong
-      </h2>
-      <p className="mb-3 text-[12px] text-text-muted">
-        Muncul sebagai pilihan di editor. Selain daftar ini, alasan bebas tetap bisa diketik
-        langsung pada sel.
-      </p>
+    <SettingsSection id="alasan" title={t('alasan.judulPanjang')}>
+      <p className="mb-3 text-[12px] text-text-muted">{t('alasan.deskripsiPanjang')}</p>
 
       {alasan.length === 0 ? (
         <EmptyState
           icon={ListChecks}
           headingLevel={3}
-          title="Belum ada alasan"
-          description="Tambahkan alasan agar bisa dipilih cepat saat mengisi hari kosong."
+          title={t('alasan.belumAda')}
+          description={t('alasan.belumAdaDeskripsi')}
         />
       ) : (
         <ul className="mb-3 flex flex-wrap gap-2">
@@ -52,7 +48,7 @@ export function AlasanSection() {
                 {item}
                 <button
                   type="button"
-                  aria-label={`Hapus alasan ${item}`}
+                  aria-label={t('alasan.hapus', { nama: item })}
                   onClick={() => update({ alasan: removeAlasan(alasan, item) })}
                   className="theme-t grid size-5 place-items-center text-text-dim hover:text-status-error-text focus:outline-none focus-visible:border focus-visible:border-border-focus"
                 >
@@ -65,11 +61,11 @@ export function AlasanSection() {
       )}
 
       <div className="flex items-end gap-2">
-        <Field htmlFor="set-alasan-baru" label="Tambah alasan" className="max-w-64 flex-1">
+        <Field htmlFor="set-alasan-baru" label={t('alasan.tambah')} className="max-w-64 flex-1">
           <Input
             id="set-alasan-baru"
             value={draft}
-            placeholder="Misal Cuti Bersama"
+            placeholder={t('alasan.misal')}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -81,16 +77,16 @@ export function AlasanSection() {
         </Field>
         <Button variant="outline" onClick={tambah} disabled={draft.trim() === ''}>
           <Plus className="size-4" strokeWidth={2} />
-          Tambah
+          {t('common.tambah')}
         </Button>
         <Button
           variant="ghost"
           onClick={() => update({ alasan: [...DEFAULT_ALASAN] })}
           disabled={alasan.length === DEFAULT_ALASAN.length}
         >
-          Kembalikan bawaan
+          {t('alasan.kembalikan')}
         </Button>
       </div>
-    </section>
+    </SettingsSection>
   )
 }

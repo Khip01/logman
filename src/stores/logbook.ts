@@ -19,11 +19,26 @@ interface LogbookState {
   activeMonthKey: string | null
   /** Minggu yang sedang dibuka, id minggu (tanggal Senin). */
   activeWeekId: string | null
+  /**
+   * Permintaan memfokuskan satu baris tanggal, dipicu tombol di banner validasi.
+   * `token` naik setiap permintaan supaya klik berulang pada tanggal yang sama tetap
+   * memicu ulang animasi dan fokus (AGENTS.md bagian 11.3).
+   */
+  focusRequest: FocusRequest | null
   setMonths: (months: MonthGroup[]) => void
   setActiveMonth: (key: string | null) => void
   setActiveWeek: (id: string | null) => void
   /** Memilih minggu sekaligus menetapkan bulan konteksnya. */
   selectWeek: (weekId: string, monthKey: string) => void
+  /** Meminta baris `date` difokuskan dan dianimasikan kilat. */
+  requestFocus: (date: string) => void
+  /** Membersihkan permintaan fokus setelah dipakai, agar tidak berulang. */
+  clearFocus: () => void
+}
+
+export interface FocusRequest {
+  date: string
+  token: number
 }
 
 /** Minggu pertama dari sebuah grup bulan, atau null bila kosong. */
@@ -44,6 +59,7 @@ export const useLogbookStore = create<LogbookState>((set, get) => ({
   months: [],
   activeMonthKey: null,
   activeWeekId: null,
+  focusRequest: null,
 
   setMonths: (months) => set({ months }),
 
@@ -70,4 +86,11 @@ export const useLogbookStore = create<LogbookState>((set, get) => ({
     }
     set({ activeWeekId: weekId })
   },
+
+  requestFocus: (date) =>
+    set((state) => ({
+      focusRequest: { date, token: (state.focusRequest?.token ?? 0) + 1 },
+    })),
+
+  clearFocus: () => set({ focusRequest: null }),
 }))

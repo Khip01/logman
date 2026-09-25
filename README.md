@@ -1,95 +1,101 @@
 # logman
 
-Generator Log Book Magang. Aplikasi web lokal untuk menyusun kegiatan magang harian,
-mengeditnya langsung seperti dokumen, lalu mengekspor PDF siap cetak dan tanda tangan.
+An internship Log Book generator. A local web app for writing daily internship
+activities, editing them in place like a document, and exporting a print-ready PDF
+that is ready to sign.
 
-## Menjalankan
+## Requirements
+
+- Node.js 20 or newer
+- pnpm 9 or newer
+- Chromium for PDF export (installed automatically by Playwright)
+
+## Getting started
 
 ```bash
 ./run
 ```
 
-Perintah di atas memasang dependency bila belum ada, lalu menjalankan web dan API
-sekaligus.
+The command installs dependencies when needed, then starts the web app and the API
+together.
 
 - Web: http://127.0.0.1:5199
 - API: http://127.0.0.1:5198
 
-Perintah lain lewat argumen yang sama:
+Other tasks use the same entry point:
 
 ```bash
-./run build       # typecheck + build produksi
-./run lint        # lint dan format check (Biome)
-./run typecheck   # cek tipe TypeScript
-./run test        # unit test (Vitest: domain + komponen + server)
-./run test:e2e    # end to end test (Playwright, butuh browser Chromium)
-./run analyze     # build + cek anggaran ukuran bundle
+./run build       # typecheck + production build
+./run lint        # lint and format check (Biome)
+./run typecheck   # TypeScript type check
+./run test        # unit tests (Vitest: domain + components + server)
+./run test:e2e    # end-to-end tests (Playwright, needs Chromium)
+./run analyze     # build + bundle budget check
 ```
 
-Skrip bertahap agar debugging cepat:
+Focused scripts for faster debugging:
 
 ```bash
-./run test:domain        # hanya logika domain
-./run test:server        # hanya server
-./run test:e2e:editor    # satu spec e2e, misal editor
-./run audit:motion       # aturan animasi
-./run audit:a11y         # aksesibilitas semua halaman x semua tema
+./run test:domain        # domain logic only
+./run test:server        # server only
+./run test:e2e:editor    # a single e2e spec, for example editor
+./run audit:motion       # animation rules
+./run audit:a11y         # accessibility across every page and theme
 ```
 
-Catatan: `./run <argumen>` meneruskan ke skrip `pnpm` dengan nama yang sama,
-jadi `./run test:e2e:seed` dan `./run test:e2e:perf` juga berlaku.
+`./run <argument>` forwards to the `pnpm` script of the same name, so
+`./run test:e2e:seed` and `./run test:e2e:perf` work as well.
 
-## Halaman
+## Pages
 
-- `/` Log Book: navigasi bulan dan minggu, editor langsung per sel, penyesuaian nama
-  penanda tangan per minggu (mahasiswa, dosen, pembimbing), dan pengaturan skala
-  tampilan konten.
-- `/settings` Pengaturan: profil, rentang magang, jam default (termasuk format jam 12
-  atau 24), daftar pembimbing lapangan, alasan, tema, ukuran kertas, font dokumen
-  (Times New Roman atau Arial), skala konten, folder ekspor lewat dialog folder, tier
-  animasi, dan tampilan dev.
-- `/export` Ekspor PDF per bulan. Ekspor ditolak selama ada hari yang belum
-  lengkap (belum ada kegiatan maupun alasan).
-- `/dev/components`, `/dev/motion`, `/dev/perf`, `/dev/seed`: halaman dev untuk
-  pengujian dan pengukuran. Menu dan halaman ini hanya bisa dibuka bila opsi
-  "Tampilkan menu Dev" di Pengaturan menyala (default mati).
+- `/` Log Book: month and week navigation, in-place per-cell editing, per-week
+  signatory names (student, supervising lecturer, field supervisor), and a content
+  display scale.
+- `/settings` Settings: profile, internship period, default hours (including a 12 or
+  24 hour clock), field supervisor list, empty-day reasons, theme, paper size,
+  document font (Times New Roman or Arial), content scale, export folder via a native
+  folder dialog, motion tier, interface language, and the dev UI toggle. A search box at
+  the top matches both section names and the text inside each section, highlights the
+  matched word, and jumps to the section you pick.
+- `/export` Monthly PDF export. Export is refused while any day is incomplete, meaning
+  it has neither an activity nor a reason.
+- `/dev/components`, `/dev/motion`, `/dev/perf`, `/dev/seed`: development pages for
+  testing and measurement. The menu and these pages are reachable only when "Show Dev
+  menu" is enabled in Settings (off by default).
 
-## Gate kualitas
+## Language
 
-Sebelum menandai pekerjaan selesai, semua gate ini lulus:
+The interface ships in Indonesian and English. Switch it under Settings, then
+Language. The default is Indonesian, and the choice is stored in the configuration.
 
-- Lint dan typecheck tanpa error.
-- Unit test Vitest lulus.
-- E2E Playwright lulus, termasuk snapshot visual.
-- Audit animasi lulus.
-- Audit aksesibilitas: 0 pelanggaran serious/critical.
-- Anggaran bundle: JS awal di bawah 200 KB gzip.
-- Long task saat mengetik di bawah ambang 50 ms.
+Printed documents and exported PDFs always stay in Indonesian. The letterhead, table
+headers, day and month names, and signature block follow the campus template, so they
+are deliberately not translated.
 
 ## Data
 
-Data runtime tersimpan lokal dan tidak masuk git:
+Runtime data is stored locally and is not tracked by git:
 
-- `data/config.json`: profil, rentang magang, jam default, format jam, font dokumen,
-  skala konten, daftar pembimbing lapangan, alasan, tema, ukuran kertas, tier animasi,
-  tampilan dev.
-- `data/logs.json`: entri kegiatan harian dan nama penanda tangan per minggu.
-- `data/backups/`: rotasi backup sebelum penulisan.
-- `data/logs/`: log aplikasi JSON lines dengan `traceId`.
-- `data/exports/`: hasil PDF bila `folderExport` dikosongkan.
+- `data/config.json`: profile, internship period, default hours, time format,
+  document font, content scale, field supervisor list, reasons, theme, paper size,
+  motion tier, interface language, dev UI toggle.
+- `data/logs.json`: daily activity entries and per-week signatory names.
+- `data/backups/`: rotating backup taken before a write.
+- `data/logs/`: application logs as JSON lines with a `traceId`.
+- `data/exports/`: generated PDFs when `folderExport` is empty.
 
-## Dokumentasi
+## Documentation
 
-Seluruh aturan, keputusan desain, dan konvensi proyek ada di [AGENTS.md](./AGENTS.md).
-Baca dokumen itu sebelum mengubah apa pun. Status pengerjaan terkini ada di bagian 20
-dokumen tersebut.
+Every rule, design decision, and convention lives in [AGENTS.md](./AGENTS.md). Read it
+before changing anything. Current progress is tracked in section 20 of that document.
 
-## Rilis
+## Releases
 
-Rilis dibuat otomatis oleh workflow GitHub saat ada tag (`v*` atau pola angka):
-workflow build produksi, memverifikasi anggaran bundle, lalu mengunggah arsip
-`logman-<tag>.tar.gz` ke halaman GitHub Release.
+Releases are cut from git tags. The workflow builds the production bundle and verifies
+the bundle budget, then publishes a GitHub Release with auto-generated notes. Desktop
+shortcuts are provided under `packaging/` for users who prefer a launcher over the
+terminal.
 
-## Lisensi
+## License
 
-Apache 2.0. Lihat [LICENSE](./LICENSE).
+Apache License 2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).

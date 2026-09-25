@@ -11,6 +11,9 @@ import { useThemeEffect } from '@/app/useThemeEffect'
 import { FeatureErrorBoundary } from '@/components/shared/FeatureErrorBoundary'
 import { Shell } from '@/components/shared/Shell'
 import { Spinner } from '@/components/ui/Spinner'
+import { pageTitleFor } from '@/lib/domain/pageTitle'
+import { LocaleContext, useT } from '@/lib/i18n'
+import type { MessageKey } from '@/lib/i18n/messages/id'
 import { AppProviders } from '@/motion/AppProviders'
 import { useConfigStore } from '@/stores/config'
 
@@ -43,24 +46,30 @@ const DevSeedPage = lazy(() =>
 
 interface RouteDef {
   path: string
-  breadcrumb: string[]
+  /** Key pesan breadcrumb, bukan teks siap pakai, agar ikut bahasa aktif. */
+  breadcrumb: MessageKey[]
   element: React.ReactNode
 }
 
 const ROUTES: RouteDef[] = [
-  { path: '/', breadcrumb: ['Log Book'], element: <LogbookPage /> },
-  { path: '/settings', breadcrumb: ['Pengaturan'], element: <SettingsPage /> },
-  { path: '/export', breadcrumb: ['Ekspor'], element: <ExportPage /> },
-  { path: '/dev/components', breadcrumb: ['Dev', 'Komponen'], element: <DevComponentsPage /> },
-  { path: '/dev/motion', breadcrumb: ['Dev', 'Motion'], element: <DevMotionPage /> },
-  { path: '/dev/perf', breadcrumb: ['Dev', 'Performa'], element: <DevPerfPage /> },
-  { path: '/dev/seed', breadcrumb: ['Dev', 'Seed'], element: <DevSeedPage /> },
+  { path: '/', breadcrumb: ['nav.logbook'], element: <LogbookPage /> },
+  { path: '/settings', breadcrumb: ['nav.pengaturan'], element: <SettingsPage /> },
+  { path: '/export', breadcrumb: ['nav.ekspor'], element: <ExportPage /> },
+  {
+    path: '/dev/components',
+    breadcrumb: ['nav.dev', 'nav.dev.komponen'],
+    element: <DevComponentsPage />,
+  },
+  { path: '/dev/motion', breadcrumb: ['nav.dev', 'nav.dev.motion'], element: <DevMotionPage /> },
+  { path: '/dev/perf', breadcrumb: ['nav.dev', 'nav.dev.performa'], element: <DevPerfPage /> },
+  { path: '/dev/seed', breadcrumb: ['nav.dev', 'nav.dev.seed'], element: <DevSeedPage /> },
 ]
 
 function NotFound() {
+  const t = useT()
   return (
     <div className="mx-auto max-w-lg px-6 py-24 text-center">
-      <h1 className="text-[17px] font-semibold text-text-primary">Halaman tidak ditemukan</h1>
+      <h1 className="text-[17px] font-semibold text-text-primary">{t('error.tidakDitemukan')}</h1>
     </div>
   )
 }
@@ -83,6 +92,13 @@ export function App() {
   const path = useRoute()
   const configLoaded = useConfigStore((s) => s.loaded)
   const tampilkanDevUi = useConfigStore((s) => s.config.tampilkanDevUi)
+  const bahasa = useConfigStore((s) => s.config.bahasa)
+
+  // Judul tab dan atribut `lang` mengikuti halaman serta bahasa aktif (AGENTS.md bagian 21).
+  useEffect(() => {
+    document.title = pageTitleFor(path, bahasa)
+    document.documentElement.lang = bahasa
+  }, [path, bahasa])
 
   // Route pengembangan diblokir bila toggle dev mati (AGENTS.md bagian 11.4): URL
   // dikembalikan ke Log Book, dan selama transisi halaman Log Book yang ditampilkan.
@@ -95,17 +111,18 @@ export function App() {
   }, [blockedDev])
 
   const match = blockedDev ? ROUTES[0] : ROUTES.find((route) => route.path === path)
-  const breadcrumb = match?.breadcrumb ?? ['Tidak ditemukan']
   const element = match?.element ?? <NotFound />
   const boundaryName = match?.path ?? 'not-found'
 
   return (
-    <AppProviders>
-      <Shell activePath={match?.path ?? path} breadcrumb={breadcrumb}>
-        <FeatureErrorBoundary key={boundaryName} name={boundaryName}>
-          <Suspense fallback={<RouteFallback />}>{element}</Suspense>
-        </FeatureErrorBoundary>
-      </Shell>
-    </AppProviders>
+    <LocaleContext.Provider value={bahasa}>
+      <AppProviders>
+        <Shell activePath={match?.path ?? path} breadcrumbKeys={match?.breadcrumb ?? null}>
+          <FeatureErrorBoundary key={boundaryName} name={boundaryName}>
+            <Suspense fallback={<RouteFallback />}>{element}</Suspense>
+          </FeatureErrorBoundary>
+        </Shell>
+      </AppProviders>
+    </LocaleContext.Provider>
   )
 }

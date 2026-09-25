@@ -1,5 +1,6 @@
 import { Calendar } from 'lucide-react'
 import { type InputHTMLAttributes, type Ref, useRef } from 'react'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { inputVariants } from './Input'
 
@@ -18,6 +19,7 @@ export interface DateInputProps
  * `showPicker` bila browser mendukung.
  */
 export function DateInput({ className, ref, ...props }: DateInputProps) {
+  const t = useT()
   const innerRef = useRef<HTMLInputElement | null>(null)
 
   function setRef(node: HTMLInputElement | null) {
@@ -49,7 +51,7 @@ export function DateInput({ className, ref, ...props }: DateInputProps) {
       />
       <button
         type="button"
-        aria-label="Buka pemilih tanggal"
+        aria-label={t('editor.bukaPemilihTanggal')}
         onClick={openPicker}
         className="theme-t absolute inset-y-0 right-0 grid w-9 place-items-center text-text-muted hover:text-text-primary"
       >

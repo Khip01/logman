@@ -1,18 +1,20 @@
-import { Clock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { defaultJamDefault } from '@/lib/domain/schema'
 import type { DayOfWeek, JamDefault } from '@/lib/domain/types'
+import { HARI, useLocale, useT } from '@/lib/i18n'
 import { useConfigStore } from '@/stores/config'
 import { JamInput } from './JamInput'
+import { SettingsSection } from './SettingsSection'
 
-const HARI_LABEL: Record<DayOfWeek, string> = {
-  senin: 'Senin',
-  selasa: 'Selasa',
-  rabu: 'Rabu',
-  kamis: 'Kamis',
-  jumat: 'Jumat',
-  sabtu: 'Sabtu',
+/** Indeks hari pada tabel HARI locale, dipakai untuk label hari yang ikut bahasa aktif. */
+const HARI_INDEX: Record<DayOfWeek, number> = {
+  senin: 1,
+  selasa: 2,
+  rabu: 3,
+  kamis: 4,
+  jumat: 5,
+  sabtu: 6,
 }
 
 /** Urutan tampilan Senin sampai Sabtu (AGENTS.md bagian 5.1). */
@@ -26,6 +28,8 @@ const HARI_ORDER: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 's
  * dimasukkan dan ditampilkan di UI. Dokumen cetak dan PDF tetap 24 jam format titik.
  */
 export function JamDefaultSection() {
+  const t = useT()
+  const locale = useLocale()
   const jamDefault = useConfigStore((s) => s.config.jamDefault)
   const formatJam = useConfigStore((s) => s.config.formatJam)
   const update = useConfigStore((s) => s.update)
@@ -39,21 +43,15 @@ export function JamDefaultSection() {
   }
 
   return (
-    <section className="mb-10" data-testid="section-jam-default">
-      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-        <Clock className="size-4" strokeWidth={1.75} />
-        Jam Default
-      </h2>
-      <p className="mb-3 text-[12px] text-text-muted">
-        Dipakai saat jam pada form dikosongkan. Nilai disimpan 24 jam format titik, misal 08.00.
-      </p>
+    <SettingsSection id="jam-default" title={t('settings.jamDefault')}>
+      <p className="mb-3 text-[12px] text-text-muted">{t('settings.jamDefaultDeskripsi')}</p>
 
       <div className="mb-4 max-w-xs">
         <SegmentedControl
-          aria-label="Format jam"
+          aria-label={t('settings.formatJam')}
           options={[
-            { value: '24', label: '24 Jam' },
-            { value: '12', label: '12 Jam (AM/PM)' },
+            { value: '24', label: t('settings.format24') },
+            { value: '12', label: t('settings.format12') },
           ]}
           value={formatJam}
           onValueChange={(value) => update({ formatJam: value === '12' ? '12' : '24' })}
@@ -62,24 +60,32 @@ export function JamDefaultSection() {
 
       <div className="border border-border-base">
         <div className="grid grid-cols-[6rem_1fr_1fr] gap-3 border-b border-border-base bg-bg-card px-3 py-2 text-[11px] uppercase tracking-wide text-text-dim">
-          <span>Hari</span>
-          <span>Jam masuk</span>
-          <span>Jam pulang</span>
+          <span>{t('settings.hari')}</span>
+          <span>{t('editor.jamMasuk')}</span>
+          <span>{t('editor.jamPulang')}</span>
         </div>
         {HARI_ORDER.map((hari) => (
           <div
             key={hari}
             className="grid grid-cols-[6rem_1fr_1fr] items-start gap-3 border-b border-border-base px-3 py-2 last:border-b-0"
           >
-            <span className="pt-2 text-[13px] text-text-main">{HARI_LABEL[hari]}</span>
+            <span className="pt-2 text-[13px] text-text-main">
+              {HARI[locale][HARI_INDEX[hari]]}
+            </span>
             <JamInput
-              label={`Jam masuk ${HARI_LABEL[hari]}`}
+              label={t('editor.jamMasukLabel', {
+                hari: HARI[locale][HARI_INDEX[hari]] ?? '',
+                tanggal: '',
+              })}
               value={jamDefault[hari].masuk}
               format={formatJam}
               onCommit={(value) => setJam(hari, 'masuk', value)}
             />
             <JamInput
-              label={`Jam pulang ${HARI_LABEL[hari]}`}
+              label={t('editor.jamPulangLabel', {
+                hari: HARI[locale][HARI_INDEX[hari]] ?? '',
+                tanggal: '',
+              })}
               value={jamDefault[hari].pulang}
               format={formatJam}
               onCommit={(value) => setJam(hari, 'pulang', value)}
@@ -94,9 +100,9 @@ export function JamDefaultSection() {
           size="sm"
           onClick={() => update({ jamDefault: defaultJamDefault() })}
         >
-          Kembalikan ke 08.00 sampai 16.00
+          {t('settings.resetJamDefault')}
         </Button>
       </div>
-    </section>
+    </SettingsSection>
   )
 }

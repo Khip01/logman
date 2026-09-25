@@ -1,5 +1,6 @@
 import { Check, Plus } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { Input } from './Input'
 
@@ -53,12 +54,15 @@ export function Combobox({
   onValueChange,
   onSelect,
   onInputBlur,
-  placeholder = 'Pilih atau ketik',
-  createLabel = (v) => `Gunakan "${v}"`,
+  placeholder,
+  createLabel,
   className,
   disabled,
   'aria-label': ariaLabel,
 }: ComboboxProps) {
+  const t = useT()
+  const resolvedPlaceholder = placeholder ?? t('common.pilihAtauKetik')
+  const resolvedCreateLabel = createLabel ?? ((v: string) => t('common.gunakan', { nilai: v }))
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -81,10 +85,10 @@ export function Combobox({
       label: option,
     }))
     if (canCreate) {
-      list.push({ kind: 'create', value: value.trim(), label: createLabel(value.trim()) })
+      list.push({ kind: 'create', value: value.trim(), label: resolvedCreateLabel(value.trim()) })
     }
     return list
-  }, [filtered, canCreate, value, createLabel])
+  }, [filtered, canCreate, value, resolvedCreateLabel])
 
   // Klik di luar menutup daftar. Didengarkan pada pointerdown agar tidak bertabrakan
   // dengan fokus input.
@@ -145,7 +149,7 @@ export function Combobox({
         ref={inputRef}
         value={value}
         disabled={disabled}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         role="combobox"
         aria-label={ariaLabel}
         aria-expanded={open}

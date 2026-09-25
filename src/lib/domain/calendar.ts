@@ -1,3 +1,4 @@
+import { BULAN_SHORT, type Locale } from '@/lib/i18n/locale'
 import {
   addDays,
   dayNameId,
@@ -121,7 +122,11 @@ export function mondaysInRange(mulai: string, selesai: string): string[] {
  * Nomor minggu dihitung berurutan di dalam grup, mulai 1. Karena minggu dalam satu
  * grup selalu berurutan, ini ekuivalen dengan "minggu pertama bulan itu adalah M1".
  */
-export function buildMonthGroups(mulai: string, selesai: string): MonthGroup[] {
+export function buildMonthGroups(
+  mulai: string,
+  selesai: string,
+  locale: Locale = 'id',
+): MonthGroup[] {
   if (!isIsoDate(mulai) || !isIsoDate(selesai) || mulai > selesai) {
     return []
   }
@@ -159,8 +164,8 @@ export function buildMonthGroups(mulai: string, selesai: string): MonthGroup[] {
 
     return {
       key,
-      label: monthLabel(key),
-      short: monthShort(key),
+      label: monthLabel(key, locale),
+      short: monthShort(key, locale),
       weeks,
     }
   })
@@ -213,6 +218,17 @@ export function findMonthOfWeek(months: MonthGroup[], weekId: string): MonthGrou
   return months.find((month) => month.weeks.some((week) => week.id === weekId)) ?? null
 }
 
+/**
+ * Mencari minggu yang memuat sebuah tanggal DI DALAM satu grup bulan.
+ *
+ * Dipakai banner validasi untuk melompat dari daftar hari belum lengkap ke minggu yang
+ * tepat. Pencarian dibatasi pada grup bulan, bukan seluruh rentang, karena satu tanggal
+ * bisa muncul di dua grup saat minggunya lintas bulan (AGENTS.md bagian 6).
+ */
+export function findWeekOfDate(month: MonthGroup, date: string): WeekEntry | null {
+  return month.weeks.find((week) => week.days.some((day) => day.date === date)) ?? null
+}
+
 /** Label alasan disabled untuk ditampilkan di UI. */
 export function disabledReasonText(reason: DisabledReason): string {
   if (reason === 'sebelum-magang') return 'Sebelum magang'
@@ -220,25 +236,16 @@ export function disabledReasonText(reason: DisabledReason): string {
   return 'Bulan lain'
 }
 
-/** Label rentang minggu untuk sidebar, misal "31 Agu - 5 Sep". */
-export function formatWeekRange(mondayIso: string): string {
+/**
+ * Label rentang minggu untuk sidebar, misal "31 Agu - 5 Sep" atau "31 Aug - 5 Sep".
+ *
+ * Memakai tabel nama bulan pendek dari modul locale, bukan daftar lokal, supaya bahasa
+ * baru tidak perlu menyentuh berkas ini (AGENTS.md bagian 21).
+ */
+export function formatWeekRange(mondayIso: string, locale: Locale = 'id'): string {
   const short = (iso: string) => {
     const [, m, d] = iso.split('-').map(Number)
-    const bulan = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Agu',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ]
-    return `${d} ${bulan[(m ?? 1) - 1]}`
+    return `${d} ${BULAN_SHORT[locale][(m ?? 1) - 1] ?? ''}`
   }
   return `${short(mondayIso)} - ${short(saturdayOf(mondayIso))}`
 }

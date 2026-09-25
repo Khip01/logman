@@ -1,3 +1,4 @@
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 
 interface TopHeaderProps {
@@ -9,6 +10,7 @@ interface TopHeaderProps {
  * dalam Sidebar sendiri, supaya tidak pernah tertutup oleh drawer yang terbuka.
  */
 export function TopHeader({ breadcrumb }: TopHeaderProps) {
+  const t = useT()
   return (
     <header
       className={cn(
@@ -17,7 +19,7 @@ export function TopHeader({ breadcrumb }: TopHeaderProps) {
       )}
       style={{ height: 'var(--header-height)' }}
     >
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[13px]">
+      <nav aria-label={t('nav.breadcrumb')} className="flex min-w-0 items-center gap-2 text-[13px]">
         {breadcrumb.map((part, index) => {
           const isLast = index === breadcrumb.length - 1
           const trail = breadcrumb.slice(0, index + 1).join('/')

@@ -14,6 +14,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { navigate } from '@/app/router'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover'
 import { formatWeekRange } from '@/lib/domain/calendar'
+import { useLocale, useT } from '@/lib/i18n'
+import type { MessageKey } from '@/lib/i18n/messages/id'
 import { cn } from '@/lib/utils/cn'
 import {
   listItemVariants,
@@ -27,15 +29,16 @@ import { useLogbookStore } from '@/stores/logbook'
 import { useUiStore } from '@/stores/ui'
 
 interface NavItem {
-  label: string
+  /** Key pesan, bukan teks siap pakai, supaya label ikut bahasa aktif. */
+  labelKey: MessageKey
   path: string
   icon: typeof BookOpen
 }
 
 const MAIN_NAV: NavItem[] = [
-  { label: 'Log Book', path: '/', icon: BookOpen },
-  { label: 'Pengaturan', path: '/settings', icon: Settings },
-  { label: 'Ekspor', path: '/export', icon: Download },
+  { labelKey: 'nav.logbook', path: '/', icon: BookOpen },
+  { labelKey: 'nav.pengaturan', path: '/settings', icon: Settings },
+  { labelKey: 'nav.ekspor', path: '/export', icon: Download },
 ]
 
 /**
@@ -43,16 +46,16 @@ const MAIN_NAV: NavItem[] = [
  * konsisten dengan daftar nav di drawer (AGENTS.md bagian 11.4).
  */
 const RAIL_ACTIONS: NavItem[] = [
-  { label: 'Log Book', path: '/', icon: BookOpen },
-  { label: 'Pengaturan', path: '/settings', icon: Settings },
-  { label: 'Ekspor', path: '/export', icon: Download },
+  { labelKey: 'nav.logbook', path: '/', icon: BookOpen },
+  { labelKey: 'nav.pengaturan', path: '/settings', icon: Settings },
+  { labelKey: 'nav.ekspor', path: '/export', icon: Download },
 ]
 
 const DEV_NAV: NavItem[] = [
-  { label: 'Komponen', path: '/dev/components', icon: Layers },
-  { label: 'Motion', path: '/dev/motion', icon: FlaskConical },
-  { label: 'Performa', path: '/dev/perf', icon: Gauge },
-  { label: 'Seed', path: '/dev/seed', icon: Sprout },
+  { labelKey: 'nav.dev.komponen', path: '/dev/components', icon: Layers },
+  { labelKey: 'nav.dev.motion', path: '/dev/motion', icon: FlaskConical },
+  { labelKey: 'nav.dev.performa', path: '/dev/perf', icon: Gauge },
+  { labelKey: 'nav.dev.seed', path: '/dev/seed', icon: Sprout },
 ]
 
 interface SidebarProps {
@@ -82,6 +85,8 @@ export function Sidebar({ activePath }: SidebarProps) {
   const activeWeekId = useLogbookStore((s) => s.activeWeekId)
   const selectWeek = useLogbookStore((s) => s.selectWeek)
   const tampilkanDevUi = useConfigStore((s) => s.config.tampilkanDevUi)
+  const t = useT()
+  const locale = useLocale()
   const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
 
   const openDrawer = useCallback(() => {
@@ -153,7 +158,7 @@ export function Sidebar({ activePath }: SidebarProps) {
             {/* Backdrop hanya pada viewport sempit, agar desktop tetap bisa diklik. */}
             <m.button
               type="button"
-              aria-label="Tutup sidebar"
+              aria-label={t('nav.tutupSidebar')}
               variants={overlayVariants}
               initial="hidden"
               animate="visible"
@@ -164,7 +169,7 @@ export function Sidebar({ activePath }: SidebarProps) {
 
             <m.aside
               data-testid="sidebar-drawer"
-              aria-label="Navigasi utama"
+              aria-label={t('nav.utama')}
               variants={sidebarVariants}
               initial="hidden"
               animate="visible"
@@ -186,7 +191,7 @@ export function Sidebar({ activePath }: SidebarProps) {
                 <button
                   type="button"
                   onClick={goToActiveWeek}
-                  aria-label="Ke Log Book"
+                  aria-label={t('nav.keLogbook')}
                   data-testid="sidebar-brand"
                   className="grid size-7 shrink-0 place-items-center bg-accent text-[13px] font-black text-accent-text"
                 >
@@ -216,7 +221,7 @@ export function Sidebar({ activePath }: SidebarProps) {
               >
                 <div className="sticky top-0 z-10 bg-bg-sidebar">
                   <p className="px-4 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-text-dim">
-                    Bulan
+                    {t('nav.bulan')}
                   </p>
                 </div>
 
@@ -276,7 +281,13 @@ export function Sidebar({ activePath }: SidebarProps) {
                               className="m-0 mb-1 list-none p-0 pl-4"
                             >
                               {month.weeks.map((week) => {
-                                const isActiveWeek = week.id === activeWeekId
+                                /*
+                                  Minggu lintas bulan muncul di DUA grup dengan id yang
+                                  sama. Jadi highlight WAJIB ikut bulan konteks, agar
+                                  hanya grup yang sedang dipakai yang menyala.
+                                */
+                                const isActiveWeek =
+                                  week.id === activeWeekId && month.key === activeMonthKey
                                 return (
                                   <li key={week.id} className="list-none">
                                     <button
@@ -292,7 +303,7 @@ export function Sidebar({ activePath }: SidebarProps) {
                                     >
                                       <span className="font-semibold">M{week.weekOfMonth}</span>
                                       <span className="truncate text-[11px]">
-                                        {formatWeekRange(week.startDate)}
+                                        {formatWeekRange(week.startDate, locale)}
                                       </span>
                                     </button>
                                   </li>
@@ -310,7 +321,7 @@ export function Sidebar({ activePath }: SidebarProps) {
               {tampilkanDevUi ? (
                 <nav className="shrink-0 border-t border-border-base p-2">
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-text-dim">
-                    Dev
+                    {t('nav.dev')}
                   </p>
                   {DEV_NAV.map((item) => (
                     <NavButton key={item.path} item={item} activePath={activePath} />
@@ -332,7 +343,7 @@ export function Sidebar({ activePath }: SidebarProps) {
       */}
       <nav
         data-testid="sidebar-rail"
-        aria-label="Navigasi ringkas"
+        aria-label={t('nav.ringkas')}
         className="theme-t no-print fixed top-0 left-0 z-30 flex flex-col border-r border-border-base bg-bg-sidebar bottom-[var(--statusbar-height)]"
         style={{ width: 'var(--sidebar-rail-width)' }}
       >
@@ -343,7 +354,7 @@ export function Sidebar({ activePath }: SidebarProps) {
           <button
             type="button"
             onClick={openDrawer}
-            aria-label="Buka sidebar"
+            aria-label={t('nav.bukaSidebar')}
             data-testid="sidebar-open-logo"
             className="theme-t grid size-7 place-items-center bg-accent text-[13px] font-black text-accent-text"
           >
@@ -351,8 +362,12 @@ export function Sidebar({ activePath }: SidebarProps) {
           </button>
         </div>
 
-        {/* Aksi cepat: Log Book, Pengaturan, dan Ekspor tetap tersedia saat drawer tertutup. */}
-        <div className="flex w-full shrink-0 flex-col items-center gap-1 py-2">
+        {/*
+          Aksi cepat: Log Book, Pengaturan, dan Ekspor tetap tersedia saat drawer tertutup.
+          Diberi border bawah agar terpisah jelas dari daftar bulan di bawahnya, sama
+          seperti pemisah antar bagian di drawer (AGENTS.md bagian 11.4).
+        */}
+        <div className="flex w-full shrink-0 flex-col items-center gap-1 border-b border-border-base py-2">
           {RAIL_ACTIONS.map((item) => (
             <RailIconButton key={item.path} item={item} activePath={activePath} />
           ))}
@@ -364,7 +379,7 @@ export function Sidebar({ activePath }: SidebarProps) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  aria-label={`Bulan ${month.label}`}
+                  aria-label={`${t('nav.bulan')} ${month.label}`}
                   aria-current={month.key === activeMonthKey ? 'true' : undefined}
                   className={cn(
                     'theme-t grid h-9 w-9 shrink-0 place-items-center border text-[11px] font-semibold',
@@ -382,7 +397,8 @@ export function Sidebar({ activePath }: SidebarProps) {
                 </p>
                 <ul className="m-0 max-h-72 list-none overflow-y-auto p-0">
                   {month.weeks.map((week) => {
-                    const isActiveWeek = week.id === activeWeekId
+                    // Sama seperti drawer: highlight ikut bulan konteks, bukan id saja.
+                    const isActiveWeek = week.id === activeWeekId && month.key === activeMonthKey
                     return (
                       <li key={week.id} className="list-none">
                         <button
@@ -398,7 +414,7 @@ export function Sidebar({ activePath }: SidebarProps) {
                         >
                           <span className="font-semibold">M{week.weekOfMonth}</span>
                           <span className="ml-2 text-[11px]">
-                            {formatWeekRange(week.startDate)}
+                            {formatWeekRange(week.startDate, locale)}
                           </span>
                         </button>
                       </li>
@@ -418,7 +434,7 @@ export function Sidebar({ activePath }: SidebarProps) {
         <m.button
           type="button"
           onClick={openDrawer}
-          aria-label="Buka sidebar lewat strip"
+          aria-label={t('nav.bukaSidebarStrip')}
           data-testid="sidebar-open-strip"
           whileHover={{ y: -2 }}
           transition={popTransition}
@@ -434,13 +450,14 @@ export function Sidebar({ activePath }: SidebarProps) {
 
 /** Tombol ikon 36x36 untuk rail, dengan keadaan aktif mengikuti path. */
 function RailIconButton({ item, activePath }: { item: NavItem; activePath: string }) {
+  const t = useT()
   const Icon = item.icon
   const isActive = activePath === item.path
   return (
     <button
       type="button"
       onClick={() => navigate(item.path)}
-      aria-label={item.label}
+      aria-label={t(item.labelKey)}
       data-testid={`rail-${item.path === '/' ? 'logbook' : item.path.slice(1)}`}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
@@ -473,11 +490,12 @@ function RailIconButton({ item, activePath }: { item: NavItem; activePath: strin
  * tata letak (AGENTS.md bagian 8.3.2).
  */
 function DrawerCollapseButton({ onClose }: { onClose: () => void }) {
+  const t = useT()
   return (
     <m.button
       type="button"
       onClick={onClose}
-      aria-label="Tutup sidebar lewat strip"
+      aria-label={t('nav.tutupSidebarStrip')}
       data-testid="sidebar-collapse-strip"
       layout
       transition={popTransition}
@@ -500,6 +518,7 @@ function DrawerCollapseButton({ onClose }: { onClose: () => void }) {
 }
 
 function NavButton({ item, activePath }: { item: NavItem; activePath: string }) {
+  const t = useT()
   const Icon = item.icon
   const isActive = activePath === item.path
   return (
@@ -514,7 +533,7 @@ function NavButton({ item, activePath }: { item: NavItem; activePath: string }) 
       )}
     >
       <Icon className="size-4 shrink-0" strokeWidth={1.75} />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">{t(item.labelKey)}</span>
     </button>
   )
 }

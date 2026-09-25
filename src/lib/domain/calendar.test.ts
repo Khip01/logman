@@ -8,6 +8,7 @@ import {
   disabledReasonText,
   findMonthOfWeek,
   findWeek,
+  findWeekOfDate,
   formatWeekRange,
   isDayActive,
   mondaysInRange,
@@ -15,6 +16,7 @@ import {
   pickInitialWeekId,
   weekDates,
 } from './calendar'
+import type { MonthGroup } from './types'
 
 describe('dayOfWeekKey', () => {
   it('memetakan hari kerja', () => {
@@ -286,6 +288,36 @@ describe('findWeek dan findMonthOfWeek', () => {
 
   it('menemukan grup bulan dari sebuah minggu', () => {
     expect(findMonthOfWeek(groups, '2026-09-21')?.key).toBe('2026-09')
+  })
+})
+
+describe('findWeekOfDate', () => {
+  const groups = buildMonthGroups('2026-08-01', '2026-09-30')
+
+  /** Mengambil grup bulan, melempar bila tidak ada, agar tipe sempit tanpa assertion. */
+  function groupOf(key: string): MonthGroup {
+    const found = groups.find((g) => g.key === key)
+    if (!found) throw new Error(`Grup bulan ${key} tidak ditemukan`)
+    return found
+  }
+
+  const agustus = groupOf('2026-08')
+  const september = groupOf('2026-09')
+
+  it('menemukan minggu dari tanggal biasa', () => {
+    expect(findWeekOfDate(agustus, '2026-08-12')?.startDate).toBe('2026-08-10')
+  })
+
+  it('menemukan minggu lintas bulan dari tanggal milik bulan itu', () => {
+    // 31 Agustus ada di minggu 31 Agu - 5 Sep, yang muncul di grup Agustus.
+    expect(findWeekOfDate(agustus, '2026-08-31')?.startDate).toBe('2026-08-31')
+    // 1 September ada di minggu yang SAMA, tetapi di grup September.
+    expect(findWeekOfDate(september, '2026-09-01')?.startDate).toBe('2026-08-31')
+  })
+
+  it('mengembalikan null bila tanggal tidak ada di grup itu', () => {
+    expect(findWeekOfDate(agustus, '2026-09-15')).toBeNull()
+    expect(findWeekOfDate(september, '2026-08-12')).toBeNull()
   })
 })
 

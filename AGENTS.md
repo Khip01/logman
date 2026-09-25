@@ -157,6 +157,11 @@ Struktur adalah peta navigasi agen. Jangan menambah folder tingkat atas tanpa pe
 logman/
 ├── AGENTS.md            # dokumen ini
 ├── run                  # ./run -> jalankan dev (Vite + server Hono)
+├── run.cmd              # launcher Windows
+├── run.ps1              # launcher PowerShell
+├── LICENSE, NOTICE      # lisensi Apache-2.0 dan atribusi
+├── CHANGELOG.md         # riwayat rilis, bahasa Inggris
+├── packaging/           # pintu masuk desktop: .desktop, .bat, .vbs, .command
 ├── package.json
 ├── biome.json
 ├── tsconfig.json
@@ -176,11 +181,12 @@ logman/
 │   ├── features/        # per fitur: UI + hook + logikanya sendiri
 │   │   ├── logbook/
 │   │   ├── editor/
-│   │   ├── settings/
+│   │   ├── settings/    # termasuk pencarian menu (bagian 22)
 │   │   └── export/
 │   ├── motion/          # layer preset animasi terregistrasi
 │   ├── lib/
 │   │   ├── domain/      # logika murni: tanggal, kepemilikan bulan, validasi
+│   │   ├── i18n/        # katalog pesan, locale, mesin terjemahan (bagian 21)
 │   │   ├── repo/        # LogRepository + HttpLogRepository + InMemoryLogRepository
 │   │   ├── log/         # logger terstruktur dengan traceId
 │   │   └── utils/       # helper umum
@@ -198,7 +204,8 @@ logman/
 ├── e2e/                 # Playwright: spec, snapshot, fixture
 ├── scripts/             # audit animasi saat build, utilitas
 ├── public/              # aset statis (logo letterhead, favicon)
-└── dev/                 # halaman dev: /dev/components, /dev/motion, /dev/perf
+├── dev/                 # halaman dev: /dev/components, /dev/motion, /dev/perf
+└── dist/                # hasil build produksi (gitignored)
 ```
 
 Aturan penempatan (jangan dilanggar):
@@ -241,6 +248,7 @@ Aturan penempatan (jangan dilanggar):
   "formatJam": "24",
   "fontDokumen": "times",
   "contentScale": 1,
+  "bahasa": "id",
   "tampilkanDevUi": false,
   "dosenPembimbing": "string",
   "pembimbingLapangan": ["string", "..."],
@@ -264,6 +272,9 @@ Aturan penempatan (jangan dilanggar):
 - `contentScale` mengatur skala ukuran konten Log Book di LAYAR, nilai bawaan 1 dengan
   preset `0.9`, `1`, `1.15`, dan `1.3`. Hanya memengaruhi tampilan layar; dokumen cetak
   dan PDF selalu 12 pt sesuai template resmi.
+- `bahasa` mengatur bahasa antarmuka, nilai `id` atau `en` dengan default `id`. Hanya
+  memengaruhi teks antarmuka. Dokumen cetak dan PDF SELALU bahasa Indonesia karena
+  mengikuti template kampus (bagian 21).
 - `folderExport` kosong berarti ekspor ditulis ke folder default `data/exports` di dalam
   project (tercakup `.gitignore` lewat `data/`).
 - `tampilkanDevUi` default `false`. Bila mati, menu Dev di sidebar disembunyikan DAN
@@ -412,6 +423,12 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
   API, bukan elemen DOM hidup, dan hanya berjalan saat tier mengizinkan. Semua properti
   lain tetap tunduk pada aturan di atas. Implementasi: `src/lib/theme/themeTransition.ts`.
 
+CATATAN PENTING soal efek border dan kilau (bagian 22): DILARANG menganimasikan
+`border-color`, `border-width`, `background-position`, `box-shadow`, maupun `clip-path`
+untuk membuat efek ini. Semuanya dibuat dari elemen berukuran TETAP yang hanya
+dianimasikan `transform` dan `opacity`. Pendinginan border memakai `box-shadow` yang
+STATIS (nilai tidak berubah), sesuai aturan "box-shadow besar hanya statis".
+
 ### 8.3 Layer preset animasi
 
 - Semua animasi hidup di `src/motion/` sebagai preset terregistrasi.
@@ -423,6 +440,13 @@ PENGECUALIAN SEMPIT yang didokumentasikan (jangan diperluas tanpa persetujuan):
   secara eksplisit. Jangan hanya memasang `variants` lalu mengandalkan propagasi dari
   induk, karena elemen yang dipasang ulang (misalnya `key` berubah) akan langsung
   tampil pada keadaan akhir tanpa animasi.
+- Preset yang tersedia: `overlayVariants`, `sidebarVariants`, `staggerListVariants`,
+  `listItemVariants`, `pageVariants`, `pulseVariants`, `buildTierPreviewVariants`
+  (pratinjau tier di Settings), `buildRowFlashVariants` (kilatan baris dari banner
+  validasi, bagian 11.3), serta `buildSectionGlintLayerVariants`,
+  `buildSectionShineVariants`, dan `buildSectionBorderVariants` (kilau seksi Pengaturan,
+  bagian 22). Pasangan `rowFlashDurationSeconds` dan `sectionGlintDurationSeconds` memberi
+  lama animasi yang dipakai bersama oleh varian dan oleh pemanggilnya.
 
 ### 8.3.1 Jebakan `AnimatePresence initial={false}` (WAJIB DIINGAT)
 
@@ -489,6 +513,12 @@ dipertahankan pada level PROP:
   DILARANG aksen biru atau warna merek pihak ketiga. Tema boleh terinspirasi suasana
   Google Docs atau Microsoft Word, tetapi aksen tetap milik kita.
 - Warna status tetap: hijau (sukses), kuning (peringatan), merah (gagal).
+- Token kilau seksi (`--glint-shine`, `--glint-glow`, dan gradien bersama
+  `--glint-fill` yang dibangun dari `--glint-shine`) juga tinggal di `tokens.css` dan
+  diatur PER TEMA, supaya kilau terasa menyatu dengan suasana temanya: tema gelap memakai
+  kilau terang, tema terang memakai kilau gelap yang lembut, dan tema bernuansa (pastel,
+  tulang, Google Docs, Word) memakai kilau yang mengikuti warna aksennya. Tetap monokrom,
+  tidak ada warna merek pihak ketiga (bagian 22).
 - Ganti tema WAJIB beranimasi halus. Urutan penerapan (implementasi:
   `src/lib/theme/themeTransition.ts`):
   1. Tema diterapkan di dalam callback View Transitions, agar snapshot lama masih
@@ -627,6 +657,19 @@ Fakta terverifikasi dari template:
 - Khusus Sakit dan Izin: jam masuk dan jam pulang ditampilkan sebagai strip (bukan angka),
   dan kolom Kegiatan diisi alasan tersebut.
 - Banner validasi di atas tabel menampilkan daftar hari yang belum lengkap sebelum ekspor.
+  Judulnya menyebut jumlah hari, dan banner sukses menyebut bulan aktif.
+- Setiap hari pada banner adalah tombol yang dapat ditekan. Menekannya memindahkan user
+  ke minggu hari itu, memberi kilatan pada barisnya, lalu memfokuskan field "Ketik
+  kegiatan". Jadi user bisa langsung mengetik tanpa klik tambahan.
+- Kilatan baris HANYA memakai `opacity` (bagian 8.2): `border-width` dan `box-shadow`
+  DILARANG dianimasikan, dan baris tabel TIDAK digeser agar tidak menimpa baris tetangga.
+  Kadar kilatan mengikuti tier animasi lewat `flashWaves` di `MOTION_TIER_PROFILE`
+  (penuh 3 gelombang, seimbang 2, minimal 1, mati tanpa kilatan). Fokus tetap terjadi di
+  semua tier, termasuk `mati`.
+- Permintaan fokus disimpan sebagai `focusRequest` (`{ date, token }`) di store logbook.
+  `token` naik setiap permintaan supaya klik berulang pada hari yang sama tetap memutar
+  ulang animasi dan memfokuskan ulang. Permintaan dibersihkan sendiri setelah kilatan
+  selesai, agar baris tidak terfokus lagi saat user berpindah minggu dan kembali.
 - Ekspor DITOLAK selama masih ada hari yang belum lengkap: server membalas 422 dengan
   daftar tanggalnya, dan tombol Ekspor di halaman Ekspor dinonaktifkan. Ekspor baru
   jalan setiap hari terisi kegiatan atau punya alasan.
@@ -640,9 +683,15 @@ Fakta terverifikasi dari template:
   di bawahnya, lalu daftar tombol bulan yang dapat digulir, dan TERAKHIR tombol buka
   yang tingginya mengisi seluruh sisa ruang sampai dasar rail. Area klik tombol buka
   sengaja sangat besar supaya pointer tidak perlu presisi.
+- Kelompok ikon aksi cepat di rail WAJIB punya `border-b border-border-base`, sebagai
+  pemisah terhadap daftar bulan di bawahnya. Ini memasangkan pemisah antar bagian yang
+  sudah ada di drawer, supaya keduanya konsisten.
 - Klik ikon bulan di rail membuka popover berisi minggu bulan itu (M1, M2, ...). Bulan
   aktif di rail ditandai `aria-current`, dan minggu yang sedang dibuka juga ditandai,
   sehingga user tidak perlu menebak.
+- HIGHLIGHT MINGGU AKTIF WAJIB memakai bulan konteks: `week.id === activeWeekId` DAN
+  `month.key === activeMonthKey`. Minggu lintas bulan muncul di dua grup dengan id yang
+  sama, jadi tanpa syarat bulan konteks keduanya ikut menyala, dan itu salah.
 - Di drawer, menekan item bulan HANYA membuka atau menutup daftar minggunya
   (`aria-expanded`). Menekan item bulan TIDAK memilih bulan. Bulan yang dipakai
   mengikuti minggu yang dipilih user, jadi tidak ada dua sumber kebenaran.
@@ -675,6 +724,18 @@ Fakta terverifikasi dari template:
   tempatnya.
 - Membuka sidebar SELALU membuka bulan yang sedang aktif. Jadi sidebar selalu fokus ke
   bulan dan minggu yang sedang dilihat user, bukan ke keadaan sebelum refresh.
+- POSISI SCROLL DIINGAT PER HALAMAN selama sesi. Kontainer scroll aplikasi
+  (`[data-testid="app-main"]`) tidak pernah diganti saat berpindah halaman, jadi tanpa
+  pengelolaan posisi halaman lama terbawa ke halaman baru (halaman pendek tampak mentok
+  bawah, halaman panjang tampak di tengah). Aturan:
+  - Posisi disimpan saat path berubah, dan dipulihkan sebelum paint di halaman tujuan.
+  - Halaman yang belum pernah dikunjungi SELALU mulai dari atas (default 0).
+  - Ingatan hanya di memori sesi, BUKAN `sessionStorage`. Refresh atau tab baru mulai
+    dari atas.
+  - Berganti minggu atau bulan di Log Book (path tetap `/`) TIDAK mengubah posisi.
+  - Implementasi: `src/lib/utils/scrollMemory.ts` dipakai `Shell.tsx` lewat
+    `ScrollRestore`. DILARANG memakai scroll listener, karena itu menambah biaya pada
+    setiap frame gulir; penulisan cukup sekali per navigasi (bagian 13).
 - PENANDA BULAN AKTIF (`data-active`) mengikuti BULAN DARI MINGGU YANG SEDANG DIPILIH,
   bukan status buka/tutup. Tepat SATU bulan ditandai, dan penanda itu tetap ada walau
   bulannya tertutup maupun bulan lain sedang dibuka. Penanda hanya berpindah saat user
@@ -766,6 +827,10 @@ Teknik wajib:
 - Catatan penting: kode baru yang ditambahkan ke bundle awal harus dipertimbangkan
   dampaknya. Halaman dev pernah tidak sengaja menarik primitif ke bundle awal dan
   menaikkannya ke 161 KB gzip. Code splitting per route adalah pengaman standar.
+- Ingatan posisi scroll per halaman TIDAK memakai scroll listener, dan itu disengaja.
+  Listener akan berjalan pada setiap frame gulir; sebaliknya, penulisan posisi cukup
+  sekali per navigasi di dalam `useLayoutEffect` (bagian 11.4). Jangan menggantinya
+  dengan pendekatan berbasis listener.
 
 Yang TIDAK dijadikan gate CI (jujur soal keterbatasan):
 - FPS dan smoothness nyata pada perangkat spesifik. Runner CI tidak punya GPU yang
@@ -946,7 +1011,10 @@ Catatan CI:
 
 ### `release.yml` (tag `v*`)
 
-- Build produksi, lalu GitHub Release berisi artifact build.
+- Build produksi, verifikasi anggaran bundle, lalu GitHub Release dengan catatan rilis
+  otomatis (`generate_release_notes`).
+- TIDAK ada arsip tar.gz. Distribusi memakai tag git plus pintasan desktop di
+  `packaging/`, karena arsip hanya berisi `dist/` yang tidak bisa dijalankan sendiri.
 
 ---
 
@@ -994,6 +1062,18 @@ Catatan CI:
     konten, sidebar dengan tombol buka/tutup kembar di dasar rail dan drawer, label
     Bulan sticky, fokus otomatis ke bulan aktif, pemilih folder ekspor lewat dialog
     native dengan default `data/exports`, dan versi aplikasi di status bar.
+14. Fase 13 (di luar roadmap): perbaikan highlight minggu lintas bulan di sidebar, dan
+    banner hari belum diisi yang dapat diklik dengan kilatan baris sesuai tier animasi
+    serta fokus otomatis ke field kegiatan.
+15. Fase 14 (di luar roadmap): ingatan posisi scroll per halaman selama sesi, sehingga
+    berpindah halaman tidak lagi mewarisi posisi halaman sebelumnya.
+16. Fase 15 (di luar roadmap): lisensi, NOTICE, CHANGELOG, README bahasa Inggris,
+    launcher Windows, pintasan desktop, judul halaman, dan release tanpa arsip.
+17. Fase 16 (di luar roadmap): bahasa antarmuka ID dan EN dengan dokumen cetak yang
+    selalu berbahasa Indonesia (bagian 21).
+18. Fase 17 (di luar roadmap): pencarian menu Pengaturan dengan saran dua lapis, sorotan
+    kata, dan lompatan ke seksi tujuan (bagian 22).
+
 
 ---
 
@@ -1006,6 +1086,10 @@ Catatan CI:
 - [ ] Domain logic murni dan ada unit test-nya.
 - [ ] Anggaran performa masih terpenuhi.
 - [ ] Dokumen ini diperbarui bila perilaku berubah.
+- [ ] Semua teks antarmuka baru memakai `useT()` dan kedua katalog pesan tetap sinkron
+      (bagian 21). Tidak ada teks dokumen cetak yang ikut diterjemahkan.
+- [ ] Seksi Pengaturan baru memakai `SettingsSection` dan terdaftar di
+      `SETTINGS_SECTIONS`, sehingga ikut muncul di pencarian (bagian 22).
 - [ ] Visual snapshot diperbarui bila perubahan UI memang disengaja.
 - [ ] Mutasi eksternal sudah mendapat ACC eksplisit dari pemilik.
 - [ ] Selama development test berjalan bertahap (bagian 14.1); full suite hanya
@@ -1023,8 +1107,10 @@ Catatan CI:
 Perbarui bagian ini setiap menyelesaikan atau memulai fase, agar sesi agen berikutnya
 langsung tahu posisinya.
 
-- Fase saat ini: 12 (perbaikan UI lanjutan dari kritik pemilik) selesai. Seluruh roadmap
-  bagian 18 tuntas; fase 11 dan 12 adalah iterasi lanjutan setelah roadmap.
+- Fase saat ini: 15 (lisensi, dokumentasi, distribusi), 16 (bahasa antarmuka), dan
+  17 (pencarian Pengaturan) selesai. Seluruh roadmap bagian 18 tuntas; fase 11 sampai 17
+  adalah iterasi lanjutan setelah roadmap, dan siap ditandai rilis v0.1.0 atas
+  persetujuan pemilik.
 - Sudah selesai:
   - Perencanaan lengkap dan seluruh keputusan terkunci (bagian 2 sampai 18).
   - Aset referensi: `docs/reference/Log-Book-Template.docx`,
@@ -1305,14 +1391,139 @@ langsung tahu posisinya.
       sehingga ikonnya sejajar dengan ikon rail saat collapsed.
     - `PopoverContent` dipastikan memakai portal, karena konten fixed di dalam pohon
       ber-`zoom` (skala konten) akan salah posisi. Aturan ini masuk bagian 11.2.
-  - Verifikasi fase 12 lulus: lint, typecheck, Vitest (278 test), Playwright (78 test),
+  - Fase 13 perbaikan highlight dan banner hari belum diisi:
+    - Highlight minggu aktif di sidebar kini memakai bulan konteks. Sebelumnya minggu
+      lintas bulan menyala di dua grup sekaligus, karena id minggu memang sama.
+    - Banner "hari belum punya kegiatan atau alasan" kini interaktif: tiap hari adalah
+      tombol yang mengarahkan user ke minggu hari itu, memberi kilatan pada barisnya
+      sesuai tier animasi, lalu memfokuskan field "Ketik kegiatan".
+    - Profil tier menambah `flashWaves`, dan preset baru `buildRowFlashVariants` beserta
+      pasangan `rowFlashDurationSeconds` mengatur kilatan itu. Fokus tetap terjadi di
+      semua tier, termasuk `mati`.
+    - Unit test baru: `findWeekOfDate` (calendar), `focusRequest` (store logbook),
+      `buildRowFlashVariants` dan `rowFlashDurationSeconds` (presets). E2E baru untuk
+      lompat dari banner, kebersihan kilatan, dan highlight lintas bulan.
+  - Fase 14 ingatan posisi scroll per halaman:
+    - `<main>` adalah satu kontainer scroll yang tidak pernah diganti, sehingga posisi
+      halaman lama dulu terbawa ke halaman baru. Kini posisi disimpan saat path berubah
+      dan dipulihkan sebelum paint.
+    - Modul murni baru `src/lib/utils/scrollMemory.ts`, dipakai `Shell.tsx` lewat
+      komponen `ScrollRestore`. Sengaja TANPA scroll listener, jadi menggulir tidak
+      menambah biaya (bagian 13).
+    - Unit test `scrollMemory.test.ts` (9 test) dan E2E `e2e/scroll.spec.ts` (2 test).
+  - Verifikasi fase 14 lulus: lint, typecheck, Vitest (299 test), Playwright (83 test),
     audit motion, audit a11y 0 pelanggaran (7 halaman x 9 tema), anggaran bundle
-    (JS awal 145.3 KB gzip).
+    (JS awal 145.7 KB gzip).
+  - Fase 14b: menambahkan border pemisah antara kelompok ikon aksi cepat dan daftar
+    bulan di rail, yang sebelumnya hilang sehingga kedua bagian tampak menyatu.
+  - Fase 15 lisensi dan distribusi:
+    - `LICENSE` (Apache-2.0) dilengkapi baris hak cipta dan tautan repo, serta `NOTICE`
+      berisi atribusi wajib sesuai Pasal 4(d). Pemilik: Akhmad Aakhif Athallah (Khip01),
+      tahun 2026.
+    - `CHANGELOG.md` dibuat dalam bahasa Inggris dengan format `## Unreleased` lalu satu
+      seksi per versi, mengikuti kebiasaan repo pemilik.
+    - `README.md` ditulis ulang dalam bahasa Inggris: kebutuhan sistem, cara menjalankan,
+      daftar halaman, bagian bahasa, data runtime, rilis, dan lisensi. Status pengujian
+      SENGAJA tidak ditulis di README dan baru akan didokumentasikan saat v1.0.
+    - Launcher lintas platform: `run.cmd` dan `run.ps1` melengkapi `run` yang sudah ada.
+    - `packaging/` berisi pintu masuk desktop: `logman.desktop` (dengan placeholder
+      `@REPO_DIR@`), `install-desktop.sh`, `Logman.bat`, `Logman.vbs`, dan
+      `Logman.command`.
+    - `release.yml` tidak lagi membuat arsip tar.gz maupun mengunggah artifact. Alasan:
+      arsip hanya berisi `dist/` yang bukan program yang bisa dijalankan. Distribusi
+      memakai tag git plus pintasan desktop, dan paket npm global tidak dipakai karena
+      nama `logman` sudah terpakai pihak lain serta server perlu direktori data nyata.
+    - Identitas judul: `index.html` memakai "Log Book Manager", dan
+      `src/lib/domain/pageTitle.ts` menjaga pola judul per halaman beserta unit test-nya.
+    - Metadata `package.json` dilengkapi `repository`, `homepage`, `bugs`, dan `keywords`.
+  - Fase 16 bahasa antarmuka: lihat bagian 21 untuk aturan lengkapnya.
+    - Modul baru `src/lib/i18n/`: `messages/id.ts` (sumber kebenaran key), `messages/en.ts`
+      (bertipe `Catalog`), `locale.ts` (tabel hari dan bulan per bahasa), `translate.ts`,
+      `useT.ts`, dan `index.ts` sebagai pintu impor.
+    - `config.bahasa` menjadi SATU-SATUNYA sumber bahasa. Store bahasa terpisah dibuat
+      lalu dihapus agar tidak ada dua sumber kebenaran.
+    - Seluruh antarmuka memakai `useT()`: shell, Log Book, editor, Pengaturan, Ekspor,
+      dan halaman dev. Daftar berlabel menyimpan key (`labelKey`) sehingga label ikut
+      bahasa aktif.
+    - Dokumen cetak dan PDF dikunci ke bahasa Indonesia. Pemanggil di lapisan dokumen
+      sengaja tidak mengirim locale.
+    - Seksi "Bahasa" ditambahkan di Pengaturan (`data-testid="section-bahasa"`), atribut
+      `lang` pada `<html>` ikut bahasa aktif, dan judul tab mengikuti halaman serta bahasa.
+    - Test baru: `i18n.test.ts`, `pageTitle.test.ts`, dan `e2e/bahasa.spec.ts`.
+      `e2e/settings-advanced.spec.ts` dikembalikan ke label Indonesia
+      ("Perlihatkan UI pengembangan") dan ditambah reset data penanda tangan agar
+      hermetik.
+  - Verifikasi fase 15 dan 16 lulus: lint, typecheck, Vitest (318 test), Playwright
+    (88 test), audit motion, audit a11y 0 pelanggaran, anggaran bundle (JS awal
+    154.5 KB gzip).
+  - Fase 17 pencarian Pengaturan: lihat bagian 22 untuk aturan lengkapnya.
+    - Modul murni baru `src/lib/domain/settingsSearch.ts` berisi registry sembilan seksi
+      plus `searchSettings` dua lapis, `settingsSectionDomId`, dan `settingsSectionIcon`.
+    - Komponen baru: `SettingsSearch.tsx` (combobox dua lapis dengan sorotan kata),
+      `SettingsSection.tsx` (pembungkus seksi: id stabil, `scroll-mt-20`, kilatan
+      sasaran), dan `SettingsFlash.tsx` (konteks permintaan lompatan ber-token).
+    - Judul seksi diseragamkan. Sebelumnya empat seksi memakai `SectionTitle` lokal dan
+      lima menulis `<h2>` sendiri; kini semuanya lewat `SettingsSection`.
+    - Bar pencarian sticky di atas area gulir. PENTING: bar itu sengaja berada di luar
+      `m.div` ber-animasi masuk halaman, karena `transform` pada induk yang beranimasi
+      mengurung `position: sticky`.
+    - Teks keras yang kini menjadi key karena dapat dicari: nama font dokumen
+      (`FONT_DOKUMEN_LABEL_KEY`) dan tombol "Putar ulang" di `TierPreview`.
+    - Test baru: `settingsSearch.test.ts` (28 test) dan `e2e/settings-search.spec.ts`
+      (11 test). Baseline visual Pengaturan diregenerasi.
+    - PERBAIKAN setelah tinjauan pemilik: key React saran disusun dari `sectionId` dan
+      `match.start`, sehingga DUPLIKAT dan membuat hasil pencarian lama menyantol di atas
+      hasil baru saat user mengetik atau menghapus ketikan. Kini setiap saran membawa
+      `key` unik dari key pesannya. Tiga test e2e regresi ditambahkan.
+  - Fase 17b kilau seksi sasaran pencarian:
+    - Komponen baru `src/features/settings/GlintTrail.tsx` plus kelas CSS
+      (`.glint-layer`, `.glint-front`, `.glint-ring`, `.glint-cover`, `.glint-shine`).
+      Efeknya dibangun dari elemen berukuran tetap yang hanya dianimasikan `transform`
+      dan `opacity`, sehingga `border-color`, `background-position`, `box-shadow`, dan
+      `clip-path` tidak perlu dianimasikan (bagian 8.2 tetap utuh).
+    - Profil tier menambah `sectionShine` dan `sectionBorder`. Preset baru:
+      `buildSectionGlintLayerVariants`, `buildSectionShineVariants`,
+      `buildSectionBorderVariants`, `sectionGlintDurationSeconds`, dan
+      `sectionGlintTotalSeconds`.
+    - Token kilau per tema: `--glint-shine`, `--glint-glow`, dan gradien bersama
+      `--glint-fill` yang dibangun dari `--glint-shine`. Tema gelap memakai kilau terang,
+      tema terang memakai kilau gelap yang lembut, dan tema bernuansa mengikuti warna
+      aksennya.
+    - `SettingsFlashProvider` membersihkan permintaan setelah rangkaian kilau selesai,
+      supaya memilih saran yang sama dua kali tetap memutar ulang animasinya.
+    - Penyempurnaan setelah peninjauan hasil visual user:
+      - Border dan isian body memakai SATU gradien bersama (`--glint-fill`). Sebelumnya
+        border memakai warna solid tersendiri sehingga tampak lebih tajam daripada isian
+        body, walaupun warnanya senada.
+      - Isian body diubah dari pita yang melintas lewat (translasi `y`) menjadi ISIAN yang
+        tumbuh dari atas (`scaleY` dengan `transform-origin: top`), lalu fade out bersama
+        border.
+      - Gradien dibuat menipis kontinu dari puncak ke dasar. Sebelumnya paruh atasnya
+        hampir rata sehingga isian terbaca sebagai blok.
+      - Kadar alpha tema terang dinaikkan dan tema gelap diturunkan supaya gradiennya
+        terbaca sepanjang tinggi seksi.
+    - PERBAIKAN yang ditemukan saat verifikasi: keyframe `opacity` sapuan lama hanya
+      empat nilai sementara `times` enam nilai, sehingga sapuan mati sebelum mencapai
+      dasar seksi. Jumlah nilai keyframe WAJIB sama dengan jumlah `times`. Setelah isian
+      memakai `scaleY`, keyframe `opacity` per-sapuan tidak lagi dipakai.
+    - Verifikasi terukur: isian dan penutup border memakai durasi, kurva, dan penundaan
+      yang sama; isian mengalir sampai dasar seksi (delta piksel menipis kontinu di tema
+      gelap maupun terang); tepi ATAS menyala dan tepi BAWAH persis sama dengan latar di
+      ketiga tier (penuh, seimbang, minimal); ukuran seksi tidak berubah
+      (720x407 sebelum dan sesudah).
+  - Verifikasi fase 17 dan 17b lulus: lint, typecheck, Vitest (356 test), Playwright
+    (102 test), audit motion, audit a11y 0 pelanggaran termasuk audit tambahan khusus
+    dropdown pencarian dan kilau aktif pada enam tema, anggaran bundle (JS awal
+    154.9 KB gzip).
 - Sedang dikerjakan:
-  - tidak ada (fase 12 tuntas; seluruh roadmap bagian 18 selesai).
+  - tidak ada (fase 15 dan 16 tuntas; menunggu keputusan pemilik soal tag v0.1.0).
 - Berikutnya:
   - Pemakaian normal dan pemeliharaan. Bila ada perilaku baru, tambah sesuai
     aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.
+  - Tag rilis v0.1.0 DITUNDA atas permintaan pemilik. Bila disetujui: `git tag -s`,
+    push tag, lalu biarkan `release.yml` membuat GitHub Release dengan catatan otomatis.
+  - Deskripsi dan topics repo GitHub diterapkan lewat `gh repo edit` setelah ACC
+    pemilik.
   - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.
@@ -1320,3 +1531,215 @@ langsung tahu posisinya.
   - Commit GPG signing aktif. Setiap commit otomatis ditandatangani.
   - Snapshot visual Playwright sudah ada untuk 3 halaman produk
     (`e2e/visual.spec.ts-snapshots/`). Perbarui baseline bila UI berubah disengaja.
+
+---
+
+## 21. Bahasa antarmuka (i18n)
+
+Aplikasi tampil dalam bahasa Indonesia dan Inggris. Aturan ini mengikat.
+
+Prinsip:
+- Bahasa adalah DATA tanggal dan teks antarmuka, bukan konten dokumen. Nama hari dan
+  bulan disimpan di `src/lib/i18n/locale.ts` sebagai tabel per bahasa, BUKAN di katalog
+  pesan.
+- Bahasa Indonesia adalah default dan sumber kebenaran key pesan.
+- Dokumen cetak dan PDF SELALU bahasa Indonesia, karena mengikuti template kampus.
+  Bahasa antarmuka TIDAK boleh bocor ke `DocumentPrintChrome.tsx`, tabel dokumen saat
+  mode cetak, atau `server/pdf.ts`.
+
+Struktur:
+- `src/lib/i18n/messages/id.ts`: katalog Indonesia, sumber kebenaran key. Tipe `Catalog`
+  diturunkan dari berkas ini.
+- `src/lib/i18n/messages/en.ts`: katalog Inggris, bertipe `Catalog`, sehingga key yang
+  hilang atau berlebih GAGAL saat compile, bukan bug diam.
+- `src/lib/i18n/locale.ts`: `Locale`, `LOCALES`, `DEFAULT_LOCALE`, `isLocale`, dan tabel
+  `HARI`, `BULAN`, `BULAN_SHORT` per bahasa.
+- `src/lib/i18n/translate.ts`: `translate`, `interpolate`, `missingKeys`, `catalogFor`.
+- `src/lib/i18n/useT.ts`: `LocaleContext`, `useLocale`, `useT`, tipe `Translator`.
+- `src/lib/i18n/index.ts`: satu-satunya pintu impor yang dipakai komponen.
+
+Aturan pemakaian:
+- Komponen WAJIB memakai `const t = useT()` lalu `t('key')`. Dilarang membandingkan atau
+  menyalin teks bahasa Indonesia langsung di JSX.
+- Bahasa HANYA dibaca dari `config.bahasa`. Dilarang membuat store bahasa terpisah, agar
+  tidak ada dua sumber kebenaran.
+- Provider `LocaleContext` dipasang di `App.tsx` dari `config.bahasa`.
+- Key pesan berupa ID bertitik (`settings.ukuranKertas`), BUKAN kalimat. Mengubah teks
+  tidak pernah mengubah key.
+- Placeholder memakai kurung kurawal, misal `{nama}`. Bentuk jamak memakai objek
+  `{ one, other }`; pilihannya didasarkan pada variabel `count`.
+- Daftar yang punya label (tema, tier animasi, skala konten, breadcrumb, item navigasi)
+  menyimpan `labelKey` atau key pesan, BUKAN teks siap pakai, supaya label ikut bahasa
+  aktif tanpa menyalin data.
+- Menambah bahasa: salin `messages/en.ts`, jaga tipe `Catalog`, daftarkan di `CATALOGS`,
+  lalu tambahkan kode, nama hari, dan nama bulannya di `locale.ts`.
+- Fungsi format tanggal di `src/lib/domain/date.ts` dan `formatWeekRange` di
+  `src/lib/domain/calendar.ts` menerima parameter `locale` dengan default `'id'`.
+  Pemanggil di lapisan dokumen sengaja TIDAK mengirim locale, sehingga tetap Indonesia.
+- Atribut `lang` pada `<html>` dan judul tab (`src/lib/domain/pageTitle.ts`) mengikuti
+  bahasa aktif. Judul tab memakai pola `<nama halaman> - Log Book Manager`, sementara
+  halaman utama cukup `Log Book Manager`.
+- Mengubah bahasa membangun ulang daftar bulan (`useDeriveMonths`), karena label bulan
+  ada di dalam data turunan itu.
+
+Pengujian:
+- Unit test `src/lib/i18n/i18n.test.ts` memastikan kedua katalog punya key yang persis
+  sama, tidak ada pesan kosong, dan tidak ada key yang belum diterjemahkan.
+- E2E `e2e/bahasa.spec.ts` menguji default, judul tab, pengalihan bahasa, dan bahwa
+  dokumen cetak tetap Indonesia. Spec ini WAJIB mengembalikan `bahasa` ke `id` di
+  `afterEach`, karena `data-e2e` bertahan antar run dan bahasa Inggris akan merusak spec
+  lain yang mencari teks Indonesia.
+
+---
+
+## 22. Pencarian halaman Pengaturan
+
+Halaman Pengaturan punya sembilan seksi. Menggulir manual untuk mencari satu pengaturan
+melelahkan, jadi halaman ini punya kotak pencarian. Aturan ini mengikat.
+
+Bentuk hasil (dua lapis, urutannya tetap):
+1. Lapis judul: query dicocokkan ke NAMA seksi, misal "jam" menemukan "Jam Default".
+   Baris saran menampilkan ikon dan nama menu saja.
+2. Lapis konten: query dicocokkan ke teks DI DALAM seksi, misal "PDF" menemukan deskripsi
+   font dokumen. Baris saran menampilkan ikon, nama menu, lalu potongan teks yang memuat
+   kata itu, sehingga user tahu kenapa hasilnya muncul.
+- SELURUH hasil lapis judul selalu mendahului SELURUH hasil lapis konten. Urutan di dalam
+  tiap lapis mengikuti urutan seksi di halaman.
+- Kata yang cocok disorot memakai token aksen tema (`bg-accent` + `text-accent-text`),
+  jadi sorotannya berkontras di kesembilan tema tanpa warna keras baru. Ini warna statis,
+  bukan animasi, sehingga aturan bagian 8 tidak tersentuh.
+- Saran teratas SELALU otomatis terpilih. Enter langsung memakai saran itu tanpa perlu
+  menekan panah lebih dulu. Panah atas dan bawah memindahkan pilihan, Escape menutup
+  daftar tanpa menghapus ketikan.
+- Query kosong (atau hanya spasi) menampilkan SELURUH menu pada lapis judul tanpa
+  highlight. Saat kotak difokuskan, user langsung melihat apa saja yang bisa dicari.
+- Tanpa hasil: satu baris "Tidak ada yang cocok" (`settings.cari.kosong`).
+- Memilih saran menggulir ke seksi tujuan sambil memberi kilatan singkat.
+
+Struktur dan aturan implementasi:
+- Registry seksi ada di `src/lib/domain/settingsSearch.ts`. Modul ini MURNI: tanpa React
+  dan tanpa DOM, sehingga daftar saran dapat diuji tanpa browser.
+- `SETTINGS_SECTIONS` memuat `id`, `titleKey`, `icon` (nama ikon, BUKAN komponen Lucide,
+  supaya modul tetap murni), dan `contentKeys`.
+- ATURAN: hanya key TANPA placeholder yang boleh masuk `contentKeys`, karena potongan
+  hasil ditampilkan apa adanya. Key ber-interpolasi seperti `settings.hapusPembimbing`
+  dikecualikan supaya snippet tidak menampilkan `{nama}`.
+- `searchSettings(query, locale)` mengembalikan saran berisi `key`, `kind`
+  (`title`/`content`), `sectionId`, `icon`, `sectionTitle`, `snippet`, dan `match`
+  (`{ start, length }`) untuk highlight. Pencocokan memakai `includes` pada teks yang
+  sudah diterjemahkan dan di-lowercase, BUKAN regex, supaya query dengan karakter khusus
+  tidak pernah melempar error.
+- JEBAKAN YANG SUDAH DIPERBAIKI: setiap saran WAJIB punya `key` yang stabil dan UNIK,
+  dibentuk dari key pesan (`title:<sectionId>` atau `content:<sectionId>:<contentKey>`).
+  Sempat dipakai kombinasi `sectionId` dan `match.start`, dan itu BUG: banyak saran mulai
+  cocok di indeks yang sama (mis. "Nama mahasiswa", "Nama lengkap", "Nama Mitra Industri"
+  semuanya indeks 0), sehingga key React DUPLIKAT. Akibatnya saran dari ketikan sebelumnya
+  tidak dibuang dan menyantol di atas hasil baru saat user mengetik atau menghapus
+  ketikan. JANGAN pernah menyusun key saran dari posisi match atau dari indeks array.
+- `settingsSectionDomId(id)` menghasilkan id DOM seksi (`settings-section-<id>`), dipakai
+  pencarian untuk menggulir. `settingsSectionIcon(id)` menjaga ikon judul dan ikon saran
+  selalu sama.
+- Menambah seksi baru: tambahkan entri di `SETTINGS_SECTIONS`, bungkus markup-nya dengan
+  `SettingsSection`, lalu daftarkan key teks yang ingin dapat dicari.
+- Teks antarmuka yang tadinya keras di kode dan kini menjadi key karena dapat dicari:
+  nama font dokumen (`FONT_DOKUMEN_LABEL_KEY`) dan tombol "Putar ulang" di `TierPreview`.
+
+Komponen:
+- `src/features/settings/SettingsSearch.tsx`: kotak pencarian dan dropdown. Memakai
+  `role="combobox"` dengan `aria-expanded`, `aria-controls`, dan `aria-activedescendant`;
+  daftar `role="listbox"`; tiap saran memakai `<button role="option" tabIndex={-1}>`,
+  BUKAN `<div role="option">`, karena elemen ber-role interaktif wajib dapat difokus dan
+  aturan lint menolak `div` ber-role `option`. Pola ini sama dengan
+  `Combobox.tsx` supaya perilaku keyboard dan hasil audit a11y konsisten. Dropdown
+  dirender seketika tanpa Motion.
+- `src/features/settings/SettingsSection.tsx`: pembungkus seksi. Menyatukan `<section>`,
+  `id` stabil, `data-testid="section-<id>"`, `scroll-mt-20` (ruang untuk bar pencarian
+  yang sticky), dan kilatan sasaran. Sebelumnya tiap seksi menulis `<section>` dan `<h2>`
+  sendiri, sehingga id dan kilatan tidak bisa dipasang seragam.
+- `src/features/settings/SettingsFlash.tsx`: konteks permintaan lompatan
+  (`SettingsFlashProvider`, `useSettingsJump`, `useSettingsFlashTarget`). Kotak pencarian
+  dan seksi tujuan adalah komponen bersaudara, jadi cukup SATU konteks; tidak perlu store
+  global. Bentuknya meniru `focusRequest` pada store logbook: ada `token` yang naik
+  setiap permintaan, sehingga memilih saran yang sama dua kali tetap memutar ulang kilatan.
+
+Perilaku gulir dan kilatan:
+- Bar pencarian STICKY di atas area gulir (`sticky top-0`), supaya tetap terjangkau saat
+  user menggulir jauh ke bawah.
+- Bar pencarian SENGAJA berada di luar `m.div` ber-animasi masuk halaman: `transform` pada
+  induk yang beranimasi akan mengurung `position: sticky` di dalamnya, sehingga bar tidak
+  akan menempel. Karena itu `SettingsPage` memasang `pageVariants` pada pembungkus konten
+  dan menaruh bar di luarnya.
+- Kilatan memakai ulang `buildRowFlashVariants` dan `rowFlashDurationSeconds` dari
+  `src/motion/presets.ts`, sama seperti kilatan baris dari banner validasi (bagian 11.3).
+  HANYA `opacity` yang dianimasikan. Tier `mati` tidak berkedip, hanya menggulir.
+- Perilaku gulir mengikuti tier: halus bila tier mengizinkan gerakan sekunder, langsung
+  pada `minimal` dan `mati`.
+
+Kilau sasaran:
+- Memilih saran tidak hanya menggulir, tetapi juga memberi KILAU pada seksi tujuan.
+  Bentuknya dua hal yang berjalan seiring:
+  1. Isian cahaya pada body seksi yang NGE-FILL dari atas: elemennya setinggi seluruh
+     seksi, tepi atasnya diam di puncak, dan tepi bawahnya yang turun sampai penuh.
+     Bukan pita yang melintas lewat.
+  2. Garis border yang merembet melingkari seksi: sisi atas muncul lebih dulu, lalu sisi
+     kiri dan kanan tumbuh ke bawah. Sisi BAWAH sengaja TIDAK diberi garis.
+- Warna border dan isian body WAJIB memakai satu gradien bersama, `--glint-fill`, yang
+  dibangun dari `--glint-shine`. Jangan memberi border warna solid tersendiri: walaupun
+  warnanya senada, border solid selalu terlihat lebih tajam daripada isian body yang
+  bergradien, jadi keduanya tidak menyatu.
+- Gradien `--glint-fill` menipis KONTINU dari puncak ke dasar (stop tengah di 52 persen
+  memakai turunan `--glint-shine`, bukan `--glint-glow`). Paruh atas yang hampir rata
+  membuat isian terbaca sebagai blok, bukan cahaya yang menipis.
+- PENTING: `border-color`, `border-width`, `background-position`, `box-shadow`, dan
+  `clip-path` DILARANG dianimasikan (bagian 8.2). Efeknya dibangun dari elemen
+  berukuran TETAP yang hanya dianimasikan `transform` dan `opacity`:
+  - `.glint-ring` adalah garis border statis pada tepi seksi, digambar dengan
+    `border-image: var(--glint-fill) 1` dan `border-bottom: none`.
+  - `.glint-cover` adalah kotak opaque sewarna latar yang MENUTUPI garis itu, lalu
+    meluncur turun. Karena tepi atasnya adalah garis depan, border tampak tersingkap dari
+    atas ke bawah. Kotak ini mengelilingi area di LUAR panel, jadi tidak pernah menutupi
+    teks; konten seksi diberi `relative z-10` supaya selalu di atas lapisan kilau.
+  - `.glint-shine` adalah isian bergradien statis dengan `transform-origin: top` yang
+    hanya dianimasikan `scaleY` dari 0 ke 1.
+  - Pendinginan border memakai `box-shadow` STATIS pada `.glint-ring`, bukan yang
+    dianimasikan.
+- Isian body dan penutup border memakai durasi, kurva, dan penundaan yang SAMA PERSIS,
+  jadi tepi bawah isian dan tepi atas penutup border turun seirama. Jangan mengubah salah
+  satunya tanpa yang lain; ada unit test yang menjaga kesamaan itu.
+- Gerakannya sengaja TIDAK linier, memakai `sectionGlintEase` = `Cubic(0.86, 0, 0.07, 1)`
+  (sama dengan `Curves.easeInOutQuint` di Flutter): lambat di awal, cepat di tengah,
+  lambat lagi di akhir.
+- Rangkaiannya: gulir mendarat, fade in memperlihatkan keadaan awal, isian dan border
+  berjalan, keadaan akhir ditahan, lalu fade out bersama-sama. Kilau BARU mulai setelah
+  gulir mendarat (`onScrollSettle`), bukan saat gulir masih berjalan.
+- Kadar per tier, dari `sectionShine` dan `sectionBorder` di `MOTION_TIER_PROFILE`:
+  - `penuh`: isian body DAN border penuh berikut pendinginan.
+  - `seimbang`: border penuh berikut pendinginan, TANPA isian body.
+  - `minimal`: border tipis tanpa pendinginan, tanpa isian body.
+  - `mati`: tidak ada kilau sama sekali, hanya menggulir.
+- Lama rangkaian = `sectionGlintTotalSeconds` (fade in + isian + tahan + fade out), dan 0
+  pada tier `mati`. `SettingsSection` membersihkan permintaan setelah durasi itu, supaya
+  memilih saran yang sama dua kali tetap memutar ulang kilau dan animasinya tidak
+  terpotong di tengah.
+- Kilau HANYA berjalan saat seksi dipilih dari kotak pencarian. Mengubah tier di
+  Pengaturan tidak memicunya.
+
+Pengujian:
+- Unit `src/lib/domain/settingsSearch.test.ts` menguji urutan dua lapis, rentang highlight
+  (termasuk saat snippet dipotong), pencocokan lintas bahasa, query kosong, tanpa hasil,
+  dan guard bahwa semua key registry ada di katalog, bukan bentuk jamak, dan tidak
+  menyisakan placeholder.
+- E2E `e2e/settings-search.spec.ts` menguji saran judul, saran konten, Enter memakai saran
+  teratas, navigasi panah, pesan kosong, Escape, fokus tanpa ketikan, dan bahasa. Spec ini
+  WAJIB mengembalikan `bahasa` ke `id` di `afterEach`, karena `data-e2e` bertahan antar run.
+- TIGA test regresi khusus untuk bug key duplikat di atas: menambah huruf tidak menyisakan
+  saran lama, menghapus seluruh ketikan kembali ke sembilan menu, dan menghapus sebagian
+  ketikan hanya menyisakan saran yang cocok. Jangan hapus ketiganya.
+- Unit `src/motion/presets.test.ts` menguji kadar kilau tiap tier, bahwa isian body memakai
+  `scaleY` (bukan translasi `y`) sehingga NGE-FILL, bahwa isian dan border memakai waktu,
+  kurva, dan penundaan yang sama, gerakan yang tidak linier, durasi, dan bahwa hanya
+  `transform` serta `opacity` yang dipakai.
+- E2E `e2e/settings-search.spec.ts` juga menguji: kilau muncul pada tier penuh, hanya
+  border tanpa isian pada tier seimbang dan minimal, tidak ada kilau sama sekali pada
+  tier `mati`, elemen kilau tidak menangkap klik, ukuran seksi TIDAK berubah saat kilau
+  berjalan, dan sisi bawah border tidak menyala.

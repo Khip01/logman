@@ -24,6 +24,11 @@ async function setRange(request: APIRequestContext, mulai: string, selesai: stri
         // Format jam dikembalikan ke 24 jam agar test normalisasi tidak terpengaruh
         // sisa setelan 12 jam dari spec lain (data-e2e persist antar run).
         formatJam: '24',
+        // Tier penuh agar kilatan baris dari banner validasi deterministik, dan skala
+        // konten normal agar tata letak tidak bergeser dari sisa setelan spec lain.
+        tierAnimasi: 'penuh',
+        contentScale: 1,
+        tampilkanDevUi: false,
       },
     },
   })
@@ -151,14 +156,64 @@ test.describe('editor per sel', () => {
 
     await expect(page.getByText(/hari belum punya kegiatan atau alasan/)).toBeVisible()
 
-    // Isi seluruh enam hari, banner harus berubah menjadi lengkap.
+    // Isi seluruh enam hari, banner harus berubah menjadi lengkap dan menyebut bulannya.
     const hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
     for (const nama of hari) {
       const keg = page.getByLabel(`Kegiatan ${nama} ${tanggalUntuk(nama)}`)
       await keg.fill(`Kegiatan ${nama}`)
     }
     await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
-    await expect(page.getByText(/sudah lengkap/)).toBeVisible()
+    await expect(page.getByTestId('validation-banner-ok')).toContainText(
+      'Semua hari pada bulan September 2026 sudah lengkap',
+    )
+  })
+
+  test('menekan hari di banner melompat ke minggu itu dan memfokuskan field kegiatan', async ({
+    page,
+    request,
+  }) => {
+    // Rentang dua minggu: supaya ada minggu lain untuk dipindah lebih dulu, sehingga
+    // terbukti banner benar-benar mengarahkan balik ke minggu hari yang ditekan.
+    await setRange(request, '2026-09-14', '2026-09-26')
+    await request.put(`${API}/api/logs`, { data: { data: { version: 1, days: {} } } })
+    await page.goto('/')
+
+    // Pindah dulu ke minggu pertama.
+    await page.getByRole('tab', { name: /^M1/ }).click()
+    await expect(page.getByTestId('editor-row-2026-09-22')).toHaveCount(0)
+
+    await page.getByTestId('banner-day-2026-09-22').click()
+
+    // Baris tujuan kembali tampil, dan field kegiatannya otomatis terfokus.
+    const row = page.getByTestId('editor-row-2026-09-22')
+    await expect(row).toBeVisible()
+    await expect(row).toHaveAttribute('data-flash', 'true')
+    await expect(page.getByLabel('Kegiatan Selasa 22 September 2026')).toBeFocused()
+
+    // Mengetik langsung tanpa klik tambahan harus bekerja.
+    await page.keyboard.type('Rapat koordinasi')
+    await expect(page.getByLabel('Kegiatan Selasa 22 September 2026')).toHaveValue(
+      'Rapat koordinasi',
+    )
+  })
+
+  test('kilatan hilang setelah selesai dan tidak mengganggu baris lain', async ({
+    page,
+    request,
+  }) => {
+    await setRange(request, '2026-09-21', '2026-09-26')
+    await request.put(`${API}/api/logs`, { data: { data: { version: 1, days: {} } } })
+    await page.goto('/')
+
+    await page.getByTestId('banner-day-2026-09-23').click()
+    await expect(page.getByTestId('editor-row-2026-09-23')).toHaveAttribute('data-flash', 'true')
+
+    // Setelah animasi selesai, permintaan fokus dibersihkan sendiri.
+    await expect(page.getByTestId('editor-row-2026-09-23')).toHaveAttribute('data-flash', 'false', {
+      timeout: 5000,
+    })
+    // Baris lain tidak pernah ikut ditandai.
+    await expect(page.getByTestId('editor-row-2026-09-24')).toHaveAttribute('data-flash', 'false')
   })
 })
 

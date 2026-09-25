@@ -187,8 +187,119 @@
   z-index: 2;
 }
 
-/* ------------------------------------------------------------- DOKUMEN */
+/* --------------------------------------------------------------- KILAU */
 
+/*
+ * Kilau seksi Pengaturan saat dipilih dari kotak pencarian (AGENTS.md bagian 22).
+ *
+ * Cara kerja tanpa melanggar aturan properti (bagian 8.2). Ukurannya tetap dan hanya
+ * `transform` serta `opacity` yang dianimasikan:
+ *
+ *   .glint-ring   garis border penuh pada tepi seksi. STATIS, hanya membawa gradien.
+ *   .glint-cover  kotak opaque sewarna latar halaman yang menutupi garis itu.
+ *   .glint-shine  isian cahaya yang tumbuh dari atas, setinggi seluruh seksi.
+ *
+ * `cover` dan `shine` bergerak turun bersamaan. Saat `cover` turun, garis di belakangnya
+ * tersingkap dari atas: sisi atas muncul lebih dulu, lalu sisi kiri dan kanan tumbuh ke
+ * bawah. Itulah efek border yang merembet melingkari seksi. Tidak ada satu pun properti
+ * border yang dianimasikan.
+ *
+ * `cover` mengelilingi area di LUAR panel (selebar seksi ditambah `--glint-pad`), jadi
+ * ia tidak pernah menutupi teks di dalam panel.
+ */
+.glint-layer,
+.glint-front {
+  --glint-pad: 0.75rem;
+  position: absolute;
+  inset: calc(-1 * var(--glint-pad));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/*
+ * Lapisan kilau body berada DI DEPAN seluruh komponen seksi, supaya cahaya terasa
+ * melintas di permukaan dan bukan membelakangi konten. `pointer-events: none` WAJIB, agar
+ * seluruh kontrol di seksi tetap bisa diklik.
+ *
+ * z-index 15 dipilih dengan sengaja: DI ATAS konten seksi (z-10) tetapi DI BAWAH bar
+ * pencarian yang sticky (z-20), sehingga kilau tidak pernah menutupi bar itu saat seksi
+ * sasaran berada tepat di bawahnya.
+ */
+.glint-front {
+  z-index: 15;
+}
+
+.glint-layer {
+  --glint-line-width: 1px;
+}
+
+/*
+ * Garis border digambar sebagai GRADIEN, memakai `--glint-fill` yang SAMA dengan isian
+ * body. Sebelumnya border memakai warna solid tersendiri yang lebih pekat, sehingga
+ * walaupun warnanya senada ia tetap terlihat lebih tajam daripada isian body yang
+ * bergradien. Dengan satu gradien bersama, keduanya menyatu.
+ *
+ * `border-image` dipakai karena ia STATIS: yang dianimasikan hanya posisi penutup di
+ * atasnya, bukan properti border itu sendiri.
+ */
+.glint-ring {
+  position: absolute;
+  inset: 0;
+  border: var(--glint-line-width) solid transparent;
+  /*
+   * Sisi BAWAH sengaja TIDAK diberi garis (AGENTS.md bagian 22). Sapuan berakhir di dasar
+   * seksi tanpa menyalakan garis bawah, sehingga yang terlihat hanya sisi atas yang turun
+   * dan kedua sisi samping yang tumbuh mengikutinya. Garis bawah yang menyala di detik
+   * terakhir terasa seperti hentakan, bukan bagian dari luncuran cahaya.
+   */
+  border-bottom: none;
+  border-image: var(--glint-fill) 1;
+}
+
+/*
+ * Kadar border tingkat penuh: garis lebih tebal plus pendinginan di dalam dan di luar
+ * garis. Keduanya STATIS, hanya `opacity` pada elemen ini yang dianimasikan, sesuai
+ * aturan "box-shadow besar hanya statis" (AGENTS.md bagian 8.2).
+ */
+.glint-ring[data-level="2"] {
+  --glint-line-width: 2px;
+  box-shadow:
+    0 0 0 1px var(--glint-glow),
+    inset 0 0 14px var(--glint-glow);
+}
+
+/*
+ * Penutup digeser turun tepat setebal garis. Akibatnya pada keadaan AWAL garis atas sudah
+ * terlihat, sementara sisi kiri dan kanan masih tertutup. Itulah "keadaan awal" yang
+ * diperlihatkan fase fade in. Karena tingginya berkurang setebal garis, perpindahan 100%
+ * tetap membawa tepi atasnya tepat ke dasar seksi, sehingga garis tersingkap penuh.
+ */
+.glint-cover {
+  position: absolute;
+  inset: 0;
+  top: var(--glint-line-width);
+  background: var(--bg-body);
+}
+
+/*
+ * Isian cahaya yang NGE-FILL dari atas, bukan pita yang melintas lewat.
+ *
+ * Elemennya setinggi seluruh seksi dan hanya `scaleY`-nya yang dianimasikan, dengan titik
+ * tumbuh di atas (`transform-origin: top`). Jadi tepi atasnya diam di puncak seksi dan
+ * tepi bawahnya yang turun sampai penuh, persis seperti wadah yang terisi. Gradiennya
+ * sama dengan gradien border (`--glint-fill`), sehingga isian dan garis menyatu.
+ *
+ * Karena lapisan ini berada DI DEPAN konten, alfanya dijaga rendah (token kilau per tema
+ * sudah tembus pandang) supaya teks di bawahnya tetap terbaca.
+ */
+.glint-shine {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  background: var(--glint-fill);
+}
+
+/* ------------------------------------------------------------- DOKUMEN */
 /*
  * Tabel dokumen Log Book. Sengaja dibuat sederhana: border 1 px, tanpa sudut
  * membulat, tanpa bayangan. Lihat AGENTS.md bagian 11.2.

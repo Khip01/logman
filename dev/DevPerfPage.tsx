@@ -1,6 +1,7 @@
 import { Activity, Gauge, Layers, RotateCcw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { useT } from '@/lib/i18n'
 import { LONG_TASK_LIMIT_MS, type LongTaskSample, longTasksOverLimit } from '@/lib/utils/perf'
 
 interface BundleStats {
@@ -25,6 +26,7 @@ function formatKb(bytes: number): string {
  * e2e (`src/lib/utils/perf.ts`) dan hanya berfungsi pada build DEV.
  */
 export function DevPerfPage() {
+  const t = useT()
   const [bundle, setBundle] = useState<BundleStats | null>(null)
   const [bundleError, setBundleError] = useState<string | null>(null)
   const [renders, setRenders] = useState<Record<string, number>>({})
@@ -71,13 +73,13 @@ export function DevPerfPage() {
         if (!cancelled) setBundle(stats)
       })
       .catch(() => {
-        if (!cancelled) setBundleError('Belum ada. Jalankan pnpm analyze setelah build.')
+        if (!cancelled) setBundleError(t('dev.perf.belumAdaBundle'))
       })
     return () => {
       cancelled = true
       perf.__logmanPerf?.stopLongTaskMonitor()
     }
-  }, [])
+  }, [t])
 
   function resetRenders() {
     const perf = window as unknown as {
@@ -199,7 +201,8 @@ export function DevPerfPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={toggleMonitor}>
-              {monitoring ? 'Hentikan' : 'Mulai'} monitor
+              {monitoring ? t('dev.perf.hentikanMonitor') : t('dev.perf.mulaiMonitor')}{' '}
+              {t('dev.perf.monitor')}
             </Button>
             <Button variant="outline" size="sm" onClick={clearLongTasks}>
               <Trash2 className="size-3.5" strokeWidth={1.75} />

@@ -75,3 +75,28 @@ describe('setMonths', () => {
     expect(useLogbookStore.getState().months).toEqual([])
   })
 })
+
+describe('requestFocus dan clearFocus', () => {
+  beforeEach(() => {
+    useLogbookStore.setState({ focusRequest: null })
+  })
+
+  it('menyimpan tanggal dan menaikkan token tiap permintaan', () => {
+    useLogbookStore.getState().requestFocus('2026-09-22')
+    expect(useLogbookStore.getState().focusRequest).toEqual({ date: '2026-09-22', token: 1 })
+
+    // Permintaan ulang pada tanggal yang sama harus menaikkan token, agar animasi dan
+    // fokus tetap terpicu walau tanggalnya tidak berubah.
+    useLogbookStore.getState().requestFocus('2026-09-22')
+    expect(useLogbookStore.getState().focusRequest).toEqual({ date: '2026-09-22', token: 2 })
+
+    useLogbookStore.getState().requestFocus('2026-09-23')
+    expect(useLogbookStore.getState().focusRequest).toEqual({ date: '2026-09-23', token: 3 })
+  })
+
+  it('clearFocus mengosongkan permintaan', () => {
+    useLogbookStore.getState().requestFocus('2026-09-22')
+    useLogbookStore.getState().clearFocus()
+    expect(useLogbookStore.getState().focusRequest).toBeNull()
+  })
+})

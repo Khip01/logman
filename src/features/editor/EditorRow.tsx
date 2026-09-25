@@ -1,4 +1,6 @@
 import { X } from 'lucide-react'
+import { m } from 'motion/react'
+import { useEffect, useRef } from 'react'
 import { TimePicker } from '@/components/ui/TimePicker'
 import {
   displayJam,
@@ -9,9 +11,14 @@ import {
 } from '@/lib/domain/editor'
 import type { JamFormat } from '@/lib/domain/jamFormat'
 import type { DayEntry } from '@/lib/domain/types'
+import { useT } from '@/lib/i18n'
 import { bumpRender } from '@/lib/utils/perf'
+import { buildRowFlashVariants, rowFlashDurationSeconds } from '@/motion/presets'
+import { MOTION_TIER_PROFILE } from '@/motion/tiers'
 import { useConfigStore } from '@/stores/config'
+import { useLogbookStore } from '@/stores/logbook'
 import { useLogsStore } from '@/stores/logs'
+import { useUiStore } from '@/stores/ui'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { ReasonPicker } from './ReasonPicker'
 
@@ -47,6 +54,7 @@ export interface EditorRowProps {
 }
 
 export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault }: EditorRowProps) {
+  const t = useT()
   // Penghitung render harness (AGENTS.md bagian 13). No-op pada build produksi.
   bumpRender(date)
   // Selector per tanggal: baris lain tidak ikut ter-render saat tanggal ini berubah.
@@ -55,17 +63,84 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
   const alasanOptions = useConfigStore((s) => s.config.alasan)
   const formatJam = useConfigStore((s) => s.config.formatJam)
 
+  // Kilatan dan fokus dari banner validasi (AGENTS.md bagian 11.3).
+  const focusRequest = useLogbookStore((s) => s.focusRequest)
+  const clearFocus = useLogbookStore((s) => s.clearFocus)
+  const motionTier = useUiStore((s) => s.motion)
+
   const day = stored ?? emptyDay(date)
   const strip = showsJamStrip(day)
   const adaAlasan = Boolean(day.alasan && !day.kegiatan)
+
+  const isFocusTarget = !disabled && focusRequest?.date === date
+  const flashProfile = MOTION_TIER_PROFILE[motionTier]
+  const flashVariants = buildRowFlashVariants(flashProfile)
+  const flashMs = rowFlashDurationSeconds(flashProfile) * 1000
+  const rowRef = useRef<HTMLTableRowElement>(null)
+  const focusToken = isFocusTarget ? focusRequest.token : undefined
+
+  /*
+   * Menggeser baris tujuan ke tengah layar begitu user menekan hari di banner, lalu
+   * membersihkan permintaan fokus setelah kilatan selesai. Pembersihan penting supaya
+   * baris tidak ikut terfokus lagi saat user berpindah minggu dan kembali.
+   *
+   * Gerak halus hanya dipakai pada tier yang mengizinkan gerakan sekunder; tier `minimal`
+   * dan `mati` melompat langsung (AGENTS.md bagian 8.1).
+   */
+  useEffect(() => {
+    if (!isFocusTarget || !focusRequest) return
+    rowRef.current?.scrollIntoView({
+      block: 'center',
+      behavior: flashProfile.secondaryMotion ? 'smooth' : 'auto',
+    })
+    const token = focusRequest.token
+    const timer = window.setTimeout(() => {
+      // Hanya bersihkan bila permintaan ini belum digantikan permintaan lain.
+      if (useLogbookStore.getState().focusRequest?.token === token) clearFocus()
+    }, flashMs + 50)
+    return () => window.clearTimeout(timer)
+  }, [isFocusTarget, focusRequest, flashProfile.secondaryMotion, flashMs, clearFocus])
 
   function commitJam(field: 'masuk' | 'pulang', normalized: string) {
     setDay(date, { [field]: normalized === '' ? null : normalized })
   }
 
   return (
-    <tr data-testid={`editor-row-${date}`} data-disabled={disabled ? 'true' : 'false'}>
+    <tr
+      ref={rowRef}
+      data-testid={`editor-row-${date}`}
+      data-disabled={disabled ? 'true' : 'false'}
+      data-flash={isFocusTarget ? 'true' : 'false'}
+      className="relative"
+    >
       <th scope="row" className="doc-cell-fit px-2 py-1.5 text-left font-normal">
+        {/*
+          Lapisan kilatan. Ditaruh di dalam sel pertama (bukan langsung di dalam <tr>,
+          karena <tr> hanya boleh berisi sel). Karena <tr> memakai `position: relative`,
+          `inset-0` di sini mencakup seluruh baris.
+          HANYA opacity yang dianimasikan (AGENTS.md bagian 8.2). `key` memakai token
+          supaya klik berulang pada hari yang sama memutar ulang animasinya.
+        */}
+        {isFocusTarget && flashProfile.flashWaves > 0 ? (
+          <>
+            <m.span
+              key={`tint-${focusRequest.token}`}
+              aria-hidden
+              variants={flashVariants}
+              initial="rest"
+              animate="flash"
+              className="pointer-events-none absolute inset-0 bg-accent-bg"
+            />
+            <m.span
+              key={`line-${focusRequest.token}`}
+              aria-hidden
+              variants={flashVariants}
+              initial="rest"
+              animate="flash"
+              className="pointer-events-none absolute inset-0 border-2 border-accent-bg"
+            />
+          </>
+        ) : null}
         <span className="block text-[12px] text-text-main print:text-doc-ink">{hariLabel}</span>
         <span className="block text-[11px] text-text-muted print:text-doc-muted">
           {tanggalLabel}
@@ -74,7 +149,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
 
       <JamCell
         field="masuk"
-        ariaLabel={`Jam masuk ${hariLabel} ${tanggalLabel}`}
+        ariaLabel={t('editor.jamMasukLabel', { hari: hariLabel, tanggal: tanggalLabel })}
         value={day.masuk}
         placeholder={jamDefault.masuk}
         format={formatJam}
@@ -85,7 +160,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
 
       <JamCell
         field="pulang"
-        ariaLabel={`Jam pulang ${hariLabel} ${tanggalLabel}`}
+        ariaLabel={t('editor.jamPulangLabel', { hari: hariLabel, tanggal: tanggalLabel })}
         value={day.pulang}
         placeholder={jamDefault.pulang}
         format={formatJam}
@@ -103,7 +178,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
             <p className="text-[12px] text-text-main print:text-doc-ink">{day.alasan}</p>
             <button
               type="button"
-              aria-label={`Hapus alasan ${tanggalLabel}`}
+              aria-label={t('editor.hapusAlasan', { tanggal: tanggalLabel })}
               onClick={() => setDay(date, patchAlasan(''))}
               className="mt-0.5 grid size-5 shrink-0 place-items-center text-text-muted no-print hover:text-text-primary"
             >
@@ -113,9 +188,10 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
         ) : (
           <>
             <AutoGrowTextarea
-              aria-label={`Kegiatan ${hariLabel} ${tanggalLabel}`}
+              aria-label={t('editor.kegiatanLabel', { hari: hariLabel, tanggal: tanggalLabel })}
               value={day.kegiatan}
-              placeholder="Ketik kegiatan"
+              placeholder={t('editor.ketikKegiatan')}
+              focusToken={focusToken}
               onChange={(kegiatan) => setDay(date, patchKegiatan(kegiatan))}
             />
             {day.kegiatan.trim() === '' ? (

@@ -12,13 +12,20 @@
  * Semua fungsi MURNI dan dapat diuji tanpa React.
  */
 
+import type { MessageKey } from '@/lib/i18n/messages/id'
+
 export type FontDokumen = 'times' | 'arial'
 
 export const FONT_DOKUMEN_LIST: FontDokumen[] = ['times', 'arial']
 
-export const FONT_DOKUMEN_LABEL: Record<FontDokumen, string> = {
-  times: 'Times New Roman',
-  arial: 'Arial',
+/**
+ * Key pesan nama font. Nama font resmi tetap sama di semua bahasa, tetapi disimpan
+ * sebagai key agar tidak ada teks antarmuka yang keras di kode dan agar dapat dicari
+ * dari kotak pencarian Pengaturan (AGENTS.md bagian 21 dan 22).
+ */
+export const FONT_DOKUMEN_LABEL_KEY: Record<FontDokumen, MessageKey> = {
+  times: 'settings.font.times',
+  arial: 'settings.font.arial',
 }
 
 /**
@@ -39,11 +46,15 @@ export type ContentScale = 0.9 | 1 | 1.15 | 1.3
 
 export const CONTENT_SCALES: ContentScale[] = [0.9, 1, 1.15, 1.3]
 
-export const CONTENT_SCALE_LABEL: Record<ContentScale, string> = {
-  0.9: 'Kecil',
-  1: 'Normal',
-  1.15: 'Besar',
-  1.3: 'Sangat besar',
+/**
+ * Key pesan untuk label skala konten. Labelnya ikut bahasa antarmuka, jadi disimpan
+ * sebagai key, bukan teks siap pakai (AGENTS.md bagian 21).
+ */
+export const CONTENT_SCALE_LABEL_KEY: Record<ContentScale, MessageKey> = {
+  0.9: 'settings.skala.kecil',
+  1: 'settings.skala.normal',
+  1.15: 'settings.skala.besar',
+  1.3: 'settings.skala.sangatBesar',
 }
 
 export function isContentScale(value: unknown): value is ContentScale {

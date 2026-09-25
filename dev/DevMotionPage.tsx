@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { useT } from '@/lib/i18n'
 import { useDocumentVisible } from '@/lib/utils/useDocumentVisible'
 import {
   buildTierPreviewVariants,
@@ -23,6 +24,7 @@ const ROWS = ['baris-1', 'baris-2', 'baris-3', 'baris-4']
  * diputar ulang. Tier aktif diambil dari store, sehingga perilaku tiap tier terlihat.
  */
 export function DevMotionPage() {
+  const t = useT()
   const motion = useUiStore((s) => s.motion)
   const setMotion = useUiStore((s) => s.setMotion)
   const [replay, setReplay] = useState(0)
@@ -35,28 +37,28 @@ export function DevMotionPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-1 text-[17px] font-semibold text-text-primary">Katalog Motion</h1>
-      <p className="mb-6 text-[13px] text-text-muted">
-        Seluruh preset animasi dan perilakunya di tiap tier. Gunakan tombol untuk memutar ulang.
-      </p>
+      <h1 className="mb-1 text-[17px] font-semibold text-text-primary">
+        {t('dev.motion.katalog')}
+      </h1>
+      <p className="mb-6 text-[13px] text-text-muted">{t('dev.motion.katalogDeskripsi')}</p>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
         <SegmentedControl
-          aria-label="Tier animasi"
+          aria-label={t('settings.tierAnimasi')}
           options={MOTION_TIERS.map((tier) => ({
             value: tier,
-            label: MOTION_TIER_PROFILE[tier].label,
+            label: t(MOTION_TIER_PROFILE[tier].labelKey),
           }))}
           value={motion}
           onValueChange={setMotion}
         />
         <Button variant="outline" size="sm" onClick={() => setReplay((n) => n + 1)}>
-          Putar ulang semua
+          {t('settings.putarUlang')}
         </Button>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <Demo title="page" description="Transisi halaman masuk dan keluar.">
+        <Demo title="page" description={t('dev.motion.page')}>
           <m.div
             key={key}
             variants={pageVariants}
@@ -64,11 +66,11 @@ export function DevMotionPage() {
             animate="visible"
             className="flex h-24 items-center justify-center border border-border-base bg-bg-body"
           >
-            <span className="text-[12px] text-text-muted">Halaman</span>
+            <span className="text-[12px] text-text-muted">{t('dev.motion.halaman')}</span>
           </m.div>
         </Demo>
 
-        <Demo title="overlay" description="Lapisan gelap muncul dan hilang.">
+        <Demo title="overlay" description={t('dev.motion.overlay')}>
           <div className="relative h-24 overflow-hidden border border-border-base bg-bg-body">
             <m.div
               key={key}
@@ -83,7 +85,7 @@ export function DevMotionPage() {
           </div>
         </Demo>
 
-        <Demo title="sidebar" description="Panel meluncur dari kiri memakai spring.">
+        <Demo title="sidebar" description={t('dev.motion.sidebar')}>
           <div className="relative h-24 overflow-hidden border border-border-base bg-bg-body">
             <m.div
               key={key}
@@ -99,7 +101,7 @@ export function DevMotionPage() {
           </div>
         </Demo>
 
-        <Demo title="staggerList dan listItem" description="Daftar muncul berurutan.">
+        <Demo title="staggerList dan listItem" description={t('dev.motion.stagger')}>
           <m.ul
             key={key}
             variants={staggerListVariants}
@@ -116,7 +118,7 @@ export function DevMotionPage() {
           </m.ul>
         </Demo>
 
-        <Demo title="pulse" description="Denyut halus untuk elemen idle.">
+        <Demo title="pulse" description={t('dev.motion.pulse')}>
           <div className="flex h-24 items-center justify-center gap-3 border border-border-base bg-bg-body">
             <m.span
               variants={pulseVariants}
@@ -125,12 +127,12 @@ export function DevMotionPage() {
               className="size-2.5 bg-status-ok"
             />
             <span className="text-[12px] text-text-muted">
-              {profile.pulse ? 'Aktif' : 'Nonaktif di tier ini'}
+              {profile.pulse ? t('dev.motion.aktif') : t('dev.motion.nonaktif')}
             </span>
           </div>
         </Demo>
 
-        <Demo title="tierPreview" description="Gerakan panel pratinjau tier.">
+        <Demo title="tierPreview" description={t('dev.motion.tierPreview')}>
           <div key={key} className="flex h-24 gap-2 border border-border-base bg-bg-body p-2">
             <m.div
               variants={tierVariants.panel}
@@ -160,7 +162,8 @@ export function DevMotionPage() {
       </div>
 
       <p className="mt-6 text-[12px] text-text-dim">
-        Tier aktif: <span className="text-text-main">{profile.label}</span>. {profile.description}
+        {t('dev.motion.tierAktif')} <span className="text-text-main">{t(profile.labelKey)}</span>.{' '}
+        {t(profile.descriptionKey)}
       </p>
     </div>
   )

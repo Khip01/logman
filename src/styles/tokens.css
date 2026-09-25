@@ -62,6 +62,33 @@
   --doc-surface: var(--bg-card);
   --doc-surface-head: var(--bg-card-hover);
   --doc-line: var(--border-color);
+
+  /*
+   * Kilau seksi Pengaturan saat dipilih dari kotak pencarian (AGENTS.md bagian 22).
+   * Dua token warna, dipakai BERSAMA oleh isian body dan garis border supaya kadarnya
+   * menyatu dan tidak ada garis yang lebih tajam daripada isiannya:
+   * - `--glint-shine`: warna kilau paling terang, tembus pandang.
+   * - `--glint-glow`: pendinginan yang lebih lembut di sekeliling garis.
+   *
+   * `--glint-fill` adalah SATU-SATUNYA bentuk gradien yang dipakai isian body maupun
+   * border, jadi keduanya tidak mungkin berbeda kadar. Bentuknya menipis KONTINU dari
+   * puncak ke dasar, bukan datar di paruh atas lalu jatuh: kalau paruh atasnya hampir
+   * rata, isian terbaca sebagai blok, bukan cahaya yang menipis. Stop tengah memakai
+   * turunan `--glint-shine`, bukan `--glint-glow`, supaya `--glint-glow` tetap khusus
+   * untuk pendingin di sekeliling garis.
+   *
+   * Nilai di bawah hanya cadangan. Tiap tema menimpanya agar kilau terasa menyatu dengan
+   * suasananya: tema gelap memakai kilau terang, tema terang memakai kilau gelap yang
+   * lembut. Tema "putih-word" memakai kilau kebiruan tipis meniru Word.
+   */
+  --glint-shine: color-mix(in srgb, var(--accent-bg) 15%, transparent);
+  --glint-glow: color-mix(in srgb, var(--accent-bg) 30%, transparent);
+  --glint-fill: linear-gradient(
+    to bottom,
+    var(--glint-shine) 0%,
+    color-mix(in srgb, var(--glint-shine) 42%, transparent) 52%,
+    transparent 100%
+  );
 }
 
 /*
@@ -102,6 +129,9 @@
   --accent-text: #000000;
   --accent-hover: #e0e0e0;
   --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.03);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(255, 255, 255, 0.16);
+  --glint-glow: rgba(255, 255, 255, 0.085);
 }
 
 [data-theme="hitam-abu"] {
@@ -128,6 +158,9 @@
   --accent-text: #0f1115;
   --accent-hover: #dfe3e8;
   --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.03);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(214, 226, 245, 0.15);
+  --glint-glow: rgba(148, 170, 205, 0.13);
 }
 
 [data-theme="hitam-pastel"] {
@@ -154,6 +187,9 @@
   --accent-text: #14121a;
   --accent-hover: #e2d9f0;
   --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(216, 197, 245, 0.15);
+  --glint-glow: rgba(168, 140, 220, 0.13);
 }
 
 /* --------------------------------------------------------------- TERANG */
@@ -182,6 +218,9 @@
   --accent-text: #ffffff;
   --accent-hover: #2a2a2a;
   --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.04);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(28, 28, 28, 0.075);
+  --glint-glow: rgba(28, 28, 28, 0.055);
 }
 
 [data-theme="putih-pastel"] {
@@ -208,6 +247,9 @@
   --accent-text: #fbfaff;
   --accent-hover: #3d3159;
   --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.04);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(83, 58, 122, 0.085);
+  --glint-glow: rgba(83, 58, 122, 0.065);
 }
 
 [data-theme="putih-tulang"] {
@@ -234,6 +276,9 @@
   --accent-text: #faf8f2;
   --accent-hover: #443f2e;
   --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.04);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(138, 118, 62, 0.13);
+  --glint-glow: rgba(138, 118, 62, 0.085);
 }
 
 [data-theme="putih-gdocs"] {
@@ -260,6 +305,9 @@
   --accent-text: #ffffff;
   --accent-hover: #3c4043;
   --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.05);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(31, 111, 235, 0.085);
+  --glint-glow: rgba(31, 111, 235, 0.065);
 }
 
 [data-theme="putih-word"] {
@@ -286,6 +334,9 @@
   --accent-text: #ffffff;
   --accent-hover: #3a3a3a;
   --shadow-ambient: 0 1px 0 rgba(0, 0, 0, 0.05);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(43, 87, 154, 0.085);
+  --glint-glow: rgba(43, 87, 154, 0.065);
 }
 
 [data-theme="word-dark"] {
@@ -312,4 +363,7 @@
   --accent-text: #1f1f1f;
   --accent-hover: #d6d6d6;
   --shadow-ambient: 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* Kilau pencarian (AGENTS.md bagian 22). */
+  --glint-shine: rgba(158, 197, 254, 0.14);
+  --glint-glow: rgba(110, 150, 205, 0.12);
 }

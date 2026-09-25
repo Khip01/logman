@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import type { ComponentProps } from 'react'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 
 export const Dialog = DialogPrimitive.Root
@@ -26,6 +27,8 @@ export function DialogContent({
   children,
   ...props
 }: ComponentProps<typeof DialogPrimitive.Content>) {
+  const t = useT()
+
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -41,7 +44,7 @@ export function DialogContent({
       >
         {children}
         <DialogPrimitive.Close
-          aria-label="Tutup"
+          aria-label={t('common.tutup')}
           className="theme-t absolute right-3 top-3 grid size-6 place-items-center border border-transparent text-text-muted hover:border-border-base hover:text-text-primary"
         >
           <X className="size-3.5" strokeWidth={2} />

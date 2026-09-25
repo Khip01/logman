@@ -35,7 +35,9 @@ import {
   Switch,
   Textarea,
 } from '@/components/ui'
+import { useT } from '@/lib/i18n'
 
+/** Nama alasan contoh; pada aplikasi nyata daftar ini berasal dari config. */
 const ALASAN = ['Libur Nasional', 'Cuti Bersama', 'Izin', 'Sakit']
 
 /**
@@ -43,6 +45,7 @@ const ALASAN = ['Libur Nasional', 'Cuti Bersama', 'Izin', 'Sakit']
  * lewat screenshot dan memverifikasi perilaku dasar tiap primitif.
  */
 export function DevComponentsPage() {
+  const t = useT()
   const [switchOn, setSwitchOn] = useState(true)
   const [checked, setChecked] = useState<boolean | 'indeterminate'>('indeterminate')
   const [combobox, setCombobox] = useState('')
@@ -52,51 +55,60 @@ export function DevComponentsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-1 text-[17px] font-semibold text-text-primary">Galeri Komponen</h1>
-      <p className="mb-8 text-[13px] text-text-muted">
-        Pratinjau seluruh primitif UI. Halaman ini hanya untuk pengembangan.
-      </p>
+      <h1 className="mb-1 text-[17px] font-semibold text-text-primary">
+        {t('dev.komponen.galeri')}
+      </h1>
+      <p className="mb-8 text-[13px] text-text-muted">{t('dev.komponen.galeriDeskripsi')}</p>
 
       <Section title="Button">
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="primary">Simpan</Button>
-          <Button variant="outline">Batal</Button>
-          <Button variant="ghost">Lewati</Button>
-          <Button variant="danger">Hapus</Button>
+          <Button variant="primary">{t('common.simpan')}</Button>
+          <Button variant="outline">{t('common.batal')}</Button>
+          <Button variant="ghost">{t('common.lewati')}</Button>
+          <Button variant="danger">{t('common.hapus')}</Button>
           <Button variant="outline" disabled>
-            Nonaktif
+            {t('common.nonaktif')}
           </Button>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button variant="primary" size="sm">
-            Kecil
+            {t('dev.komponen.kecil')}
           </Button>
           <Button variant="outline" size="md">
-            Sedang
+            {t('dev.komponen.sedang')}
           </Button>
           <Button variant="outline" size="lg">
-            Besar
+            {t('dev.komponen.besar')}
           </Button>
-          <Button variant="outline" size="icon" aria-label="Tambah">
+          <Button variant="outline" size="icon" aria-label={t('common.tambah')}>
             <Plus />
           </Button>
           <Button variant="primary">
-            <Download /> Unduh
+            <Download /> {t('dev.komponen.unduh')}
           </Button>
         </div>
       </Section>
 
       <Section title="Input dan Field">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field htmlFor="gal-nama" label="Nama" description="Sesuai kartu mahasiswa." required>
-            <Input id="gal-nama" placeholder="Nama lengkap" />
+          <Field
+            htmlFor="gal-nama"
+            label={t('dev.komponen.nama')}
+            description={t('dev.komponen.namaDeskripsi')}
+            required
+          >
+            <Input id="gal-nama" placeholder={t('settings.namaLengkap')} />
           </Field>
-          <Field htmlFor="gal-nim" label="NIM" error="NIM wajib diisi.">
-            <Input id="gal-nim" placeholder="Nomor induk" />
+          <Field htmlFor="gal-nim" label={t('dev.komponen.nim')} error={t('dev.komponen.nimError')}>
+            <Input id="gal-nim" placeholder={t('dev.komponen.nimPlaceholder')} />
           </Field>
         </div>
-        <Field htmlFor="gal-kegiatan" label="Kegiatan" className="mt-4">
-          <Textarea id="gal-kegiatan" rows={3} placeholder="Tulis kegiatan harian" />
+        <Field htmlFor="gal-kegiatan" label={t('dev.komponen.kegiatan')} className="mt-4">
+          <Textarea
+            id="gal-kegiatan"
+            rows={3}
+            placeholder={t('dev.komponen.kegiatanPlaceholder')}
+          />
         </Field>
       </Section>
 
@@ -104,12 +116,12 @@ export function DevComponentsPage() {
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2 text-[13px] text-text-main">
             <Switch id="gal-switch" checked={switchOn} onCheckedChange={setSwitchOn} />
-            <label htmlFor="gal-switch">Simpan otomatis</label>
+            <label htmlFor="gal-switch">{t('dev.komponen.simpanOtomatis')}</label>
           </div>
 
           <div className="flex items-center gap-2 text-[13px] text-text-main">
             <Checkbox id="gal-checkbox" checked={checked} onCheckedChange={setChecked} />
-            <label htmlFor="gal-checkbox">Pilih sebagian</label>
+            <label htmlFor="gal-checkbox">{t('dev.komponen.pilihSebagian')}</label>
           </div>
 
           <div className="flex w-48 items-center gap-3">
@@ -118,7 +130,7 @@ export function DevComponentsPage() {
               onValueChange={setSliderValue}
               max={100}
               step={1}
-              aria-label="Ambang"
+              aria-label={t('dev.komponen.ambang')}
             />
             <span className="text-[12px] text-text-muted">{sliderValue[0]}</span>
           </div>
@@ -126,7 +138,7 @@ export function DevComponentsPage() {
 
         <div className="mt-4">
           <SegmentedControl
-            aria-label="Contoh segmented"
+            aria-label={t('dev.komponen.contohSegmented')}
             options={[
               { value: 'a', label: 'A4' },
               { value: 'b', label: 'F4' },
@@ -140,9 +152,9 @@ export function DevComponentsPage() {
 
       <Section title="Select dan Combobox">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field htmlFor="gal-kertas" label="Ukuran kertas">
+          <Field htmlFor="gal-kertas" label={t('settings.ukuranKertas')}>
             <Select value={selectValue} onValueChange={setSelectValue}>
-              <SelectTrigger id="gal-kertas" aria-label="Ukuran kertas">
+              <SelectTrigger id="gal-kertas" aria-label={t('settings.ukuranKertas')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -153,12 +165,16 @@ export function DevComponentsPage() {
             </Select>
           </Field>
 
-          <Field htmlFor="gal-alasan" label="Alasan" description="Bisa dipilih atau diketik bebas.">
+          <Field
+            htmlFor="gal-alasan"
+            label={t('dev.komponen.alasan')}
+            description={t('dev.komponen.alasanDeskripsi')}
+          >
             <Combobox
               options={ALASAN}
               value={combobox}
               onValueChange={setCombobox}
-              placeholder="Pilih atau ketik alasan"
+              placeholder={t('dev.komponen.alasanPlaceholder')}
             />
           </Field>
         </div>
@@ -166,14 +182,15 @@ export function DevComponentsPage() {
 
       <Section title="Badge dan Kbd">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>Netral</Badge>
-          <Badge tone="accent">Aksen</Badge>
-          <Badge tone="ok">Tersimpan</Badge>
-          <Badge tone="warn">Menunggu</Badge>
-          <Badge tone="error">Gagal</Badge>
+          <Badge>{t('dev.komponen.netral')}</Badge>
+          <Badge tone="accent">{t('dev.komponen.aksen')}</Badge>
+          <Badge tone="ok">{t('common.tersimpan')}</Badge>
+          <Badge tone="warn">{t('dev.komponen.menunggu')}</Badge>
+          <Badge tone="error">{t('common.gagal')}</Badge>
         </div>
         <p className="mt-3 flex items-center gap-2 text-[13px] text-text-muted">
-          Pintasan <Kbd>Ctrl</Kbd> <Kbd>S</Kbd> untuk menyimpan.
+          {t('dev.komponen.pintasanSebelum')} <Kbd>Ctrl</Kbd> <Kbd>S</Kbd>{' '}
+          {t('dev.komponen.pintasanSesudah')}
         </p>
       </Section>
 
@@ -182,31 +199,29 @@ export function DevComponentsPage() {
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline">
-                <Info /> Buka Dialog
+                <Info /> {t('dev.komponen.bukaDialog')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Tambah Minggu</DialogTitle>
-                <DialogDescription>
-                  Dialog contoh dengan judul, deskripsi, dan aksi di footer.
-                </DialogDescription>
+                <DialogTitle>{t('dev.komponen.tambahMinggu')}</DialogTitle>
+                <DialogDescription>{t('dev.komponen.dialogDeskripsi')}</DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button variant="outline">Batal</Button>
-                <Button variant="primary">Tambah</Button>
+                <Button variant="outline">{t('common.batal')}</Button>
+                <Button variant="primary">{t('common.tambah')}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          <SimpleTooltip label="Cetak dokumen">
-            <Button variant="outline" size="icon" aria-label="Cetak">
+          <SimpleTooltip label={t('dev.komponen.cetakDokumen')}>
+            <Button variant="outline" size="icon" aria-label={t('dev.komponen.cetak')}>
               <Printer />
             </Button>
           </SimpleTooltip>
 
-          <SimpleTooltip label="Salin">
-            <Button variant="ghost" size="icon" aria-label="Salin">
+          <SimpleTooltip label={t('dev.komponen.salin')}>
+            <Button variant="ghost" size="icon" aria-label={t('dev.komponen.salin')}>
               <Copy />
             </Button>
           </SimpleTooltip>
@@ -223,18 +238,18 @@ export function DevComponentsPage() {
       <Section title="Card">
         <Card>
           <CardHeader>
-            <CardTitle>Ringkasan Minggu</CardTitle>
-            <CardDescription>Contoh kartu dengan header, isi, dan footer.</CardDescription>
+            <CardTitle>{t('dev.komponen.ringkasanMinggu')}</CardTitle>
+            <CardDescription>{t('dev.komponen.kartuDeskripsi')}</CardDescription>
           </CardHeader>
           <CardContent className="text-[13px] text-text-main">
-            Isi kartu. Semua sudut tegas, tanpa membulat.
+            {t('dev.komponen.isiKartu')}
           </CardContent>
           <CardFooter>
             <Button variant="primary" size="sm">
-              <Save /> Simpan
+              <Save /> {t('common.simpan')}
             </Button>
             <Button variant="ghost" size="sm">
-              <Trash2 /> Hapus
+              <Trash2 /> {t('common.hapus')}
             </Button>
           </CardFooter>
         </Card>
@@ -242,16 +257,16 @@ export function DevComponentsPage() {
 
       <Section title="Separator">
         <Separator />
-        <p className="mt-3 text-[12px] text-text-dim">Teks setelah pemisah.</p>
+        <p className="mt-3 text-[12px] text-text-dim">{t('dev.komponen.setelahPemisah')}</p>
       </Section>
 
       <Section title="Empty State">
         <Card padding="none">
           <EmptyState
             icon={Info}
-            title="Belum ada data"
-            description="Contoh tampilan saat data kosong."
-            action={<Button variant="primary">Mulai</Button>}
+            title={t('dev.komponen.belumAdaData')}
+            description={t('dev.komponen.kosongDeskripsi')}
+            action={<Button variant="primary">{t('dev.komponen.mulai')}</Button>}
           />
         </Card>
       </Section>

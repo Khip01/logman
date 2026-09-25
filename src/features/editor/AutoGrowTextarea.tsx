@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { cn } from '@/lib/utils/cn'
 
 interface AutoGrowTextareaProps {
@@ -8,6 +8,8 @@ interface AutoGrowTextareaProps {
   onKeyDown?: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void
   disabled?: boolean
   placeholder?: string
+  /** Bila nilainya berubah, textarea mengambil fokus. Dipakai banner validasi. */
+  focusToken?: number
   'aria-label': string
   className?: string
 }
@@ -31,6 +33,7 @@ export function AutoGrowTextarea({
   onKeyDown,
   disabled,
   placeholder,
+  focusToken,
   'aria-label': ariaLabel,
   className,
 }: AutoGrowTextareaProps) {
@@ -46,6 +49,16 @@ export function AutoGrowTextarea({
     node.style.height = 'auto'
     node.style.height = `${node.scrollHeight}px`
   }, [value])
+
+  /*
+   * Fokus terprogram dari banner validasi (AGENTS.md bagian 11.3). Memakai `token` yang
+   * naik setiap permintaan, sehingga klik berulang pada hari yang sama tetap memfokuskan
+   * ulang field ini.
+   */
+  useEffect(() => {
+    if (focusToken === undefined) return
+    ref.current?.focus()
+  }, [focusToken])
 
   return (
     <textarea

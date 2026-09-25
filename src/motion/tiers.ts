@@ -1,3 +1,5 @@
+import type { MessageKey } from '@/lib/i18n/messages/id'
+
 import type { MotionTier } from '@/stores/ui'
 
 /**
@@ -13,9 +15,9 @@ import type { MotionTier } from '@/stores/ui'
  */
 export interface MotionTierProfile {
   /** Label yang ditampilkan ke user. */
-  label: string
+  labelKey: MessageKey
   /** Deskripsi singkat. */
-  description: string
+  descriptionKey: MessageKey
   /** Jumlah item yang dianimasikan berurutan pada pratinjau. */
   previewItems: number
   /** Jeda antar item (stagger), dalam detik. 0 berarti tanpa stagger. */
@@ -28,47 +30,76 @@ export interface MotionTierProfile {
   duration: number
   /** Durasi reveal melingkar saat ganti tema, dalam detik. 0 berarti tanpa reveal. */
   revealDuration: number
+  /**
+   * Jumlah gelombang denyut kilatan baris saat banner validasi diklik (AGENTS.md
+   * bagian 11.3). 0 berarti tanpa kilatan sama sekali: baris langsung difokuskan.
+   */
+  flashWaves: number
+  /**
+   * Sapuan cahaya pada body seksi Pengaturan saat seksi dipilih dari kotak pencarian
+   * (AGENTS.md bagian 22). 0 berarti tanpa sapuan.
+   */
+  sectionShine: number
+  /**
+   * Garis border yang merembet melingkari seksi Pengaturan.
+   *
+   * 0 = tanpa garis (tier mati). 1 = garis tipis, tanpa pendinginan, untuk tier minimal.
+   * 2 = garis penuh berikut pendinginan di sekelilingnya.
+   */
+  sectionBorder: number
 }
 
 export const MOTION_TIER_PROFILE: Record<MotionTier, MotionTierProfile> = {
   penuh: {
-    label: 'Penuh',
-    description: 'Semua animasi aktif, termasuk stagger, gelombang, dan gerakan sekunder.',
+    labelKey: 'motion.penuh',
+    descriptionKey: 'motion.penuhDeskripsi',
     previewItems: 5,
     stagger: 0.09,
     secondaryMotion: true,
     pulse: true,
     duration: 0.42,
     revealDuration: 0.5,
+    flashWaves: 3,
+    sectionShine: 1,
+    sectionBorder: 2,
   },
   seimbang: {
-    label: 'Seimbang',
-    description: 'Stagger dan gerakan sekunder dikurangi, gelombang tetap ada.',
+    labelKey: 'motion.seimbang',
+    descriptionKey: 'motion.seimbangDeskripsi',
     previewItems: 5,
     stagger: 0.045,
     secondaryMotion: true,
     pulse: true,
     duration: 0.32,
     revealDuration: 0.36,
+    flashWaves: 2,
+    sectionShine: 0,
+    sectionBorder: 2,
   },
   minimal: {
-    label: 'Minimal',
-    description: 'Hanya transisi opacity. Tidak ada stagger, gerakan, atau gelombang.',
+    labelKey: 'motion.minimal',
+    descriptionKey: 'motion.minimalDeskripsi',
     previewItems: 5,
     stagger: 0,
     secondaryMotion: false,
     pulse: false,
     duration: 0.2,
     revealDuration: 0.22,
+    flashWaves: 1,
+    sectionShine: 0,
+    sectionBorder: 1,
   },
   mati: {
-    label: 'Mati',
-    description: 'Semua transisi non-esensial dimatikan. Perubahan tampil seketika.',
+    labelKey: 'motion.mati',
+    descriptionKey: 'motion.matiDeskripsi',
     previewItems: 5,
     stagger: 0,
     secondaryMotion: false,
     pulse: false,
     duration: 0,
     revealDuration: 0,
+    flashWaves: 0,
+    sectionShine: 0,
+    sectionBorder: 0,
   },
 }

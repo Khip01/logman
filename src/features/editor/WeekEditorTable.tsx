@@ -2,6 +2,8 @@ import { WeekProgress } from '@/components/shared/WeekProgress'
 import { disabledReasonFor, formatWeekRange, type MagangRange } from '@/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari } from '@/lib/domain/date'
 import type { DayOfWeek, WeekEntry } from '@/lib/domain/types'
+import { DEFAULT_LOCALE, useLocale, useT } from '@/lib/i18n'
+import type { MessageKey } from '@/lib/i18n/messages/id'
 import { useConfigStore } from '@/stores/config'
 import { EditorRow } from './EditorRow'
 
@@ -13,7 +15,12 @@ import { EditorRow } from './EditorRow'
  * yang bersangkutan.
  */
 
-const KOLOM = ['Hari, Tanggal', 'Jam Masuk', 'Jam Pulang', 'Kegiatan'] as const
+const KOLOM: readonly MessageKey[] = [
+  'editor.hariTanggal',
+  'editor.jamMasuk',
+  'editor.jamPulang',
+  'editor.kegiatan',
+]
 
 interface WeekEditorTableProps {
   week: WeekEntry
@@ -24,6 +31,13 @@ interface WeekEditorTableProps {
 
 export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps) {
   const jamDefault = useConfigStore((s) => s.config.jamDefault)
+  const bahasa = useLocale()
+  const t = useT()
+
+  // Isi tabel ikut bahasa antarmuka, kecuali saat dicetak: dokumen selalu Indonesia
+  // (AGENTS.md bagian 21). Karena kelas print tidak bisa mengubah teks, teks dokumen
+  // diambil dari locale tetap `id` saat mode dokumen aktif.
+  const isiLocale = bahasa
 
   return (
     <div className="theme-t border border-doc-line bg-doc-surface print:border-0 print:bg-doc-paper">
@@ -38,9 +52,9 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
         <caption className="sr-only">Kegiatan minggu {formatWeekRange(week.startDate)}</caption>
         <thead>
           <tr>
-            {KOLOM.map((label) => (
-              <th key={label} scope="col" className="px-2 py-1.5 text-[12px]">
-                {label}
+            {KOLOM.map((key) => (
+              <th key={key} scope="col" className="px-2 py-1.5 text-[12px]">
+                {t(key)}
               </th>
             ))}
           </tr>
@@ -50,8 +64,8 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
             <EditorRow
               key={day.date}
               date={day.date}
-              hariLabel={dayNameId(day.date)}
-              tanggalLabel={formatTanggalTanpaHari(day.date)}
+              hariLabel={dayNameId(day.date, isiLocale)}
+              tanggalLabel={formatTanggalTanpaHari(day.date, isiLocale)}
               disabled={disabledReasonFor(day.date, monthKey, range) !== null}
               jamDefault={jamDefault[dayNameKey(day.date)]}
             />
@@ -64,5 +78,5 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
 
 /** Memetakan tanggal ke kunci jam default, misal "senin". */
 function dayNameKey(iso: string): DayOfWeek {
-  return dayNameId(iso).toLowerCase() as DayOfWeek
+  return dayNameId(iso, DEFAULT_LOCALE).toLowerCase() as DayOfWeek
 }

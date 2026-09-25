@@ -8,42 +8,21 @@
  *   zona waktu yang bisa menggeser hari.
  */
 
+import { BULAN, BULAN_SHORT as BULAN_SHORT_NAMA, HARI, type Locale } from '@/lib/i18n/locale'
+
 export const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Nama hari dalam bahasa Indonesia, indeks 0 = Minggu (sama dengan Date.getDay). */
-export const HARI_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] as const
-
-/** Nama bulan dalam bahasa Indonesia, indeks 0 = Januari. */
-export const BULAN_ID = [
-  'Januari',
-  'Februari',
-  'Maret',
-  'April',
-  'Mei',
-  'Juni',
-  'Juli',
-  'Agustus',
-  'September',
-  'Oktober',
-  'November',
-  'Desember',
-] as const
-
-/** Label pendek 3 huruf untuk rail sidebar. Tidak ambigu antar bulan. */
-export const BULAN_SHORT = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'Mei',
-  'Jun',
-  'Jul',
-  'Agu',
-  'Sep',
-  'Okt',
-  'Nov',
-  'Des',
-] as const
+/**
+ * Nama hari dan bulan TIDAK lagi ditulis di sini, melainkan di
+ * `src/lib/i18n/locale.ts`. Alasannya: nama hari dan bulan adalah data tanggal yang
+ * perlu mengikuti bahasa antarmuka, sedangkan berkas ini tetap murni dan tanpa React.
+ *
+ * `HARI_ID`, `BULAN_ID`, dan `BULAN_SHORT` di bawah hanyalah alias bahasa Indonesia
+ * untuk kompatibilitas. Kode baru WAJIB memakai fungsi ber-locale di bawahnya.
+ */
+export const HARI_ID = HARI.id
+export const BULAN_ID = BULAN.id
+export const BULAN_SHORT = BULAN_SHORT_NAMA.id
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
 
@@ -99,8 +78,8 @@ export function dayOfWeek(iso: string): number {
 }
 
 /** Nama hari bahasa Indonesia. */
-export function dayNameId(iso: string): string {
-  return HARI_ID[dayOfWeek(iso)] ?? ''
+export function dayNameId(iso: string, locale: Locale = 'id'): string {
+  return HARI[locale][dayOfWeek(iso)] ?? ''
 }
 
 /** Tanggal Senin dari minggu yang memuat tanggal tersebut. */
@@ -122,33 +101,33 @@ export function monthKey(iso: string): string {
 }
 
 /** Label panjang bulan, misal "September 2026", dari kunci `YYYY-MM`. */
-export function monthLabel(key: string): string {
+export function monthLabel(key: string, locale: Locale = 'id'): string {
   const [y, m] = key.split('-').map(Number)
   if (!y || !m || m < 1 || m > 12) {
     throw new Error(`Kunci bulan tidak valid: ${key}`)
   }
-  return `${BULAN_ID[m - 1]} ${y}`
+  return `${BULAN[locale][m - 1]} ${y}`
 }
 
 /** Label pendek 3 huruf dari kunci `YYYY-MM`. */
-export function monthShort(key: string): string {
+export function monthShort(key: string, locale: Locale = 'id'): string {
   const [, m] = key.split('-').map(Number)
   if (!m || m < 1 || m > 12) {
     throw new Error(`Kunci bulan tidak valid: ${key}`)
   }
-  return BULAN_SHORT[m - 1] ?? ''
+  return BULAN_SHORT_NAMA[locale][m - 1] ?? ''
 }
 
 /**
  * Format tanggal lengkap bahasa Indonesia, misal "Senin, 5 Januari 2026".
  * Sesuai AGENTS.md bagian 11.2.
  */
-export function formatTanggalId(iso: string): string {
+export function formatTanggalId(iso: string, locale: Locale = 'id'): string {
   const [y, m, d] = iso.split('-').map(Number)
   if (!y || !m || !d) {
     throw new Error(`Tanggal tidak valid: ${iso}`)
   }
-  return `${dayNameId(iso)}, ${d} ${BULAN_ID[m - 1] ?? ''} ${y}`
+  return `${dayNameId(iso, locale)}, ${d} ${BULAN[locale][m - 1] ?? ''} ${y}`
 }
 
 /**
@@ -157,21 +136,21 @@ export function formatTanggalId(iso: string): string {
  * Dipakai bersama nama hari yang terpisah, agar tabel dokumen tidak mengulang nama
  * hari (kolom sudah punya baris nama hari sendiri).
  */
-export function formatTanggalTanpaHari(iso: string): string {
+export function formatTanggalTanpaHari(iso: string, locale: Locale = 'id'): string {
   const [y, m, d] = iso.split('-').map(Number)
   if (!y || !m || !d) {
     throw new Error(`Tanggal tidak valid: ${iso}`)
   }
-  return `${d} ${BULAN_ID[m - 1] ?? ''} ${y}`
+  return `${d} ${BULAN[locale][m - 1] ?? ''} ${y}`
 }
 
 /** Format tanggal pendek, misal "5 Jan 2026". */
-export function formatTanggalPendek(iso: string): string {
+export function formatTanggalPendek(iso: string, locale: Locale = 'id'): string {
   const [y, m, d] = iso.split('-').map(Number)
   if (!y || !m || !d) {
     throw new Error(`Tanggal tidak valid: ${iso}`)
   }
-  return `${d} ${BULAN_SHORT[m - 1] ?? ''} ${y}`
+  return `${d} ${BULAN_SHORT_NAMA[locale][m - 1] ?? ''} ${y}`
 }
 
 /** Benar bila tanggal berada di dalam rentang inklusif. */

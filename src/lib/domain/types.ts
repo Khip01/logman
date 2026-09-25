@@ -3,6 +3,7 @@
  * diuji tanpa React (AGENTS.md bagian 4 dan 14).
  */
 
+import type { Locale } from '@/lib/i18n/locale'
 import type { ContentScale, FontDokumen } from './dokumen'
 import type { JamFormat } from './jamFormat'
 
@@ -83,6 +84,11 @@ export interface AppConfig {
   fontDokumen: FontDokumen
   /** Skala ukuran tampilan konten Log Book di layar. Cetak dan PDF tidak terpengaruh. */
   contentScale: ContentScale
+  /**
+   * Bahasa antarmuka aplikasi. Cetak dan PDF SELALU bahasa Indonesia mengikuti template
+   * kampus, apa pun nilai ini (AGENTS.md bagian 21).
+   */
+  bahasa: Locale
   /** Menampilkan menu dan route pengembangan. Default mati. */
   tampilkanDevUi: boolean
   /** Nama default Dosen Pembimbing untuk blok tanda tangan. */

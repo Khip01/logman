@@ -32,6 +32,11 @@ test.describe('settings lanjutan', () => {
       formatJam: '24',
       fontDokumen: 'times',
       contentScale: 1,
+      // Nama pembimbing ikut persist; kosongkan agar penambahan selalu terdeteksi
+      // sebagai perubahan pada setiap run.
+      dosenPembimbing: '',
+      pembimbingLapangan: [],
+      pembimbingLapanganDefault: null,
       jamDefault: {
         senin: { masuk: '08.00', pulang: '16.00' },
         selasa: { masuk: '08.00', pulang: '16.00' },

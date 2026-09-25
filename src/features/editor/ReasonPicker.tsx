@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Combobox } from '@/components/ui/Combobox'
+import { useT } from '@/lib/i18n'
 
 /**
  * Pemilih alasan untuk hari yang masih kosong (AGENTS.md bagian 11.3).
@@ -18,6 +19,7 @@ export function ReasonPicker({
   onCommit: (alasan: string) => void
   disabled?: boolean
 }) {
+  const t = useT()
   const [draft, setDraft] = useState('')
 
   function commit(value: string) {
@@ -35,7 +37,7 @@ export function ReasonPicker({
       onValueChange={setDraft}
       onSelect={commit}
       onInputBlur={() => commit(draft)}
-      placeholder="Atau pilih alasan"
+      placeholder={t('editor.atauPilihAlasan')}
       className="no-print [&_input]:h-6 [&_input]:border-dashed [&_input]:text-[11px]"
     />
   )

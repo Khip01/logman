@@ -200,4 +200,48 @@ test.describe('navigasi bulan dan minggu', () => {
     await expect(juli).toHaveAttribute('aria-expanded', 'true')
     await expect(agustus).toHaveAttribute('aria-expanded', 'true')
   })
+
+  test('minggu lintas bulan hanya ditandai aktif pada bulan konteksnya', async ({
+    page,
+    request,
+  }) => {
+    // Rentang ini membuat minggu 31 Agu - 5 Sep muncul di Agustus (M6) DAN September (M1).
+    const current = (await (await request.get('/api/config')).json()) as {
+      config: Record<string, unknown>
+    }
+    await request.put('/api/config', {
+      data: {
+        config: {
+          ...current.config,
+          magang: { mulai: '2026-08-01', selesai: '2026-09-30' },
+          tampilkanDevUi: false,
+        },
+      },
+    })
+
+    await page.goto('/')
+    // Pindah ke Agustus lalu pilih M6, sehingga bulan konteksnya Agustus.
+    await page.getByRole('button', { name: 'Bulan sebelumnya' }).click()
+    await page.getByRole('tab', { name: /^M6/ }).click()
+
+    await page.getByTestId('sidebar-open-logo').click()
+    const drawer = page.getByTestId('sidebar-drawer')
+    await expect(drawer).toBeVisible()
+
+    // Buka September TAMBAHAN; Agustus sudah otomatis terbuka sebagai bulan aktif.
+    await drawer.getByRole('button', { name: 'September 2026' }).click()
+    await expect(drawer.getByRole('button', { name: 'September 2026' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+
+    // Kedua baris minggu yang sama-sama "31 Agu - 5 Sep" terlihat, tetapi HANYA SATU
+    // yang ditandai aktif, yaitu milik Agustus (bulan konteks), bukan September.
+    await expect(drawer.locator('button[aria-current="true"]')).toHaveCount(1)
+
+    const agustusM6 = drawer
+      .getByRole('button', { name: 'Agustus 2026' })
+      .locator('xpath=following-sibling::ul[1]//button[contains(., "M6")]')
+    await expect(agustusM6).toHaveAttribute('aria-current', 'true')
+  })
 })

@@ -1,10 +1,13 @@
-import { Palette, Sparkles, UserRound } from 'lucide-react'
+import { m } from 'motion/react'
 import { DateInput } from '@/components/ui/DateInput'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { LOCALES, useT } from '@/lib/i18n'
+import type { MessageKey } from '@/lib/i18n/messages/id'
 import { setThemeAnimated } from '@/lib/theme/themeTransition'
 import { cn } from '@/lib/utils/cn'
+import { pageVariants } from '@/motion/presets'
 import { MOTION_TIER_PROFILE } from '@/motion/tiers'
 import { useConfigStore } from '@/stores/config'
 import { MOTION_TIERS, THEMES, useUiStore } from '@/stores/ui'
@@ -12,10 +15,43 @@ import { AlasanSection } from './AlasanSection'
 import { DokumenEksporSection } from './DokumenEksporSection'
 import { JamDefaultSection } from './JamDefaultSection'
 import { PenandaTanganSection } from './PenandaTanganSection'
+import { SettingsFlashProvider } from './SettingsFlash'
+import { SettingsSearch } from './SettingsSearch'
+import { SettingsSection } from './SettingsSection'
 import { TampilanDevSection } from './TampilanDevSection'
 import { TierPreview } from './TierPreview'
 
+/**
+ * Pemilih bahasa antarmuka (AGENTS.md bagian 21).
+ *
+ * Dokumen cetak dan PDF selalu bahasa Indonesia, karena mengikuti template kampus;
+ * pilihan di sini hanya mengubah antarmuka aplikasi.
+ */
+function BahasaSection() {
+  const t = useT()
+  const bahasa = useConfigStore((s) => s.config.bahasa)
+  const update = useConfigStore((s) => s.update)
+
+  return (
+    <SettingsSection id="bahasa" title={t('settings.bahasa')}>
+      <Field label={t('settings.bahasa')} description={t('settings.bahasaDeskripsi')}>
+        <SegmentedControl
+          aria-label={t('settings.bahasa')}
+          options={LOCALES.map((value) => ({
+            value,
+            label: t(`settings.bahasa.${value}` as MessageKey),
+          }))}
+          value={bahasa}
+          onValueChange={(value) => update({ bahasa: value })}
+          className="w-fit"
+        />
+      </Field>
+    </SettingsSection>
+  )
+}
+
 export function SettingsPage() {
+  const t = useT()
   const theme = useUiStore((s) => s.theme)
   const motion = useUiStore((s) => s.motion)
   const setMotion = useUiStore((s) => s.setMotion)
@@ -24,148 +60,163 @@ export function SettingsPage() {
   const update = useConfigStore((s) => s.update)
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="mb-8 text-[17px] font-semibold text-text-primary">Pengaturan</h1>
+    <SettingsFlashProvider>
+      <m.div
+        initial="hidden"
+        animate="visible"
+        variants={pageVariants}
+        className="mx-auto max-w-3xl px-6 py-10"
+      >
+        <h1 className="mb-6 text-[17px] font-semibold text-text-primary">{t('settings.judul')}</h1>
 
-      {/* Profil dan rentang magang. Wajib sebelum daftar Log Book muncul. */}
-      <section className="mb-10" data-testid="section-profil">
-        <SectionTitle icon={UserRound} title="Profil dan Rentang Magang" />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field htmlFor="set-nama" label="Nama mahasiswa">
-            <Input
-              id="set-nama"
-              value={config.profil.nama}
-              placeholder="Nama lengkap"
-              onChange={(event) =>
-                update({ profil: { ...config.profil, nama: event.target.value } })
-              }
-            />
-          </Field>
-          <Field htmlFor="set-nim" label="NIM">
-            <Input
-              id="set-nim"
-              value={config.profil.nim}
-              placeholder="Nomor induk mahasiswa"
-              onChange={(event) =>
-                update({ profil: { ...config.profil, nim: event.target.value } })
-              }
-            />
-          </Field>
-          <Field htmlFor="set-prodi" label="Program Studi">
-            <Input
-              id="set-prodi"
-              value={config.profil.programStudi}
-              onChange={(event) =>
-                update({ profil: { ...config.profil, programStudi: event.target.value } })
-              }
-            />
-          </Field>
-          <Field htmlFor="set-mitra" label="Nama Mitra Industri">
-            <Input
-              id="set-mitra"
-              value={config.profil.mitraIndustri}
-              onChange={(event) =>
-                update({ profil: { ...config.profil, mitraIndustri: event.target.value } })
-              }
-            />
-          </Field>
-          <Field
-            htmlFor="set-mulai"
-            label="Tanggal mulai magang"
-            description="Daftar Log Book dibuat otomatis dari rentang ini."
-          >
-            <DateInput
-              id="set-mulai"
-              value={config.magang.mulai ?? ''}
-              onChange={(event) =>
-                update({ magang: { ...config.magang, mulai: event.target.value } })
-              }
-            />
-          </Field>
-          <Field htmlFor="set-selesai" label="Tanggal selesai magang">
-            <DateInput
-              id="set-selesai"
-              value={config.magang.selesai ?? ''}
-              onChange={(event) =>
-                update({ magang: { ...config.magang, selesai: event.target.value } })
-              }
-            />
-          </Field>
+        {/*
+          Bar pencarian dibuat sticky supaya tetap terjangkau saat user menggulir jauh ke
+          bawah, dan tidak lagi terjebak di dalam animasi masuk halaman: `transform` pada
+          induk yang beranimasi akan mengurung `position: sticky` di dalamnya.
+          `scroll-mt-20` pada tiap seksi memberi ruang setinggi bar ini.
+        */}
+        {/*
+          `pointer-events-none` pada bar dan `pointer-events-auto` pada kotak pencarian
+          penting: bar ini sticky, sehingga konten yang digulir naik akan lewat DI
+          BELAKANGNYA. Tanpa itu, bagian konten yang kebetulan berada di area bar tidak
+          bisa diklik karena kliknya tertelan bar. Yang boleh menerima klik hanya kotak
+          pencariannya sendiri.
+        */}
+        <div className="theme-t pointer-events-none sticky top-0 z-20 -mx-6 mb-6 border-b border-border-base bg-bg-body px-6 py-3">
+          <div className="pointer-events-auto">
+            <SettingsSearch />
+          </div>
         </div>
-      </section>
 
-      {/* Tema: grid kartu swatch miniatur, bukan radio (AGENTS.md bagian 10) */}
-      <section className="mb-10" data-testid="section-tema">
-        <SectionTitle icon={Palette} title="Tema" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {THEMES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={(event) => setThemeAnimated(item.id, { x: event.clientX, y: event.clientY })}
-              aria-pressed={theme === item.id}
-              className={cn(
-                'theme-t overflow-hidden border text-left',
-                theme === item.id
-                  ? 'border-border-light bg-bg-card'
-                  : 'border-border-base hover:border-border-light',
-              )}
+        {/* Profil dan rentang magang. Wajib sebelum daftar Log Book muncul. */}
+        <SettingsSection id="profil" title={t('settings.profil')}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field htmlFor="set-nama" label={t('settings.namaMahasiswa')}>
+              <Input
+                id="set-nama"
+                value={config.profil.nama}
+                placeholder={t('settings.namaLengkap')}
+                onChange={(event) =>
+                  update({ profil: { ...config.profil, nama: event.target.value } })
+                }
+              />
+            </Field>
+            <Field htmlFor="set-nim" label={t('settings.nim')}>
+              <Input
+                id="set-nim"
+                value={config.profil.nim}
+                placeholder={t('settings.nimPanjang')}
+                onChange={(event) =>
+                  update({ profil: { ...config.profil, nim: event.target.value } })
+                }
+              />
+            </Field>
+            <Field htmlFor="set-prodi" label={t('settings.programStudi')}>
+              <Input
+                id="set-prodi"
+                value={config.profil.programStudi}
+                onChange={(event) =>
+                  update({ profil: { ...config.profil, programStudi: event.target.value } })
+                }
+              />
+            </Field>
+            <Field htmlFor="set-mitra" label={t('settings.mitraIndustri')}>
+              <Input
+                id="set-mitra"
+                value={config.profil.mitraIndustri}
+                onChange={(event) =>
+                  update({ profil: { ...config.profil, mitraIndustri: event.target.value } })
+                }
+              />
+            </Field>
+            <Field
+              htmlFor="set-mulai"
+              label={t('settings.tanggalMulai')}
+              description={t('settings.tanggalMulaiDeskripsi')}
             >
-              {/* data-theme hanya di area miniatur, agar label tetap ikut tema aplikasi */}
-              <div data-theme={item.id}>
-                <ThemeSwatch />
-              </div>
-              <div className="flex items-center justify-between gap-2 border-t border-border-base px-3 py-2">
-                <span className="truncate text-[12px] text-text-main">{item.label}</span>
-                {theme === item.id ? (
-                  <span className="size-2 shrink-0 bg-accent" aria-hidden />
-                ) : null}
-              </div>
-            </button>
-          ))}
-        </div>
-      </section>
+              <DateInput
+                id="set-mulai"
+                value={config.magang.mulai ?? ''}
+                onChange={(event) =>
+                  update({ magang: { ...config.magang, mulai: event.target.value } })
+                }
+              />
+            </Field>
+            <Field htmlFor="set-selesai" label={t('settings.tanggalSelesai')}>
+              <DateInput
+                id="set-selesai"
+                value={config.magang.selesai ?? ''}
+                onChange={(event) =>
+                  update({ magang: { ...config.magang, selesai: event.target.value } })
+                }
+              />
+            </Field>
+          </div>
+        </SettingsSection>
 
-      {/* Tier animasi: kontrol manual, default penuh (AGENTS.md bagian 8.1) */}
-      <section className="mb-10" data-testid="section-tier">
-        <SectionTitle icon={Sparkles} title="Tier Animasi" />
-        <p className="mb-3 text-[12px] text-text-muted">
-          Menentukan kadar gerakan sekunder. Tier tinggi lebih ekspresif dan lebih berat.
-        </p>
-        <div className="mb-4">
-          <SegmentedControl
-            aria-label="Tier animasi"
-            options={MOTION_TIERS.map((tier) => ({
-              value: tier,
-              label: MOTION_TIER_PROFILE[tier].label,
-            }))}
-            value={motion}
-            onValueChange={(value) => {
-              setMotion(value)
-              update({ tierAnimasi: value })
-            }}
-          />
-        </div>
+        {/* Tema: grid kartu swatch miniatur, bukan radio (AGENTS.md bagian 10) */}
+        <SettingsSection id="tema" title={t('settings.tema')}>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {THEMES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={(event) =>
+                  setThemeAnimated(item.id, { x: event.clientX, y: event.clientY })
+                }
+                aria-pressed={theme === item.id}
+                className={cn(
+                  'theme-t overflow-hidden border text-left',
+                  theme === item.id
+                    ? 'border-border-light bg-bg-card'
+                    : 'border-border-base hover:border-border-light',
+                )}
+              >
+                {/* data-theme hanya di area miniatur, agar label tetap ikut tema aplikasi */}
+                <div data-theme={item.id}>
+                  <ThemeSwatch />
+                </div>
+                <div className="flex items-center justify-between gap-2 border-t border-border-base px-3 py-2">
+                  <span className="truncate text-[12px] text-text-main">{t(item.labelKey)}</span>
+                  {theme === item.id ? (
+                    <span className="size-2 shrink-0 bg-accent" aria-hidden />
+                  ) : null}
+                </div>
+              </button>
+            ))}
+          </div>
+        </SettingsSection>
 
-        {/* Pratinjau mini window di bawah tier selector, di atas deskripsinya. */}
-        <TierPreview tier={motion} />
-      </section>
+        {/* Tier animasi: kontrol manual, default penuh (AGENTS.md bagian 8.1) */}
+        <SettingsSection id="tier" title={t('settings.tierAnimasi')}>
+          <p className="mb-3 text-[12px] text-text-muted">{t('settings.tierAnimasiDeskripsi')}</p>
+          <div className="mb-4">
+            <SegmentedControl
+              aria-label={t('settings.tierAnimasi')}
+              options={MOTION_TIERS.map((tier) => ({
+                value: tier,
+                label: t(MOTION_TIER_PROFILE[tier].labelKey),
+              }))}
+              value={motion}
+              onValueChange={(value) => {
+                setMotion(value)
+                update({ tierAnimasi: value })
+              }}
+            />
+          </div>
 
-      <JamDefaultSection />
-      <AlasanSection />
-      <PenandaTanganSection />
-      <DokumenEksporSection />
-      <TampilanDevSection />
-    </div>
-  )
-}
+          {/* Pratinjau mini window di bawah tier selector, di atas deskripsinya. */}
+          <TierPreview tier={motion} />
+        </SettingsSection>
 
-function SectionTitle({ icon: Icon, title }: { icon: typeof Palette; title: string }) {
-  return (
-    <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-      <Icon className="size-4" strokeWidth={1.75} />
-      {title}
-    </h2>
+        <BahasaSection />
+        <JamDefaultSection />
+        <AlasanSection />
+        <PenandaTanganSection />
+        <DokumenEksporSection />
+        <TampilanDevSection />
+      </m.div>
+    </SettingsFlashProvider>
   )
 }
 

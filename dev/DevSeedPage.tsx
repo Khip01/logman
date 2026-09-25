@@ -2,6 +2,7 @@ import { Sprout } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { buildSeedPatch } from '@/lib/domain/seed'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { useConfigStore } from '@/stores/config'
 import { useLogbookStore } from '@/stores/logbook'
@@ -15,6 +16,7 @@ import { useLogsStore } from '@/stores/logs'
  * patch autosave sehingga seluruh bulan tersimpan dalam satu permintaan.
  */
 export function DevSeedPage() {
+  const t = useT()
   const months = useLogbookStore((s) => s.months)
   const magang = useConfigStore((s) => s.config.magang)
   const setDays = useLogsStore((s) => s.setDays)
@@ -28,30 +30,29 @@ export function DevSeedPage() {
     if (!activeMonth || !magang.mulai || !magang.selesai) return
     const patch = buildSeedPatch(activeMonth, { mulai: magang.mulai, selesai: magang.selesai })
     setDays(patch)
-    setResult(`${Object.keys(patch).length} hari terisi contoh pada ${activeMonth.label}.`)
+    setResult(t('dev.seed.berhasil', { n: Object.keys(patch).length, bulan: activeMonth.label }))
   }
 
   if (months.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="mb-2 text-[17px] font-semibold text-text-primary">Mode Seed</h1>
-        <p className="text-[13px] text-text-muted">
-          Atur rentang magang di Pengaturan terlebih dahulu.
-        </p>
+        <h1 className="mb-2 text-[17px] font-semibold text-text-primary">
+          {t('dev.seed.judulPanjang')}
+        </h1>
+        <p className="text-[13px] text-text-muted">{t('dev.seed.tanpaRentang')}</p>
       </div>
     )
   }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="mb-2 text-[17px] font-semibold text-text-primary">Mode Seed</h1>
-      <p className="mb-6 text-[13px] text-text-muted">
-        Isi satu bulan dengan data contoh untuk pengujian cepat. Tindakan ini menimpa hari yang bisa
-        diisi pada bulan terpilih.
-      </p>
+      <h1 className="mb-2 text-[17px] font-semibold text-text-primary">
+        {t('dev.seed.judulPanjang')}
+      </h1>
+      <p className="mb-6 text-[13px] text-text-muted">{t('dev.seed.deskripsiPanjang')}</p>
 
       <fieldset className="mb-4 border-0 p-0">
-        <legend className="mb-2 p-0 text-[12px] text-text-dim">Pilih bulan seed</legend>
+        <legend className="mb-2 p-0 text-[12px] text-text-dim">{t('dev.seed.pilihBulan')}</legend>
         <div className="flex flex-wrap gap-2">
           {months.map((month) => (
             <button
@@ -78,7 +79,7 @@ export function DevSeedPage() {
 
       <Button variant="primary" data-testid="seed-submit" disabled={!activeMonth} onClick={seed}>
         <Sprout className="size-3.5" strokeWidth={1.75} />
-        Isi contoh {activeMonth?.label}
+        {t('dev.seed.isiContoh', { bulan: activeMonth?.label ?? '' })}
       </Button>
 
       {result ? (

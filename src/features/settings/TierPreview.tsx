@@ -1,6 +1,7 @@
 import { RotateCcw } from 'lucide-react'
 import { m } from 'motion/react'
 import { useMemo, useState } from 'react'
+import { useT } from '@/lib/i18n'
 import { useDocumentVisible } from '@/lib/utils/useDocumentVisible'
 import { buildTierPreviewVariants, pulseVariants } from '@/motion/presets'
 import { MOTION_TIER_PROFILE } from '@/motion/tiers'
@@ -24,6 +25,7 @@ interface TierPreviewProps {
  * perubahan `key`.
  */
 export function TierPreview({ tier }: TierPreviewProps) {
+  const t = useT()
   const profile = MOTION_TIER_PROFILE[tier]
   const variants = useMemo(() => buildTierPreviewVariants(profile), [profile])
   const [replayCount, setReplayCount] = useState(0)
@@ -39,10 +41,10 @@ export function TierPreview({ tier }: TierPreviewProps) {
       <div className="flex items-center justify-between gap-3 border-b border-border-base px-3 py-2">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-text-dim">
-            Pratinjau
+            {t('settings.pratinjau')}
           </span>
           <span className="border border-border-base px-1.5 py-0.5 text-[10px] text-text-muted">
-            {profile.label}
+            {t(profile.labelKey)}
           </span>
         </div>
         <button
@@ -123,7 +125,9 @@ export function TierPreview({ tier }: TierPreviewProps) {
           </div>
         </div>
 
-        <p className="mt-3 text-[11px] leading-relaxed text-text-dim">{profile.description}</p>
+        <p className="mt-3 text-[11px] leading-relaxed text-text-dim">
+          {t(profile.descriptionKey)}
+        </p>
       </div>
     </div>
   )

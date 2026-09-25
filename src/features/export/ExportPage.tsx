@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
 import { buildMonthGroups, type MagangRange } from '@/lib/domain/calendar'
 import { monthIncompleteDates } from '@/lib/domain/editor'
+import { useLocale, useT } from '@/lib/i18n'
 import { useConfigStore } from '@/stores/config'
 import { useLogsStore } from '@/stores/logs'
 
@@ -18,6 +19,8 @@ import { useLogsStore } from '@/stores/logs'
  * juga menolak dengan 422 bila dipanggil langsung.
  */
 export function ExportPage() {
+  const t = useT()
+  const locale = useLocale()
   const config = useConfigStore((s) => s.config)
   const logs = useLogsStore((s) => s.data)
   const configLoaded = useConfigStore((s) => s.loaded)
@@ -34,7 +37,7 @@ export function ExportPage() {
     )
   }
 
-  const months = buildMonthGroups(config.magang.mulai ?? '', config.magang.selesai ?? '')
+  const months = buildMonthGroups(config.magang.mulai ?? '', config.magang.selesai ?? '', locale)
   const range: MagangRange = { mulai: config.magang.mulai, selesai: config.magang.selesai }
 
   if (months.length === 0) {
@@ -42,8 +45,8 @@ export function ExportPage() {
       <EmptyState
         icon={FileText}
         headingLevel={1}
-        title="Belum ada bulan untuk diekspor"
-        description="Atur rentang magang di Pengaturan terlebih dahulu."
+        title={t('ekspor.belumAdaBulan')}
+        description={t('ekspor.belumAdaBulanDeskripsi')}
       />
     )
   }
@@ -59,7 +62,7 @@ export function ExportPage() {
       })
       const body = (await response.json()) as { ok?: boolean; fileName?: string; error?: string }
       if (!response.ok || !body.ok) {
-        setError(body.error ?? 'Gagal mengekspor PDF.')
+        setError(body.error ?? t('ekspor.gagalEkspor'))
         return
       }
       const link = document.createElement('a')
@@ -67,7 +70,7 @@ export function ExportPage() {
       link.download = body.fileName ?? `LogBook_${monthKey}.pdf`
       link.click()
     } catch {
-      setError('Gagal menghubungi server ekspor.')
+      setError(t('ekspor.gagalServer'))
     } finally {
       setExporting(null)
     }
@@ -75,12 +78,11 @@ export function ExportPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
-      <h1 className="mb-2 text-[17px] font-semibold text-text-primary">Ekspor PDF</h1>
+      <h1 className="mb-2 text-[17px] font-semibold text-text-primary">{t('ekspor.judul')}</h1>
       <p className="mb-6 text-[13px] text-text-muted">
-        Unduh Log Book per bulan sebagai PDF. Nama file mengikuti pola{' '}
-        <code className="font-mono text-[12px]">
-          LogBook_{config.profil.nim || '<NIM>'}_Bulan-Tahun.pdf
-        </code>
+        {t('ekspor.deskripsi', {
+          pola: `LogBook_${config.profil.nim || '<NIM>'}_Bulan-Tahun.pdf`,
+        })}
       </p>
 
       {error ? (
@@ -122,10 +124,10 @@ export function ExportPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-medium text-text-primary">{month.label}</span>
-                  <Badge>{weekCount} minggu</Badge>
+                  <Badge>{t('ekspor.minggu', { n: weekCount })}</Badge>
                 </div>
                 <p className="mt-0.5 text-[11px] text-text-dim">
-                  {dayCount} hari, {filledCount} terisi
+                  {t('ekspor.hariTerisi', { hari: dayCount, terisi: filledCount })}
                 </p>
                 {blocked ? (
                   <p
@@ -133,7 +135,7 @@ export function ExportPage() {
                     className="mt-0.5 flex items-center gap-1 text-[11px] text-status-warn-text"
                   >
                     <TriangleAlert className="size-3 shrink-0" strokeWidth={1.75} />
-                    {incomplete.length} hari belum lengkap
+                    {t('ekspor.belumLengkap', { n: incomplete.length })}
                   </p>
                 ) : null}
               </div>
@@ -149,7 +151,7 @@ export function ExportPage() {
                 ) : (
                   <>
                     <Download className="size-3.5" strokeWidth={1.75} />
-                    Ekspor
+                    {t('ekspor.ekspor')}
                   </>
                 )}
               </Button>

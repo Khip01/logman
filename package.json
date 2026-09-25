@@ -3,12 +3,29 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "logman - Generator Log Book Magang. Aplikasi web lokal untuk menyusun, mengedit, dan mengekspor Log Book kegiatan magang ke PDF siap cetak.",
+  "description": "logman - Internship Log Book generator. A local web app to write, edit, and export daily internship activities to a print-ready PDF.",
   "author": {
     "name": "Khip01",
     "url": "https://github.com/Khip01"
   },
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Khip01/logman.git"
+  },
+  "homepage": "https://github.com/Khip01/logman#readme",
+  "bugs": {
+    "url": "https://github.com/Khip01/logman/issues"
+  },
+  "keywords": [
+    "logbook",
+    "internship",
+    "magang",
+    "pdf",
+    "vite",
+    "react",
+    "typescript"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -35,6 +52,7 @@
     "test:e2e:print": "playwright test e2e/print.spec.ts",
     "test:e2e:perf": "playwright test e2e/perf.spec.ts",
     "test:e2e:visual": "playwright test e2e/visual.spec.ts",
+    "test:e2e:settings-search": "playwright test e2e/settings-search.spec.ts",
     "analyze": "vite build && node scripts/analyze-bundle.mjs",
     "audit:motion": "node scripts/audit-motion.mjs",
     "audit:a11y": "node scripts/axe-check.mjs"

@@ -1,36 +1,40 @@
-import { Download, FileText, FolderOpen, RotateCcw } from 'lucide-react'
+import { Download, FolderOpen, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import {
-  CONTENT_SCALE_LABEL,
+  CONTENT_SCALE_LABEL_KEY,
   CONTENT_SCALES,
   type ContentScale,
-  FONT_DOKUMEN_LABEL,
+  FONT_DOKUMEN_LABEL_KEY,
   FONT_DOKUMEN_LIST,
 } from '@/lib/domain/dokumen'
 import { UKURAN_KERTAS } from '@/lib/domain/schema'
 import type { UkuranKertas } from '@/lib/domain/types'
+import { useT } from '@/lib/i18n'
+import type { MessageKey } from '@/lib/i18n/messages/id'
 import { getRepositories } from '@/lib/repo'
 import { useConfigStore } from '@/stores/config'
+import { SettingsSection } from './SettingsSection'
 
 const KERTAS_OPTIONS = UKURAN_KERTAS.map((value) => ({ value, label: value }))
 
-const KERTAS_DESKRIPSI: Record<UkuranKertas, string> = {
-  A4: '210 x 297 mm. Default template.',
-  F4: '215 x 330 mm. Folio, umum di Indonesia.',
-  Letter: '216 x 279 mm. Standar Amerika.',
+/** Key pesan deskripsi tiap ukuran kertas (AGENTS.md bagian 21). */
+const KERTAS_DESKRIPSI_KEY: Record<UkuranKertas, MessageKey> = {
+  A4: 'settings.kertas.A4',
+  F4: 'settings.kertas.F4',
+  Letter: 'settings.kertas.Letter',
 }
 
 const FONT_OPTIONS = FONT_DOKUMEN_LIST.map((value) => ({
   value,
-  label: FONT_DOKUMEN_LABEL[value],
+  labelKey: FONT_DOKUMEN_LABEL_KEY[value],
 }))
 
 const SKALA_OPTIONS = CONTENT_SCALES.map((value) => ({
   value: String(value),
-  label: CONTENT_SCALE_LABEL[value],
+  labelKey: CONTENT_SCALE_LABEL_KEY[value],
 }))
 
 /**
@@ -40,6 +44,7 @@ const SKALA_OPTIONS = CONTENT_SCALES.map((value) => ({
  * Nama file mengikuti pola `LogBook_<NIM>_<Bulan>-<Tahun>.pdf`.
  */
 export function DokumenEksporSection() {
+  const t = useT()
   const ukuranKertas = useConfigStore((s) => s.config.ukuranKertas)
   const fontDokumen = useConfigStore((s) => s.config.fontDokumen)
   const contentScale = useConfigStore((s) => s.config.contentScale)
@@ -49,16 +54,14 @@ export function DokumenEksporSection() {
   const contohNama = `LogBook_${nim || '<NIM>'}_Agustus-2026.pdf`
 
   return (
-    <section className="mb-10" data-testid="section-dokumen">
-      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-        <FileText className="size-4" strokeWidth={1.75} />
-        Dokumen dan Ekspor
-      </h2>
-
+    <SettingsSection id="dokumen" title={t('settings.dokumenEkspor')}>
       <div className="grid gap-5">
-        <Field label="Ukuran kertas" description={KERTAS_DESKRIPSI[ukuranKertas]}>
+        <Field
+          label={t('settings.ukuranKertas')}
+          description={t(KERTAS_DESKRIPSI_KEY[ukuranKertas])}
+        >
           <SegmentedControl
-            aria-label="Ukuran kertas"
+            aria-label={t('settings.ukuranKertas')}
             options={KERTAS_OPTIONS}
             value={ukuranKertas}
             onValueChange={(value) => update({ ukuranKertas: value })}
@@ -66,26 +69,26 @@ export function DokumenEksporSection() {
           />
         </Field>
 
-        <Field
-          label="Font dokumen"
-          description="Font untuk tabel, kop, dan tanda tangan pada cetak dan PDF. Tampilan aplikasi tidak berubah."
-        >
+        <Field label={t('settings.fontDokumen')} description={t('settings.fontDokumenDeskripsi')}>
           <SegmentedControl
-            aria-label="Font dokumen"
-            options={FONT_OPTIONS}
+            aria-label={t('settings.fontDokumen')}
+            options={FONT_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
             value={fontDokumen}
             onValueChange={(value) => update({ fontDokumen: value })}
             className="w-fit"
           />
         </Field>
 
-        <Field
-          label="Skala tampilan konten"
-          description="Membesarkan isi Log Book di layar saja. Hasil cetak dan PDF tetap 12 pt sesuai template."
-        >
+        <Field label={t('settings.skalaKonten')} description={t('settings.skalaKontenDeskripsi')}>
           <SegmentedControl
-            aria-label="Skala tampilan konten"
-            options={SKALA_OPTIONS}
+            aria-label={t('settings.skalaKonten')}
+            options={SKALA_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            }))}
             value={String(contentScale)}
             onValueChange={(value) => update({ contentScale: Number(value) as ContentScale })}
             className="w-fit"
@@ -97,12 +100,12 @@ export function DokumenEksporSection() {
         <div className="border border-border-base bg-bg-card px-3 py-2">
           <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-text-dim">
             <Download className="size-3.5" strokeWidth={1.75} />
-            Pola nama file
+            {t('settings.polaNamaFile')}
           </div>
           <p className="mt-1 truncate font-mono text-[12px] text-text-main">{contohNama}</p>
         </div>
       </div>
-    </section>
+    </SettingsSection>
   )
 }
 
@@ -116,6 +119,7 @@ export function DokumenEksporSection() {
  * mengganti path dari default.
  */
 function FolderExportField() {
+  const t = useT()
   const folderExport = useConfigStore((s) => s.config.folderExport)
   const update = useConfigStore((s) => s.update)
   const [exportsDir, setExportsDir] = useState('')
@@ -149,22 +153,24 @@ function FolderExportField() {
         setManual(false)
       } else if (result.unsupported) {
         setManual(true)
-        setNote('Dialog folder tidak tersedia di mesin ini. Ketik path folder secara manual.')
+        setNote(t('settings.dialogTidakAda'))
       }
     } catch {
-      setNote('Gagal membuka dialog folder. Coba lagi.')
+      setNote(t('settings.dialogGagal'))
     } finally {
       setBusy(false)
     }
   }
 
-  const placeholder = exportsDir ? `Default: ${exportsDir}` : 'Default: folder data logman'
+  const placeholder = exportsDir
+    ? t('settings.folderDefault', { path: exportsDir })
+    : t('settings.folderDefaultKosong')
 
   return (
     <Field
       htmlFor="set-folder"
-      label="Folder ekspor"
-      description="Path lokal tempat PDF hasil ekspor disimpan."
+      label={t('settings.folderEkspor')}
+      description={t('settings.folderEksporDeskripsi')}
     >
       <div className="flex items-center gap-2">
         <Input
@@ -182,8 +188,8 @@ function FolderExportField() {
         />
         <button
           type="button"
-          aria-label="Telusuri folder"
-          title="Pilih folder lewat dialog"
+          aria-label={t('settings.telusuriFolder')}
+          title={t('settings.telusuriFolderJudul')}
           data-testid="folder-export-browse"
           disabled={busy}
           onClick={() => void browse()}
@@ -194,8 +200,8 @@ function FolderExportField() {
         {folderExport !== '' ? (
           <button
             type="button"
-            aria-label="Reset ke folder default"
-            title="Kembalikan ke folder default"
+            aria-label={t('settings.resetFolder')}
+            title={t('settings.resetFolderJudul')}
             data-testid="folder-export-reset"
             onClick={() => {
               update({ folderExport: '' })

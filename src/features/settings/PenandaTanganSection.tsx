@@ -5,8 +5,10 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Field } from '@/components/ui/Field'
 import { Input } from '@/components/ui/Input'
 import { hapusPembimbing, setDefaultPembimbing, tambahPembimbing } from '@/lib/domain/pembimbing'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { useConfigStore } from '@/stores/config'
+import { SettingsSection } from './SettingsSection'
 
 /**
  * Pengaturan nama penanda tangan (AGENTS.md bagian 11.5).
@@ -16,6 +18,7 @@ import { useConfigStore } from '@/stores/config'
  * tombol silang, dan tandai satu sebagai default yang dipakai bila minggu belum diatur.
  */
 export function PenandaTanganSection() {
+  const t = useT()
   const config = useConfigStore((s) => s.config)
   const update = useConfigStore((s) => s.update)
   const [draft, setDraft] = useState('')
@@ -44,39 +47,34 @@ export function PenandaTanganSection() {
   }
 
   return (
-    <section className="mb-10" data-testid="section-penanda-tangan">
-      <h2 className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-text-muted">
-        <PenLine className="size-4" strokeWidth={1.75} />
-        Penanda Tangan
-      </h2>
-      <p className="mb-4 text-[12px] text-text-muted">
-        Nama yang tercetak di blok tanda tangan tiap minggu. Mahasiswa memakai nama di profil.
-        Pembimbing Lapangan bisa lebih dari satu dan dipilih per minggu di Log Book.
-      </p>
+    <SettingsSection id="penanda-tangan" title={t('settings.penandaTangan')}>
+      <p className="mb-4 text-[12px] text-text-muted">{t('settings.penandaTanganDeskripsi')}</p>
 
       <div className="mb-5">
         <Field
           htmlFor="set-dosen"
-          label="Dosen Pembimbing"
-          description="Dipakai sebagai default semua minggu, dan bisa diganti per minggu di Log Book."
+          label={t('settings.dosenPembimbing')}
+          description={t('settings.dosenPembimbingDeskripsi')}
         >
           <Input
             id="set-dosen"
             value={config.dosenPembimbing}
-            placeholder="Nama dosen pembimbing"
+            placeholder={t('settings.misalDosen')}
             onChange={(event) => update({ dosenPembimbing: event.target.value })}
           />
         </Field>
       </div>
 
-      <p className="mb-2 text-[12px] font-medium text-text-main">Pembimbing Lapangan</p>
+      <p className="mb-2 text-[12px] font-medium text-text-main">
+        {t('settings.pembimbingLapangan')}
+      </p>
 
       {daftar.length === 0 ? (
         <EmptyState
           icon={PenLine}
           headingLevel={3}
-          title="Belum ada pembimbing lapangan"
-          description="Tambahkan nama pembimbing agar bisa dipilih pada blok tanda tangan tiap minggu."
+          title={t('settings.belumAdaPembimbing')}
+          description={t('settings.belumAdaPembimbingDeskripsi')}
         />
       ) : (
         <ul className="mb-3 flex flex-wrap gap-2">
@@ -95,20 +93,20 @@ export function PenandaTanganSection() {
                   <button
                     type="button"
                     aria-pressed={isDefault}
-                    title={isDefault ? 'Default saat ini' : 'Jadikan default'}
+                    title={isDefault ? t('settings.defaultSaatIni') : t('settings.jadikanDefault')}
                     onClick={() => update({ pembimbingLapanganDefault: nama })}
                     className="theme-t text-left hover:text-text-primary"
                   >
                     {nama}
                     {isDefault ? (
                       <span className="ml-1.5 text-[10px] uppercase tracking-wide text-text-dim">
-                        default
+                        {t('settings.default')}
                       </span>
                     ) : null}
                   </button>
                   <button
                     type="button"
-                    aria-label={`Hapus pembimbing ${nama}`}
+                    aria-label={t('settings.hapusPembimbing', { nama })}
                     onClick={() => hapus(nama)}
                     className="theme-t grid size-5 place-items-center text-text-dim hover:text-status-error-text"
                   >
@@ -122,11 +120,15 @@ export function PenandaTanganSection() {
       )}
 
       <div className="flex items-end gap-2">
-        <Field htmlFor="set-pembimbing-baru" label="Tambah pembimbing" className="max-w-64 flex-1">
+        <Field
+          htmlFor="set-pembimbing-baru"
+          label={t('settings.tambahPembimbing')}
+          className="max-w-64 flex-1"
+        >
           <Input
             id="set-pembimbing-baru"
             value={draft}
-            placeholder="Misal Budi Santoso"
+            placeholder={t('settings.misalNama')}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -138,9 +140,9 @@ export function PenandaTanganSection() {
         </Field>
         <Button variant="outline" onClick={tambah} disabled={draft.trim() === ''}>
           <Plus className="size-4" strokeWidth={2} />
-          Tambah
+          {t('common.tambah')}
         </Button>
       </div>
-    </section>
+    </SettingsSection>
   )
 }

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Log Book Manager
+GenericName=Internship Log Book
+Comment=Write and export an internship Log Book
+Comment[id]=Menyusun dan mengekspor Log Book magang
+Exec=@REPO_DIR@/run
+Icon=@REPO_DIR@/public/favicon.svg
+Terminal=true
+Categories=Office;Education;
+Keywords=logbook;internship;magang;pdf;
+StartupNotify=true

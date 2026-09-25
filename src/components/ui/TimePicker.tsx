@@ -11,6 +11,7 @@ import {
   to24Hour,
   toJam24,
 } from '@/lib/domain/jamFormat'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { inputVariants } from './Input'
 import { Popover, PopoverContent, PopoverTrigger } from './Popover'
@@ -53,6 +54,7 @@ export function TimePicker({
   variant = 'field',
   className,
 }: TimePickerProps) {
+  const t = useT()
   const [draft, setDraft] = useState(formatJamDisplay(value, format))
   const [error, setError] = useState<string | null>(null)
 
@@ -72,7 +74,7 @@ export function TimePicker({
     }
     const normalized = parseJamDisplay(trimmed, format)
     if (!normalized) {
-      setError(format === '24' ? 'Format jam HH.MM, misal 08.00.' : 'Format jam, misal 8.00 AM.')
+      setError(format === '24' ? t('editor.formatJamSalah') : t('editor.formatJamSalah12'))
       return
     }
     setError(null)
@@ -131,8 +133,8 @@ export function TimePicker({
             <button
               type="button"
               disabled={disabled}
-              aria-label="Buka pemilih jam"
-              title={`Pilih ${label}`}
+              aria-label={t('editor.bukaPemilihJam')}
+              title={t('editor.pilihLabel', { label })}
               data-testid="time-picker-trigger"
               className={cn(
                 'theme-t shrink-0 text-text-muted no-print hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50',
@@ -148,7 +150,7 @@ export function TimePicker({
             <p className="mb-2 text-[12px] font-semibold text-text-primary">{label}</p>
             <div className="flex gap-2">
               <TimeGrid
-                title="Jam"
+                title={t('editor.jam')}
                 values={format === '24' ? HOURS_24 : HOURS_12}
                 selected={format === '24' ? reference.hh : hh12}
                 render={(hour) => (format === '24' ? String(hour).padStart(2, '0') : String(hour))}
@@ -161,7 +163,7 @@ export function TimePicker({
                 }
               />
               <TimeGrid
-                title="Menit"
+                title={t('editor.menit')}
                 values={minuteOptions(parts ? reference.mm : null)}
                 selected={reference.mm}
                 render={(minute) => String(minute).padStart(2, '0')}
