@@ -1556,8 +1556,9 @@ langsung tahu posisinya.
     aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.
   - Rilis berikutnya: naikkan `version` di `package.json`, pindahkan blok `Unreleased`
     baru di `CHANGELOG.md` menjadi seksi versi bertanggal, lalu `git tag -s` dan push tag.
-  - Deskripsi dan topics repo GitHub diterapkan lewat `gh repo edit` setelah ACC
-    pemilik.
+  - Deskripsi dan topics repo GitHub SUDAH diterapkan lewat `gh repo edit` (ACC pemilik):
+    deskripsi singkat plus topik `logbook`, `internship`, `magang`, `pdf`, `vite`,
+    `react`, `typescript`, `tailwindcss`. Repo masih PRIVATE.
   - Catatan terbuka:
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.
