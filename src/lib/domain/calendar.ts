@@ -177,6 +177,25 @@ export function weekDates(mondayIso: string): string[] {
 }
 
 /**
+ * Tanggal dalam sebuah minggu yang BENAR-BENAR milik bulan konteks dan di dalam rentang.
+ *
+ * Sebuah minggu selalu punya enam hari (Senin sampai Sabtu), tetapi minggu di awal atau
+ * akhir bulan memuat hari milik bulan tetangga, dan minggu di tepi rentang memuat hari di
+ * luar magang. Hari-hari itu TIDAK dapat diisi dan TIDAK boleh ikut dihitung pada
+ * penghitung progres minggu maupun ringkasan bulan.
+ *
+ * Predikatnya sama persis dengan yang dipakai `EditorRow` untuk mengaktifkan baris, jadi
+ * angka yang ditampilkan tidak mungkin berbeda dari baris yang benar-benar bisa diisi.
+ */
+export function editableWeekDates(
+  week: WeekEntry,
+  activeMonth: string,
+  range: MagangRange,
+): string[] {
+  return week.days.map((day) => day.date).filter((date) => isDayActive(date, activeMonth, range))
+}
+
+/**
  * Memilih bulan yang dibuka saat pertama kali.
  *
  * Aturan: bulan yang memuat tanggal `today` bila ada, supaya user langsung mendarat di

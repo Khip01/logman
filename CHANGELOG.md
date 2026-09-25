@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status directly, so a day filled with a reason was never counted and the badge stayed at
   zero even though the row was complete. The Export page already counted these days
   correctly, so the two views disagreed about the same data.
+- The week progress badge now counts only the days that actually belong to the open month
+  and fall inside the internship range. Weeks at the start or end of a month contain days
+  from the neighbouring month, and weeks at the edge of the range contain days outside the
+  internship. Those days cannot be filled, so a week with four fillable days now reads
+  "0 of 4" instead of "0 of 6".
+- The Export page summary uses the same rule, so a day is counted in exactly one month.
+  It previously counted cross-month days twice and included days outside the range.
 
 ## v0.1.0 - 2026-09-25
 

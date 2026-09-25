@@ -12,6 +12,9 @@ public/bundle-stats.json
 # Runtime data (see AGENTS.md section 5)
 data/
 data-e2e/
+# Direktori data KHUSUS pengujian agen. WAJIB dipakai agen agar tidak pernah
+# menyentuh `data/` milik user. Lihat AGENTS.md bagian 14.4.
+data-agent/
 
 # Tests
 coverage/

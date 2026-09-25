@@ -1,5 +1,10 @@
 import { WeekProgress } from '@/components/shared/WeekProgress'
-import { disabledReasonFor, formatWeekRange, type MagangRange } from '@/lib/domain/calendar'
+import {
+  disabledReasonFor,
+  editableWeekDates,
+  formatWeekRange,
+  type MagangRange,
+} from '@/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari } from '@/lib/domain/date'
 import type { DayOfWeek, WeekEntry } from '@/lib/domain/types'
 import { DEFAULT_LOCALE, useLocale, useT } from '@/lib/i18n'
@@ -45,7 +50,12 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
         <span className="text-[12px] font-semibold text-text-primary print:font-doc">
           M{week.weekOfMonth} - {formatWeekRange(week.startDate)}
         </span>
-        <WeekProgress dates={week.days.map((d) => d.date)} />
+        {/*
+          Penghitung hanya menerima hari yang dapat diisi pada bulan ini, bukan seluruh
+          enam hari. Minggu di awal atau akhir bulan memuat hari milik bulan tetangga dan
+          hari di luar rentang; hari-hari itu tidak boleh ikut dihitung (AGENTS.md bagian 6).
+        */}
+        <WeekProgress dates={editableWeekDates(week, monthKey, range)} />
       </div>
 
       <table className="doc-table">

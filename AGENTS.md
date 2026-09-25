@@ -686,6 +686,20 @@ Fakta terverifikasi dari template:
   - Unit `isDayFilled` di `editor.test.ts` mengunci kesamaan dengan `validateDay`
     (berisi berarti tidak ada masalah), dan E2E di `editor.spec.ts` mengunci bahwa memilih
     alasan menaikkan penghitung minggu.
+- PENTING: penyebut penghitung progres adalah hari yang DAPAT DIISI pada bulan itu, bukan
+  enam hari kalender. Selalu pakai `editableWeekDates(week, monthKey, range)` dari
+  `src/lib/domain/calendar.ts`; predikatnya sama persis dengan yang mengaktifkan baris
+  (`isDayActive`), jadi angka yang tampil tidak mungkin berbeda dari baris yang benar-benar
+  bisa diisi.
+  - BUG yang pernah terjadi: `WeekEditorTable` menyerahkan seluruh enam hari ke
+    `WeekProgress`, sehingga minggu di awal atau akhir bulan tertulis "0 dari 6" padahal
+    hari milik bulan tetangga dan hari di luar rentang tidak dapat diisi. Halaman Ekspor
+    juga salah dua kali pada saat bersamaan: `dayCount` menyaring rentang TANPA menyaring
+    bulan, dan `filledCount` tidak menyaring apa pun, sehingga minggu lintas bulan
+    terhitung pada dua bulan sekaligus.
+  - Unit `editableWeekDates` di `calendar.test.ts` mengunci aturan bulan, aturan rentang,
+    gabungan keduanya, dan bahwa setiap hari bulan terhitung tepat sekali di seluruh
+    minggu bulan itu.
 
 ### 11.4 Navigasi
 
@@ -977,6 +991,28 @@ timeout 10 pkill -f "vite" || true
 Artefak CI wajib diunggah saat gagal: screenshot, trace Playwright, laporan visualizer.
 Tujuannya agar agen bisa "melihat" kegagalan tanpa akses layar.
 
+### 14.4 JANGAN PERNAH menyentuh `data/` milik pemilik (WAJIB)
+
+`data/` berisi Log Book ASLI pemilik, bukan data uji. Menghapusnya berarti menghapus
+pekerjaan nyata yang tidak bisa dikembalikan. Insiden pernah terjadi: skrip verifikasi
+menjalankan `PUT /api/logs` dengan data kosong terhadap server dev yang memakai `data/`,
+sehingga isi Log Book pemilik terhapus.
+
+Aturan mengikat:
+
+- Setiap kali menjalankan dev server untuk keperluan SENDIRI (verifikasi visual, skrip
+  Playwright ad hoc, reproduksi bug), WAJIB menyetel `LOGMAN_DATA_DIR` ke direktori
+  terpisah, misalnya `data-agent/`:
+  `LOGMAN_DATA_DIR=data-agent nohup pnpm dev > /tmp/opencode/dev.log 2>&1 &`
+- DILARANG memanggil endpoint yang MENULIS (`PUT`/`PATCH`/`DELETE`) pada server yang
+  memakai `data/`. Baca (`GET`) boleh.
+- `pnpm test:e2e` sudah aman karena Playwright memaksa `LOGMAN_DATA_DIR=data-e2e`.
+- Sebelum skrip yang menulis dijalankan, pastikan dulu direktori datanya lewat
+  `GET /api/health` dan baca `dataDir`. Bila yang terbaca berakhiran `/data`, HENTIKAN.
+- `data-agent/` ada di `.gitignore`. Boleh dihapus kapan saja.
+- Bila ragu, JANGAN tulis. Lebih baik verifikasi lewat unit test atau e2e yang sudah
+  hermetik daripada menulis ke data pemilik.
+
 ---
 
 ## 15. Fasilitas dev untuk agen
@@ -1102,6 +1138,7 @@ Catatan CI:
 - [ ] Tidak ada impor Motion global.
 - [ ] Domain logic murni dan ada unit test-nya.
 - [ ] Anggaran performa masih terpenuhi.
+- [ ] Tidak menyentuh `data/` milik pemilik (bagian 14.4).
 - [ ] Dokumen ini diperbarui bila perilaku berubah.
 - [ ] Semua teks antarmuka baru memakai `useT()` dan kedua katalog pesan tetap sinkron
       (bagian 21). Tidak ada teks dokumen cetak yang ikut diterjemahkan.
@@ -1562,10 +1599,20 @@ langsung tahu posisinya.
   - Verifikasi rilis v0.1.0 lulus: lint, typecheck, Vitest (364 test), Playwright
     (105 test dari direktori data KOSONG, meniru CI), audit motion, audit a11y 0
     pelanggaran (7 halaman x 9 tema), anggaran bundle (JS awal 154.9 KB gzip).
-  - Perbaikan pasca-rilis v0.1.0: badge "x/y terisi" tidak menghitung hari ber-alasan
-    (lihat bagian 11.3 untuk penyebab dan aturannya). Ditambahkan `isDayFilled` sebagai
-    satu sumber kebenaran, dipakai `WeekProgress` dan halaman Ekspor. Verifikasi ulang
-    lulus: lint, typecheck, Vitest (368 test), Playwright (106 test dari data kosong).
+  - Perbaikan pasca-rilis v0.1.0 (tiga bug penghitung, lihat bagian 11.3 untuk aturannya):
+    - Badge "x/y terisi" tidak menghitung hari ber-ALASAN. Ditambahkan `isDayFilled`
+      sebagai satu sumber kebenaran, dipakai `WeekProgress` dan halaman Ekspor.
+    - Penyebut badge memakai enam hari kalender, termasuk hari milik bulan tetangga dan
+      hari di luar rentang. Ditambahkan `editableWeekDates` agar hanya hari yang dapat
+      diisi yang dihitung.
+    - Ringkasan halaman Ekspor menghitung hari lintas bulan dua kali dan ikut menghitung
+      hari di luar rentang. Kini memakai predikat yang sama dengan editor.
+    - Verifikasi ulang lulus: lint, typecheck, Vitest (373 test), Playwright (106 test
+      dari data kosong).
+  - INSIDEN data pemilik: skrip verifikasi menulis data kosong ke server dev yang memakai
+    `data/`, sehingga isi Log Book pemilik terhapus. Dipulihkan dari backup rotasi
+    (16 hari berisi). Aturan pencegahan ditambahkan di bagian 14.4 dan `.gitignore`
+    menyediakan `data-agent/`.
 - Sedang dikerjakan:
   - tidak ada (fase 15, 16, 17, dan 17b tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:

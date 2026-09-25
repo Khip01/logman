@@ -128,16 +128,20 @@ test.describe('editor per sel', () => {
   test('memilih alasan menambah penghitung hari terisi di kartu minggu', async ({ page }) => {
     await page.goto('/')
 
-    // Kartu minggu memuat enam hari (Senin sampai Sabtu), bukan hanya yang di dalam rentang.
+    /*
+     * Rentang spec ini 2026-09-23 s/d 2026-09-26. Minggu yang dibuka memuat Senin 21
+     * sampai Sabtu 26, tetapi Senin dan Selasa berada SEBELUM magang, jadi hanya 4 hari
+     * yang dapat diisi. Penghitung harus menyebut 4, bukan 6.
+     */
     const kartu = page.getByTestId('week-progress')
-    await expect(kartu).toHaveText('0 dari 6 terisi')
+    await expect(kartu).toHaveText('0 dari 4 terisi')
 
     const sel = page.getByTestId('editor-row-2026-09-24')
     await sel.getByRole('combobox').click()
     await page.getByRole('option', { name: 'Libur Nasional' }).click()
 
     // Menambah lewat ALASAN harus ikut terhitung, bukan hanya lewat kegiatan.
-    await expect(kartu).toHaveText('1 dari 6 terisi')
+    await expect(kartu).toHaveText('1 dari 4 terisi')
     await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
   })
 

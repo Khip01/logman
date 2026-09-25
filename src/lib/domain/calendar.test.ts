@@ -6,6 +6,7 @@ import {
   dayOfWeekKey,
   disabledReasonFor,
   disabledReasonText,
+  editableWeekDates,
   findMonthOfWeek,
   findWeek,
   findWeekOfDate,
@@ -16,7 +17,7 @@ import {
   pickInitialWeekId,
   weekDates,
 } from './calendar'
-import type { MonthGroup } from './types'
+import type { MonthGroup, WeekEntry } from './types'
 
 describe('dayOfWeekKey', () => {
   it('memetakan hari kerja', () => {
@@ -86,6 +87,81 @@ describe('kepemilikan baris per bulan', () => {
     const empty = { mulai: null, selesai: null }
     expect(disabledReasonFor('2026-09-21', '2026-09', empty)).toBeNull()
     expect(disabledReasonFor('2026-08-31', '2026-09', empty)).toBe('bulan-lain')
+  })
+})
+
+describe('editableWeekDates', () => {
+  /** Minggu minimal; `editableWeekDates` hanya membaca `days`. */
+  function weekOf(monday: string): WeekEntry {
+    return {
+      id: monday,
+      startDate: monday,
+      endDate: monday,
+      weekOfMonth: 1,
+      days: buildWeekDays(monday),
+    }
+  }
+
+  it('menghitung seluruh enam hari bila semuanya milik bulan dan di dalam rentang', () => {
+    const range = { mulai: '2026-09-01', selesai: '2026-09-30' }
+    expect(editableWeekDates(weekOf('2026-09-21'), '2026-09', range)).toEqual([
+      '2026-09-21',
+      '2026-09-22',
+      '2026-09-23',
+      '2026-09-24',
+      '2026-09-25',
+      '2026-09-26',
+    ])
+  })
+
+  /*
+   * Regresi: minggu di awal bulan memuat hari milik bulan sebelumnya. Hari itu tidak
+   * dapat diisi, jadi TIDAK boleh ikut dihitung. Sebelumnya penghitung memakai seluruh
+   * enam hari sehingga tertulis "0 dari 6" padahal hanya lima yang bisa diisi.
+   */
+  it('membuang hari milik bulan tetangga pada minggu lintas bulan', () => {
+    const range = { mulai: '2026-08-01', selesai: '2026-12-31' }
+    // Senin 31 Agustus 2026; hanya 1 sampai 5 September yang milik September.
+    const hasil = editableWeekDates(weekOf('2026-08-31'), '2026-09', range)
+    expect(hasil).toEqual(['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05'])
+    expect(hasil).not.toContain('2026-08-31')
+  })
+
+  it('membuang hari di luar rentang magang', () => {
+    const range = { mulai: '2026-09-23', selesai: '2026-09-30' }
+    // Senin dan Selasa berada sebelum magang dimulai.
+    expect(editableWeekDates(weekOf('2026-09-21'), '2026-09', range)).toEqual([
+      '2026-09-23',
+      '2026-09-24',
+      '2026-09-25',
+      '2026-09-26',
+    ])
+  })
+
+  it('menggabungkan aturan bulan dan rentang', () => {
+    const range = { mulai: '2026-09-02', selesai: '2026-09-30' }
+    // 31 Agustus bukan September DAN di luar rentang; 1 September milik September tetapi
+    // di luar rentang. Sisanya boleh.
+    expect(editableWeekDates(weekOf('2026-08-31'), '2026-09', range)).toEqual([
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
+      '2026-09-05',
+    ])
+  })
+
+  it('setiap hari bulan terhitung tepat SEKALI di seluruh minggu bulan itu', () => {
+    const range = { mulai: '2026-09-01', selesai: '2026-09-30' }
+    const bulan = buildMonthGroups(range.mulai, range.selesai).find((m) => m.key === '2026-09')
+    expect(bulan).toBeDefined()
+
+    const semua = (bulan as MonthGroup).weeks.flatMap((week) =>
+      editableWeekDates(week, '2026-09', range),
+    )
+    // September 2026: 26 hari Senin sampai Sabtu. Minggu lintas bulan tidak boleh membuat
+    // ada tanggal yang terhitung dua kali.
+    expect(semua).toHaveLength(26)
+    expect(new Set(semua).size).toBe(26)
   })
 })
 

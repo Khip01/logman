@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Spinner } from '@/components/ui/Spinner'
-import { buildMonthGroups, type MagangRange } from '@/lib/domain/calendar'
+import { buildMonthGroups, editableWeekDates, type MagangRange } from '@/lib/domain/calendar'
 import { isDayFilled, monthIncompleteDates } from '@/lib/domain/editor'
 import { useLocale, useT } from '@/lib/i18n'
 import { useConfigStore } from '@/stores/config'
@@ -94,19 +94,18 @@ export function ExportPage() {
       <div className="flex flex-col gap-3">
         {months.map((month) => {
           const weekCount = month.weeks.length
-          const dayCount = month.weeks.reduce(
-            (sum, week) =>
-              sum +
-              week.days.filter(
-                (d) =>
-                  d.date >= (config.magang.mulai ?? '') && d.date <= (config.magang.selesai ?? ''),
-              ).length,
-            0,
+          /*
+           * Hari dan hari terisi dihitung dari hari yang BENAR-BENAR milik bulan ini dan
+           * di dalam rentang, memakai predikat yang sama dengan editor. Sebelumnya `dayCount`
+           * hanya menyaring rentang tanpa menyaring bulan, dan `filledCount` tidak menyaring
+           * apa pun, sehingga minggu lintas bulan ikut terhitung dua kali dan hari di luar
+           * rentang ikut masuk.
+           */
+          const tanggalBulanIni = month.weeks.flatMap((week) =>
+            editableWeekDates(week, month.key, range),
           )
-          const filledCount = month.weeks.reduce(
-            (sum, week) => sum + week.days.filter((d) => isDayFilled(logs.days[d.date])).length,
-            0,
-          )
+          const dayCount = tanggalBulanIni.length
+          const filledCount = tanggalBulanIni.filter((date) => isDayFilled(logs.days[date])).length
           const incomplete = monthIncompleteDates(month, logs.days, range)
           const isExporting = exporting === month.key
           const blocked = incomplete.length > 0
