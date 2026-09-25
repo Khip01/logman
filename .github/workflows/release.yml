@@ -24,6 +24,14 @@ jobs:
       - run: pnpm build
       - name: Verifikasi anggaran bundle
         run: node scripts/analyze-bundle.mjs
+
+      # Catatan rilis diambil dari CHANGELOG.md, BUKAN dari `generate_release_notes`.
+      # Repo ini menerima commit langsung ke `main` tanpa PR, sehingga catatan otomatis
+      # GitHub kosong. Skrip membaca seksi yang cocok dengan tag dan gagal keras bila
+      # seksi itu tidak ada, supaya rilis tidak pernah terbit tanpa catatan.
+      - name: Ambil catatan rilis dari CHANGELOG
+        run: node scripts/release-notes.mjs > /tmp/release-body.md
+
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: /tmp/release-body.md

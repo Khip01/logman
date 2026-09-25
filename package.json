@@ -54,6 +54,7 @@
     "test:e2e:visual": "playwright test e2e/visual.spec.ts",
     "test:e2e:settings-search": "playwright test e2e/settings-search.spec.ts",
     "analyze": "vite build && node scripts/analyze-bundle.mjs",
+    "release:notes": "node scripts/release-notes.mjs",
     "audit:motion": "node scripts/audit-motion.mjs",
     "audit:a11y": "node scripts/axe-check.mjs"
   },

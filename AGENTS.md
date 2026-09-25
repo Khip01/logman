@@ -1011,8 +1011,12 @@ Catatan CI:
 
 ### `release.yml` (tag `v*`)
 
-- Build produksi, verifikasi anggaran bundle, lalu GitHub Release dengan catatan rilis
-  otomatis (`generate_release_notes`).
+- Build produksi, verifikasi anggaran bundle, lalu GitHub Release.
+- Catatan rilis diambil dari `CHANGELOG.md` lewat `scripts/release-notes.mjs`, BUKAN dari
+  `generate_release_notes`. Alasan: repo ini menerima commit langsung ke `main` tanpa PR,
+  sehingga catatan otomatis GitHub kosong dan hanya menyisakan tautan "Full Changelog".
+  Skrip gagal keras bila seksi untuk tag tidak ditemukan atau kosong, supaya rilis tidak
+  pernah terbit tanpa catatan. Uji lokal: `pnpm release:notes v0.1.0`.
 - TIDAK ada arsip tar.gz. Distribusi memakai tag git plus pintasan desktop di
   `packaging/`, karena arsip hanya berisi `dist/` yang tidak bisa dijalankan sendiri.
 
@@ -1517,7 +1521,12 @@ langsung tahu posisinya.
   - Rilis v0.1.0: `CHANGELOG.md` dikonsolidasikan (blok `Unreleased` dilebur ke
     `v0.1.0`), tanggal rilis 2026-09-25, dan tag `v0.1.0` dibuat dengan GPG signed lalu
     di-push. `release.yml` membangun bundle, memeriksa anggaran, dan menerbitkan GitHub
-    Release dengan catatan otomatis (tanpa arsip).
+    Release dengan catatan dari CHANGELOG (tanpa arsip).
+  - `release.yml` diperbaiki setelah rilis pertama terbit dengan catatan KOSONG:
+    `generate_release_notes` menyusun catatan dari daftar PR dan kontributor, sementara
+    repo ini menerima commit langsung ke `main` tanpa PR. Catatan kini diambil dari
+    `CHANGELOG.md` lewat `scripts/release-notes.mjs` (`pnpm release:notes <tag>`), yang
+    gagal keras bila seksi tag tidak ada.
   - Sumber versi disatukan. `server/index.ts` kini membaca `version` dari `package.json`
     lewat `readAppVersion()` (dengan fallback `0.0.0` plus peringatan log), bukan lagi
     string keras. Satu sumber kebenaran versi: `package.json`.
