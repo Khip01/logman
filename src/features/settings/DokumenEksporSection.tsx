@@ -13,6 +13,7 @@ import {
 import { UKURAN_KERTAS } from '@/lib/domain/schema'
 import type { UkuranKertas } from '@/lib/domain/types'
 import { useT } from '@/lib/i18n'
+import { LOCALES, type Locale } from '@/lib/i18n/locale'
 import type { MessageKey } from '@/lib/i18n/messages/id'
 import { getRepositories } from '@/lib/repo'
 import { useConfigStore } from '@/stores/config'
@@ -48,6 +49,7 @@ export function DokumenEksporSection() {
   const ukuranKertas = useConfigStore((s) => s.config.ukuranKertas)
   const fontDokumen = useConfigStore((s) => s.config.fontDokumen)
   const contentScale = useConfigStore((s) => s.config.contentScale)
+  const bahasaDokumen = useConfigStore((s) => s.config.bahasaDokumen)
   const nim = useConfigStore((s) => s.config.profil.nim)
   const update = useConfigStore((s) => s.update)
 
@@ -91,6 +93,22 @@ export function DokumenEksporSection() {
             }))}
             value={String(contentScale)}
             onValueChange={(value) => update({ contentScale: Number(value) as ContentScale })}
+            className="w-fit"
+          />
+        </Field>
+
+        <Field
+          label={t('settings.bahasaDokumen')}
+          description={t('settings.bahasaDokumenDeskripsi')}
+        >
+          <SegmentedControl
+            aria-label={t('settings.bahasaDokumen')}
+            options={LOCALES.map((value) => ({
+              value,
+              label: t(`settings.bahasa.${value}` as MessageKey),
+            }))}
+            value={bahasaDokumen}
+            onValueChange={(value) => update({ bahasaDokumen: value as Locale })}
             className="w-fit"
           />
         </Field>

@@ -3,9 +3,13 @@ import {
   CONTENT_SCALES,
   docFontSizePx,
   FONT_DOKUMEN_STACK,
+  HARI_LUAR_BULAN_LABEL_KEY,
+  HARI_LUAR_BULAN_LIST,
   isContentScale,
   isFontDokumen,
+  isHariLuarBulan,
   parseContentScale,
+  parseHariLuarBulan,
 } from './dokumen'
 
 describe('isFontDokumen', () => {
@@ -56,5 +60,43 @@ describe('docFontSizePx', () => {
     expect(docFontSizePx(1.15)).toBe(18.4)
     expect(docFontSizePx(1.3)).toBe(20.8)
     expect(docFontSizePx(0.9)).toBe(14.4)
+  })
+})
+
+describe('isHariLuarBulan', () => {
+  it('hanya menerima samarkan dan hapus', () => {
+    expect(isHariLuarBulan('samarkan')).toBe(true)
+    expect(isHariLuarBulan('hapus')).toBe(true)
+    expect(isHariLuarBulan('SAMARKAN')).toBe(false)
+    expect(isHariLuarBulan('abu')).toBe(false)
+    expect(isHariLuarBulan(null)).toBe(false)
+    expect(isHariLuarBulan(0)).toBe(false)
+  })
+})
+
+describe('parseHariLuarBulan', () => {
+  it('mempertahankan nilai yang dikenal', () => {
+    expect(parseHariLuarBulan('samarkan', 'hapus')).toBe('samarkan')
+    expect(parseHariLuarBulan('hapus', 'samarkan')).toBe('hapus')
+  })
+
+  it('jatuh ke fallback untuk data rusak', () => {
+    // Fallback wajib dipakai, bukan default tetap, supaya default config tetap punya
+    // satu sumber kebenaran.
+    expect(parseHariLuarBulan('entah', 'samarkan')).toBe('samarkan')
+    expect(parseHariLuarBulan(undefined, 'hapus')).toBe('hapus')
+    expect(parseHariLuarBulan('', 'hapus')).toBe('hapus')
+  })
+})
+
+describe('daftar hari luar bulan', () => {
+  it('urutan daftar dipakai untuk urutan kartu di Pengaturan', () => {
+    expect(HARI_LUAR_BULAN_LIST).toEqual(['samarkan', 'hapus'])
+  })
+
+  it('setiap nilai punya key pesan, dan key-nya ada di katalog', () => {
+    for (const mode of HARI_LUAR_BULAN_LIST) {
+      expect(HARI_LUAR_BULAN_LABEL_KEY[mode]).toBe(`settings.hariLuarBulan.${mode}`)
+    }
   })
 })

@@ -1,5 +1,20 @@
+import { monthLabel } from '@/lib/domain/date'
 import { resolveNamaMinggu } from '@/lib/domain/pembimbing'
 import type { MonthGroup, WeekEntry } from '@/lib/domain/types'
+import type { MessageKey } from '@/lib/i18n/messages/id'
+import { translate } from '@/lib/i18n/translate'
+
+/**
+ * Bahasa isi dokumen untuk lapisan cetak browser.
+ *
+ * Dibaca di luar React supaya `translate` bisa dipakai tanpa hook. Nilai ini BUKAN
+ * bahasa antarmuka: yang dicetak adalah dokumen, dan dokumen punya bahasa sendiri
+ * (AGENTS.md bagian 21). Config lama tanpa key `bahasaDokumen` otomatis memakai `id`.
+ */
+function dokumenLocale() {
+  return useConfigStore.getState().config.bahasaDokumen
+}
+
 import { useConfigStore } from '@/stores/config'
 import { useLogsStore } from '@/stores/logs'
 
@@ -42,19 +57,27 @@ export function PrintLetterhead() {
   )
 }
 
-/** Judul dan subjudul dokumen: LOG BOOK MAGANG plus bulan dan nomor minggu. */
+/**
+ * Judul dan subjudul dokumen: LOG BOOK MAGANG plus bulan dan nomor minggu.
+ *
+ * `monthKey` dipakai, bukan label yang sudah jadi, karena nama bulan harus mengikuti
+ * bahasa DOKUMEN. Label dari grup bulan mengikuti bahasa antarmuka, jadi kalau
+ * dipassing apa adanya, subjudul akan ikut berubah ke bahasa antarmuka (bug yang
+ * pernah terjadi di sini).
+ */
 export function PrintDocHeading({
-  monthLabel,
+  monthKey,
   weekOfMonth,
 }: {
-  monthLabel: string
+  monthKey: string
   weekOfMonth: number
 }) {
+  const locale = dokumenLocale()
   return (
     <div data-testid="print-heading" className="print-only mb-3 text-center font-doc text-doc-ink">
       <h1 className="text-[14pt] font-bold">LOG BOOK MAGANG</h1>
       <p className="text-[12pt]">
-        {monthLabel} - Minggu {weekOfMonth}
+        {monthLabel(monthKey, locale)} - {translate(locale, 'logbook.weekLabel')} {weekOfMonth}
       </p>
     </div>
   )
@@ -63,11 +86,12 @@ export function PrintDocHeading({
 /** Tabel identitas dari config profil, hanya pada minggu pertama (sama seperti PDF). */
 export function PrintIdentity() {
   const profil = useConfigStore((s) => s.config.profil)
+  const locale = dokumenLocale()
   const baris: Array<[string, string]> = [
-    ['Nama', profil.nama],
-    ['NIM', profil.nim],
-    ['Program Studi', profil.programStudi],
-    ['Nama Mitra Industri', profil.mitraIndustri],
+    ['logbook.nama', profil.nama],
+    ['logbook.nim', profil.nim],
+    ['settings.programStudi', profil.programStudi],
+    ['settings.mitraIndustri', profil.mitraIndustri],
   ]
   return (
     <table
@@ -75,9 +99,9 @@ export function PrintIdentity() {
       className="print-only mb-3 w-full border-collapse font-doc text-[12pt] text-doc-ink"
     >
       <tbody>
-        {baris.map(([label, value]) => (
-          <tr key={label}>
-            <td className="w-40 p-0 align-top">{label}</td>
+        {baris.map(([key, value]) => (
+          <tr key={key}>
+            <td className="w-40 p-0 align-top">{translate(locale, key as MessageKey)}</td>
             <td className="w-3 p-0 align-top">:</td>
             <td className="p-0 align-top">{value}</td>
           </tr>
@@ -105,6 +129,9 @@ export function PrintSignature({ weekId }: { weekId: string }) {
   })
 
   const label = (nama: string) => `(${nama || '...........................'})`
+  const locale = dokumenLocale()
+  const ttd = (key: 'ttd.mahasiswa' | 'ttd.dosen' | 'ttd.pembimbing') =>
+    `${translate(locale, key)},`
 
   return (
     <div
@@ -112,20 +139,20 @@ export function PrintSignature({ weekId }: { weekId: string }) {
       className="print-only mt-8 font-doc text-[12pt] text-doc-ink"
     >
       <div className="mx-auto mb-6 w-[45%] text-center">
-        <p>Mahasiswa,</p>
+        <p>{ttd('ttd.mahasiswa')}</p>
         <div className="h-[60px]" aria-hidden="true" />
         <p>{label(mahasiswa)}</p>
       </div>
       <div>
-        <p className="text-left">Mengetahui,</p>
+        <p className="text-left">{translate(locale, 'ttd.mengetahui')}</p>
         <div className="mt-2 flex justify-between">
           <div className="w-[45%] text-center">
-            <p>Dosen Pembimbing,</p>
+            <p>{ttd('ttd.dosen')}</p>
             <div className="h-[60px]" aria-hidden="true" />
             <p>{label(dosen)}</p>
           </div>
           <div className="w-[45%] text-center">
-            <p>Pembimbing Lapangan,</p>
+            <p>{ttd('ttd.pembimbing')}</p>
             <div className="h-[60px]" aria-hidden="true" />
             <p>{label(pembimbing)}</p>
           </div>

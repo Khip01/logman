@@ -5,6 +5,7 @@ import { TimePicker } from '@/components/ui/TimePicker'
 import { alasanLabels } from '@/lib/domain/alasan'
 import {
   displayJam,
+  displayJamLuarBulan,
   JAM_STRIP,
   patchAlasan,
   patchKegiatan,
@@ -45,17 +46,32 @@ function emptyDay(date: string): DayEntry {
 export interface EditorRowProps {
   /** Tanggal ISO baris ini. Identitas baris. */
   date: string
-  /** Nama hari bahasa Indonesia, misal "Senin". */
+  /** Nama hari sesuai bahasa dokumen, misal "Senin" atau "Monday". */
   hariLabel: string
-  /** Tanggal lengkap bahasa Indonesia, misal "21 September 2026". */
+  /** Tanggal lengkap sesuai bahasa dokumen, misal "21 September 2026". */
   tanggalLabel: string
   /** Benar bila baris tidak dapat diisi (bulan lain atau di luar rentang). */
   disabled: boolean
+  /**
+   * Kalimat alasan baris ini tidak relevan, sudah diterjemahkan ke bahasa dokumen.
+   *
+   * Dipakai untuk mengisi sel kegiatan yang kosong supaya pembaca dokumen tahu kenapa
+   * jamnya strip. Kalau sel kegiatan sudah terisi, kalimat ini TIDAK ditampilkan agar
+   * data user tidak tertutup (AGENTS.md bagian 11.9).
+   */
+  alasanLuarBulan: string
   /** Jam default untuk nama hari ini, dipakai sebagai placeholder. */
   jamDefault: { masuk: string; pulang: string }
 }
 
-export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault }: EditorRowProps) {
+export function EditorRow({
+  date,
+  hariLabel,
+  tanggalLabel,
+  disabled,
+  alasanLuarBulan,
+  jamDefault,
+}: EditorRowProps) {
   const t = useT()
   // Penghitung render harness (AGENTS.md bagian 13). No-op pada build produksi.
   bumpRender(date)
@@ -185,7 +201,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
       <td className="doc-cell-wrap px-2 py-1.5">
         {disabled ? (
           <p className="text-[12px] text-text-muted print:text-doc-ink">
-            {day.kegiatan || day.alasan || ''}
+            {day.kegiatan || day.alasan || alasanLuarBulan}
           </p>
         ) : adaAlasan ? (
           <div className="flex items-start justify-between gap-2">
@@ -267,12 +283,13 @@ function JamCell({
   if (disabled) {
     return (
       <td className="doc-cell-fit px-2 py-1.5 text-center">
-        {/* Layar: nilai tersimpan saja. Cetak: fallback ke jam default, sama seperti PDF. */}
+        {/* Layar: nilai tersimpan saja. Cetak: baris luar bulan memakai strip, bukan
+            jam default, sama seperti PDF (AGENTS.md bagian 11.9). */}
         <span className="text-[12px] text-text-muted print:hidden">
           {strip ? JAM_STRIP : (value ?? '')}
         </span>
         <span className="hidden text-[12px] text-doc-ink print:inline">
-          {strip ? JAM_STRIP : displayJam(value, placeholder)}
+          {strip ? JAM_STRIP : displayJamLuarBulan(value)}
         </span>
       </td>
     )

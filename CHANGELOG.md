@@ -5,6 +5,55 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Out-of-month days can be treated explicitly. A calendar week can cross a month
+  boundary, so a "July 2026" page can carry a "Monday 29 June 2026" row. Such a row
+  looks exactly like an empty one: no activity, and a time that is only guessed from
+  the default. Settings now decides whether those rows print dimmed and italic, or not
+  at all. Disabling a day only ever hides it, and a removed row still appears on the
+  page of its own month, so no data is ever lost.
+- Empty out-of-month rows now say why. The activity cell gets a short reason, "Another
+  month", "Before the internship", or "After the internship", so a reader of the printed
+  document can tell that a deliberate choice was made rather than something failing to
+  render. A row the user has already filled in keeps its own content and hides the
+  reason.
+- Sunday can be a working day. It is off by default, so every existing configuration
+  keeps its six Monday to Saturday rows, and the week range extends to Sunday only while
+  it is switched on.
+- The export language is now a setting. Print and PDF follow `bahasaDokumen`, which is
+  separate from the interface language, so an English document no longer requires an
+  English interface and vice versa. The letterhead and the "LOG BOOK MAGANG" title stay
+  in Indonesian because they are part of the official campus identity. The file name
+  pattern is unchanged.
+- The dev server picks its own free ports. If the default web or API port is already
+  taken, both are chosen together on the next free ports and the new URLs are printed.
+  Previously the dev server failed outright with "Port 5199 is already in use".
+
+### Changed
+
+- The on-screen table now follows the document language instead of the interface
+  language. Print styles cannot swap text, so this is what keeps the browser preview
+  identical to the exported file. It also closes a leak where the interface language
+  reached the printed document.
+- `disabledReasonText` takes a locale and a new `disabledReasonMessageKey` exposes the
+  message key, so a printed sentence can follow the document language.
+
+### Fixed
+
+- The default time for a day is no longer printed on a row that belongs to a different
+  month. Those rows used to show a guessed 08.00 and 16.00, which made an empty row look
+  filled in. A time the user actually typed is still shown.
+- The printed month label follows the document language. It was still using the
+  interface language, so an English document could read "Juli 2026".
+- The default time lookup no longer depends on the displayed day name. With an English
+  document the key would have become "monday", which is not in the config, and the row
+  would have silently fallen back to a hardcoded 08.00.
+- The document and print layer no longer import the message catalogue through the React
+  barrel, which would have pulled `useT` into a plain Node module.
+
 ## v0.1.3 - 2026-09-26
 
 ### Added

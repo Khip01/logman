@@ -159,7 +159,9 @@ test.describe('pencarian pengaturan', () => {
     await input.focus()
 
     const opsi = page.getByTestId('settings-search-results').getByRole('option')
-    await expect(opsi).toHaveCount(9)
+    // Sepuluh seksi. Jumlah ini diikat ke registry SETTINGS_SECTIONS, jadi setiap
+    // seksi baru harus memperbarui angka ini (AGENTS.md bagian 22).
+    await expect(opsi).toHaveCount(10)
     await expect(opsi.first()).toContainText('Profil')
   })
 
@@ -203,7 +205,7 @@ test.describe('pencarian pengaturan', () => {
     }
   })
 
-  test('menghapus seluruh ketikan mengembalikan sembilan menu tanpa sisa', async ({ page }) => {
+  test('menghapus seluruh ketikan mengembalikan sepuluh menu tanpa sisa', async ({ page }) => {
     await page.goto('/settings')
 
     const input = page.getByRole('combobox', { name: 'Cari di Pengaturan' })
@@ -216,7 +218,7 @@ test.describe('pencarian pengaturan', () => {
     await page.getByTestId('settings-search-clear').click()
 
     await expect(input).toHaveValue('')
-    await expect(opsi).toHaveCount(9)
+    await expect(opsi).toHaveCount(10)
     await expect(opsi.first()).toContainText('Profil')
     await expect(opsi.last()).toContainText('Tampilan')
   })
@@ -495,8 +497,8 @@ test.describe('pencarian pengaturan', () => {
     for (const baris of teks) {
       expect(baris.toLowerCase()).toContain('a')
     }
-    // Kembali ke keadaan query kosong harus tepat sembilan menu.
+    // Kembali ke keadaan query kosong harus tepat sepuluh menu.
     await input.fill('')
-    await expect(opsi).toHaveCount(9)
+    await expect(opsi).toHaveCount(10)
   })
 })

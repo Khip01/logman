@@ -7,9 +7,19 @@ import type { Locale } from '@/lib/i18n/locale'
 import type { ContentScale, FontDokumen } from './dokumen'
 import type { JamFormat } from './jamFormat'
 
-export type DayOfWeek = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu'
+export type DayOfWeek = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu' | 'minggu'
 
-/** UrutannyaSenin sampai Sabtu, bukan urutan kalender (Minggu tidak pernah masuk). */
+/**
+ * Urutan hari kerja, Senin sampai Minggu.
+ *
+ * Minggu ada di daftar ini supaya bisa dinyalakan, karena ada magang yang Donnerstags
+ * bekerja hari Minggu. Bawaannya MATI, jadi daftar bawaan `DEFAULT_HARI_KERJA` hanya
+ * berisi enam hari Senin sampai Sabtu (lihat `schema.ts`).
+ *
+ * Urutannya mengikuti kebiasaan kerja Indonesia, bukan urutan `Date.getDay()` yang
+ * dimulai dari Minggu. Baris tabel dimulai dari Senin, dan Minggu menjadi baris
+ * terakhir bila dinyalakan.
+ */
 export const DAY_OF_WEEK_ORDER: readonly DayOfWeek[] = [
   'senin',
   'selasa',
@@ -17,6 +27,7 @@ export const DAY_OF_WEEK_ORDER: readonly DayOfWeek[] = [
   'kamis',
   'jumat',
   'sabtu',
+  'minggu',
 ]
 
 /** Status pengisian sebuah hari. Lihat AGENTS.md bagian 11.3. */
@@ -95,6 +106,16 @@ export type JamDefault = Record<DayOfWeek, JamDefaultHarian>
 
 export type UkuranKertas = 'A4' | 'F4' | 'Letter'
 
+/**
+ * Cara baris yang tidak relevan terhadap bulan halaman ditampilkan pada dokumen.
+ *
+ * `samarkan` (bawaan) tetap mencetak barisnya, dengan tulisan miring dan redup supaya
+ * jelas bahwa baris itu milik bulan lain. `hapus` tidak mencetaknya sama sekali.
+ *
+ * Lihat AGENTS.md bagian 11.9.
+ */
+export type HariLuarBulan = 'samarkan' | 'hapus'
+
 export interface AppConfig {
   profil: Profil
   magang: RentangMagang
@@ -124,13 +145,32 @@ export interface AppConfig {
   formatJam: JamFormat
   /** Font layer dokumen (cetak, preview, PDF). UI aplikasi tidak terpengaruh. */
   fontDokumen: FontDokumen
+  /**
+   * Perlakuan baris yang tidak relevan terhadap bulan halaman pada dokumen cetak
+   * dan PDF. Layar TIDAK terpengaruh: tabel di layar tetap menampilkan semua baris
+   * sebagai read-only. Lihat AGENTS.md bagian 11.9.
+   */
+  hariLuarBulan: HariLuarBulan
   /** Skala ukuran tampilan konten Log Book di layar. Cetak dan PDF tidak terpengaruh. */
   contentScale: ContentScale
   /**
-   * Bahasa antarmuka aplikasi. Cetak dan PDF SELALU bahasa Indonesia mengikuti template
-   * kampus, apa pun nilai ini (AGENTS.md bagian 21).
+   * Bahasa antarmuka aplikasi. Tidak memengaruhi dokumen cetak dan PDF, karena dokumen
+   * punya bahasa sendiri lewat `bahasaDokumen` (AGENTS.md bagian 21).
    */
   bahasa: Locale
+  /**
+   * Bahasa isi dokumen cetak dan PDF. Default `id`.
+   *
+   * Yang ikut bahasa ini: label identitas, judul kolom tabel, label tanda tangan, kata
+   * Minggu, nama hari, dan nama bulan. Yang TIDAK ikut: kop surat dan judul dokumen
+   * "LOG BOOK MAGANG", karena keduanya bagian identitas resmi kampus
+   * (AGENTS.md bagian 21).
+   *
+   * Tabel di LAYAR juga memakai nilai ini, bukan `bahasa`, karena preview di browser
+   * adalah dokumen itu sendiri. Kelas print tidak bisa mengganti teks, jadi satu-satunya
+   * cara menjaga tampilan sama dengan hasil cetak adalah memakai bahasa dokumen sejak awal.
+   */
+  bahasaDokumen: Locale
   /** Menampilkan menu dan route pengembangan. Default mati. */
   tampilkanDevUi: boolean
   /** Nama default Dosen Pembimbing untuk blok tanda tangan. */

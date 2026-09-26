@@ -37,6 +37,13 @@ export default defineConfig({
     command: 'pnpm dev',
     env: {
       LOGMAN_DATA_DIR: 'data-e2e',
+      /*
+       * Mode `strict` WAJIB di sini. E2E meng-hardcode `http://127.0.0.1:5199`, jadi
+       * kalau port auto-increment, test akan diam-diam mengukur server lain. Mode ini
+       * membuat `pnpm dev` gagal dengan pesan jelas kalau port default sedang dipakai.
+       * Lihat AGENTS.md bagian 4.1.
+       */
+      LOGMAN_PORT_MODE: 'strict',
     },
     url: 'http://127.0.0.1:5199',
     reuseExistingServer: false,

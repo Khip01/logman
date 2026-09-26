@@ -30,7 +30,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -k -n web,api -c cyan,magenta \"pnpm:dev:web\" \"pnpm:dev:api\"",
+    "dev": "node scripts/dev-ports.mjs && concurrently -k -n web,api -c cyan,magenta \"pnpm:dev:web\" \"pnpm:dev:api\"",
     "dev:web": "vite",
     "dev:api": "tsx watch server/index.ts",
     "build": "tsc --noEmit && vite build",

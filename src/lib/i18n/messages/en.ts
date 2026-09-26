@@ -76,12 +76,14 @@ export const en: Catalog = {
   'logbook.aturRentang': 'Set the internship period in Settings first.',
   'logbook.gagalMemuat': 'Failed to load log data: {pesan}',
   'logbook.minggu': 'Week {label}',
+  'logbook.weekLabel': 'Week',
 
   // ---------------------------------------------------------------- NAMA PENANDA TANGAN
   'ttd.judul': 'Signatories for This Week',
   'ttd.mahasiswa': 'Student',
   'ttd.dosen': 'Supervising Lecturer',
   'ttd.pembimbing': 'Field Supervisor',
+  'ttd.mengetahui': 'Approved by',
   'ttd.namaMahasiswa': 'Student name',
   'ttd.namaDosen': 'Supervising lecturer name',
   'ttd.pilihPembimbing': 'Select a supervisor',
@@ -123,6 +125,9 @@ export const en: Catalog = {
   'alasan.belumAdaDeskripsi': 'Add reasons so they can be picked quickly when filling empty days.',
   'alasan.misal': 'For example Public Holiday',
   'alasan.kembalikan': 'Restore defaults',
+  'alasan.bulanLain': 'Another month',
+  'alasan.sebelumMagang': 'Before the internship',
+  'alasan.setelahMagang': 'After the internship',
   'alasan.toggleStrip': 'Strip the time for {nama}',
   'alasan.toggleStripJudul': 'Show the time as a strip on days with this reason',
   'alasan.stripPetunjuk':
@@ -181,6 +186,18 @@ export const en: Catalog = {
   'settings.belumAdaPembimbing': 'No field supervisors yet',
   'settings.jadikanDefault': 'Set as default',
   'settings.hapusPembimbing': 'Remove supervisor {nama}',
+  'settings.hariLuarBulan': 'Out-of-Month Days',
+  'settings.hariLuarBulanDeskripsi':
+    'How the document shows days that do not belong to the page month, such as a "Monday 29 June 2026" row on the "July 2026" page.',
+  'settings.hariLuarBulan.samarkan': 'Dim it',
+  'settings.hariLuarBulan.samarkanKet':
+    'Still printed, with italic and dimmed text, so it is clear the row is not part of this month.',
+  'settings.hariLuarBulan.hapus': 'Remove from the table',
+  'settings.hariLuarBulan.hapusKet':
+    'Not printed at all. The row still appears on the page of its own month.',
+  'settings.bahasaDokumen': 'Document language',
+  'settings.bahasaDokumenDeskripsi':
+    'Language for the letter content in print and PDF. The letterhead and document title stay in Indonesian because they are part of the official campus identity.',
   'settings.dokumenEkspor': 'Document and Export',
   'settings.ukuranKertas': 'Paper size',
   'settings.fontDokumen': 'Document font',

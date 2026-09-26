@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { chromium } from '@playwright/test'
+import { DEV_HOST, readDevPorts } from './dev-ports.mjs'
 
 /**
  * Audit aksesibilitas semua halaman pada semua tema.
@@ -8,7 +9,9 @@ import { chromium } from '@playwright/test'
  * mendekati satu tema, bukan sembilan. Animasi dibekukan via CSS sehingga wait bisa
  * pendek dan hasil deterministik.
  */
-const BASE = 'http://127.0.0.1:5199'
+// Port dibaca dari berkas hasil pemilihan port dev, jadi skrip ini tetap benar
+// walau `pnpm dev` menaikkan port karena port default sedang dipakai.
+const BASE = `http://${DEV_HOST}:${readDevPorts().webPort}`
 const PAGES = [
   '/',
   '/settings',

@@ -2,14 +2,29 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
-import { buildMonthGroups } from '../src/lib/domain/calendar'
+import {
+  buildMonthGroups,
+  type DisabledReason,
+  disabledReasonFor,
+  disabledReasonText,
+  type MagangRange,
+} from '../src/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari, monthLabel } from '../src/lib/domain/date'
 import { FONT_DOKUMEN_STACK } from '../src/lib/domain/dokumen'
-import { displayJam, JAM_STRIP, showsJamStrip } from '../src/lib/domain/editor'
+import { displayJam, displayJamLuarBulan, JAM_STRIP, showsJamStrip } from '../src/lib/domain/editor'
 import { PAGE_MARGIN_CM, paperSizeCss } from '../src/lib/domain/paper'
 import { type ResolvedNama, resolveNamaMinggu } from '../src/lib/domain/pembimbing'
 import { escapeHtml, richTextToHtml } from '../src/lib/domain/richTextHtml'
-import type { AppConfig, DayEntry, LogData, WeekEntry } from '../src/lib/domain/types'
+import type {
+  AppConfig,
+  DayEntry,
+  HariLuarBulan,
+  LogData,
+  WeekEntry,
+} from '../src/lib/domain/types'
+import { DEFAULT_LOCALE, isLocale, type Locale } from '../src/lib/i18n/locale'
+import type { MessageKey } from '../src/lib/i18n/messages/id'
+import { translate } from '../src/lib/i18n/translate'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const LETTERHEAD_PATH = join(here, '..', 'public', 'letterhead-polinema.png')
@@ -30,15 +45,34 @@ function renderLetterhead(): string {
   `
 }
 
-function renderIdentity(config: AppConfig): string {
+function renderIdentity(config: AppConfig, locale: Locale): string {
+  const baris: Array<[string, string]> = [
+    ['logbook.nama', config.profil.nama],
+    ['logbook.nim', config.profil.nim],
+    ['settings.programStudi', config.profil.programStudi],
+    ['settings.mitraIndustri', config.profil.mitraIndustri],
+  ]
   return `
     <table class="identity-table">
-      <tr><td class="id-label">Nama</td><td class="id-colon">:</td><td>${escapeHtml(config.profil.nama)}</td></tr>
-      <tr><td class="id-label">NIM</td><td class="id-colon">:</td><td>${escapeHtml(config.profil.nim)}</td></tr>
-      <tr><td class="id-label">Program Studi</td><td class="id-colon">:</td><td>${escapeHtml(config.profil.programStudi)}</td></tr>
-      <tr><td class="id-label">Nama Mitra Industri</td><td class="id-colon">:</td><td>${escapeHtml(config.profil.mitraIndustri)}</td></tr>
+      ${baris
+        .map(
+          ([key, nilai]) =>
+            `<tr><td class="id-label">${escapeHtml(translate(locale, key as MessageKey))}</td><td class="id-colon">:</td><td>${escapeHtml(nilai)}</td></tr>`,
+        )
+        .join('\n      ')}
     </table>
   `
+}
+
+interface WeekTableOptions {
+  /** Kunci bulan halaman ini, format `YYYY-MM`. */
+  monthKey: string
+  /** Rentang magang, dipakai untuk membedakan bulan lain dan di luar rentang. */
+  range: MagangRange
+  /** Perlakuan baris yang tidak relevan terhadap bulan halaman. */
+  hariLuarBulan: HariLuarBulan
+  /** Bahasa isi dokumen. Kop surat dan judul dokumen tetap bahasa Indonesia. */
+  locale: Locale
 }
 
 function renderWeekTable(
@@ -46,26 +80,65 @@ function renderWeekTable(
   days: Record<string, DayEntry>,
   jamDefault: AppConfig['jamDefault'],
   alasan: AppConfig['alasan'],
+  options: WeekTableOptions,
 ): string {
+  const { monthKey, range, hariLuarBulan, locale } = options
   let rows = ''
   for (const emptyDay of week.days) {
     const saved = days[emptyDay.date] ?? emptyDay
+    /*
+     * Baris yang tidak relevan terhadap bulan halaman. Perlakuan-nya sama untuk
+     * 'bulan-lain', 'sebelum-magang', dan 'setelah-magang', karena ketiganya kondisi
+     * visual yang sama, yaitu hari ini tidak milik halaman ini.
+     */
+    const alasanDisabled = disabledReasonFor(saved.date, monthKey, range)
+    const luarBulan = alasanDisabled !== null
+    // Menghapus baris tidak pernah menghilangkan data: minggu lintas bulan ikut masuk
+    // ke grup bulan sebelumnya, jadi baris yang sama masih tercetak di halaman itu.
+    if (luarBulan && hariLuarBulan === 'hapus') continue
+
     // Strip memakai helper yang SAMA dengan layar, jadi PDF tidak pernah berbeda dari
     // yang dilihat user. Aturan lama yang hardcode 'sakit' dan 'izin' sudah diganti
     // tanda `stripJam` milik alasannya (AGENTS.md bagian 11.8).
     const strip = showsJamStrip(saved, alasan)
-    const hari = dayNameId(emptyDay.date)
-    const tanggal = formatTanggalTanpaHari(emptyDay.date)
-    const dowKey = hari.toLowerCase() as keyof typeof jamDefault
+    const hari = dayNameId(emptyDay.date, locale)
+    const tanggal = formatTanggalTanpaHari(emptyDay.date, locale)
+    /*
+     * Kunci jam default HARUS diturunkan dari nama hari berbahasa Indonesia, bukan dari
+     * `hari` yang ditampilkan. Kalau nama hari ikut bahasa dokumen, hasilnya "monday"
+     * yang tidak ada di `jamDefault`, lalu `jamDefault[dowKey]` undefined dan baris ini
+     * diam-diam jatuh ke 08.00/16.00 yang di-hardcode, tanpa error. Pola yang sama
+     * dipakai `dayNameKey` di WeekEditorTable.tsx.
+     */
+    const dowKey = dayNameId(emptyDay.date, DEFAULT_LOCALE).toLowerCase() as keyof typeof jamDefault
     const def = jamDefault[dowKey] ?? { masuk: '08.00', pulang: '16.00' }
-    const masuk = strip ? JAM_STRIP : displayJam(saved.masuk, def.masuk)
-    const pulang = strip ? JAM_STRIP : displayJam(saved.pulang, def.pulang)
+    // Baris luar bulan tidak memakai jam default, karena itu tebakan yang membuat
+    // baris kosong terlihat terisi (AGENTS.md bagian 11.9).
+    const jamMasuk = luarBulan
+      ? displayJamLuarBulan(saved.masuk)
+      : displayJam(saved.masuk, def.masuk)
+    const jamPulang = luarBulan
+      ? displayJamLuarBulan(saved.pulang)
+      : displayJam(saved.pulang, def.pulang)
+    const masuk = strip ? JAM_STRIP : jamMasuk
+    const pulang = strip ? JAM_STRIP : jamPulang
     // Format teks (tebal, miring, judul) memakai parser yang SAMA dengan layar, sehingga
     // PDF tidak pernah berbeda dari yang dilihat user (AGENTS.md bagian 11.6).
-    const kegiatan = richTextToHtml(saved.kegiatan || saved.alasan || '')
+    const isi = saved.kegiatan || saved.alasan || ''
+    /*
+     * Baris luar bulan yang kosong diberi kalimat alasan, supaya pembaca dokumen tahu
+     * kenapa jamnya strip dan sel kegiatan kosong. Kalau baris itu sudah diisi user,
+     * isi user yang ditampilkan dan alasannya disembunyikan: data asli tidak boleh
+     * tertutup oleh kalimat.
+     */
+    const kegiatan =
+      luarBulan && isi === ''
+        ? `<span class="alasan-luar-bulan">${escapeHtml(disabledReasonText(alasanDisabled as DisabledReason, locale))}</span>`
+        : richTextToHtml(isi)
 
+    const kelas = luarBulan ? ' class="row-bulan-lain"' : ''
     rows += `
-      <tr>
+      <tr${kelas}>
         <td class="cell-hari">${hari}<br/><span class="tanggal">${tanggal}</span></td>
         <td class="cell-jam">${masuk}</td>
         <td class="cell-jam">${pulang}</td>
@@ -77,10 +150,10 @@ function renderWeekTable(
     <table class="doc-table">
       <thead>
         <tr>
-          <th>Hari, Tanggal</th>
-          <th>Jam Masuk</th>
-          <th>Jam Pulang</th>
-          <th>Kegiatan</th>
+          <th>${escapeHtml(translate(locale, 'editor.hariTanggal'))}</th>
+          <th>${escapeHtml(translate(locale, 'editor.jamMasuk'))}</th>
+          <th>${escapeHtml(translate(locale, 'editor.jamPulang'))}</th>
+          <th>${escapeHtml(translate(locale, 'editor.kegiatan'))}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -88,25 +161,27 @@ function renderWeekTable(
   `
 }
 
-function renderSignatureBlock(names: ResolvedNama): string {
+function renderSignatureBlock(names: ResolvedNama, locale: Locale): string {
   const label = (nama: string) => `(${escapeHtml(nama) || '...........................'})`
+  const ttd = (key: 'ttd.mahasiswa' | 'ttd.dosen' | 'ttd.pembimbing') =>
+    `${escapeHtml(translate(locale, key))},`
   return `
     <div class="signature-block">
       <div class="sig-student">
-        <p>Mahasiswa,</p>
+        <p>${ttd('ttd.mahasiswa')}</p>
         <div class="sig-space"></div>
         <p>${label(names.mahasiswa)}</p>
       </div>
       <div class="sig-know">
-        <p>Mengetahui,</p>
+        <p>${escapeHtml(translate(locale, 'ttd.mengetahui'))},</p>
         <div class="sig-columns">
           <div class="sig-col">
-            <p>Dosen Pembimbing,</p>
+            <p>${ttd('ttd.dosen')}</p>
             <div class="sig-space"></div>
             <p>${label(names.dosen)}</p>
           </div>
           <div class="sig-col">
-            <p>Pembimbing Lapangan,</p>
+            <p>${ttd('ttd.pembimbing')}</p>
             <div class="sig-space"></div>
             <p>${label(names.pembimbing)}</p>
           </div>
@@ -148,13 +223,30 @@ export function buildExportHtml(options: {
   const selesai = config.magang.selesai
   if (!mulai || !selesai) throw new Error('Rentang magang belum diatur.')
 
+  /*
+   * Bahasa isi dokumen. Nilai ini hanya mengubah isi surat, bukan kop surat dan judul
+   * dokumen yang tetap bahasa Indonesia mengikuti identitas resmi kampus
+   * (AGENTS.md bagian 21). Config lama tanpa key ini otomatis memakai `id`.
+   */
+  const locale: Locale = isLocale(config.bahasaDokumen) ? config.bahasaDokumen : DEFAULT_LOCALE
+
   // Hari kerja diteruskan supaya PDF punya baris yang sama persis dengan layar.
-  const months = buildMonthGroups(mulai, selesai, 'id', config.hariKerja)
+  const months = buildMonthGroups(mulai, selesai, locale, config.hariKerja)
   const month = months.find((m) => m.key === monthKey)
   if (!month) throw new Error(`Bulan ${monthKey} tidak ditemukan dalam rentang magang.`)
 
   const pageSize = paperSizeCss(config.ukuranKertas)
   const fontDokumen = FONT_DOKUMEN_STACK[config.fontDokumen]
+
+  // Rentang magang diteruskan agar PDF bisa membedakan baris milik bulan lain, sebelum
+  // magang, dan setelah magang (AGENTS.md bagian 11.9).
+  const range: MagangRange = { mulai, selesai }
+  const tableOptions: WeekTableOptions = {
+    monthKey,
+    range,
+    hariLuarBulan: config.hariLuarBulan,
+    locale,
+  }
 
   const lastWeek = month.weeks[month.weeks.length - 1]
   const signatureNames = resolveNamaMinggu(
@@ -175,10 +267,10 @@ export function buildExportHtml(options: {
       <div class="print-page">
         ${renderLetterhead().replace('LETTERHEAD_SRC', letterheadUri)}
         <h1 class="doc-title">LOG BOOK MAGANG</h1>
-        <h2 class="doc-subtitle">${escapeHtml(month.label)} - Minggu ${week.weekOfMonth}</h2>
-        ${i === 0 ? renderIdentity(config) : ''}
-        ${renderWeekTable(week, logs.days, config.jamDefault, config.alasan)}
-        ${isLast ? renderSignatureBlock(signatureNames) : ''}
+        <h2 class="doc-subtitle">${escapeHtml(month.label)} - ${escapeHtml(translate(locale, 'logbook.weekLabel'))} ${week.weekOfMonth}</h2>
+        ${i === 0 ? renderIdentity(config, locale) : ''}
+        ${renderWeekTable(week, logs.days, config.jamDefault, config.alasan, tableOptions)}
+        ${isLast ? renderSignatureBlock(signatureNames, locale) : ''}
       </div>
     `
   }
@@ -230,6 +322,27 @@ export function buildExportHtml(options: {
   .doc-table thead th { background: #D0CECE; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .doc-table tbody tr { min-height: 1.8cm; }
   .doc-table tbody td { height: 1.8cm; }
+  /*
+   * Baris yang tidak relevan terhadap bulan halaman (AGENTS.md bagian 11.9).
+   *
+   * Miring adalah sinyal utama dan abu-abu hanya penguat, karena dokumen ini sering
+   * difotokopi. Abu-abu terang bisa hilang di salinan, sedangkan miring selalu
+   * terbaca di printer hitam-putih. Spesifisitas dinaikkan di atas '.doc-table td'
+   * supaya warna border di bawah tidak menimpa aturan ini.
+   */
+  .doc-table tbody tr.row-bulan-lain > td {
+    color: #666;
+    font-style: italic;
+    border-color: #a8a8a8;
+  }
+  .doc-table tbody tr.row-bulan-lain > td .tanggal { color: #666; }
+  /*
+   * Kalimat alasan pada baris luar bulan yang kosong. Warnanya sudah diwarisi dari
+   * aturan baris di atas, jadi aturan ini hanya menjaga agar kalimat itu tidak ikut
+   * tebal dan tidak mewarisi format judul dari parser rich text.
+   * Sengaja TIDAK diberi warna sendiri, supaya tidak ada dua sumber kebenaran warna.
+   */
+  .kegiatan-wrap .alasan-luar-bulan { font-style: italic; }
   .cell-hari { white-space: nowrap; width: 1%; }
   .cell-hari .tanggal { font-size: 10pt; color: #333; }
   .cell-jam { text-align: center; white-space: nowrap; width: 1%; }

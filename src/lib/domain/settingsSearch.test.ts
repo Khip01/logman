@@ -36,7 +36,7 @@ const REGISTRY_KEYS = [
 ]
 
 describe('registry seksi', () => {
-  it('mencakup sembilan seksi halaman Pengaturan', () => {
+  it('mencakup sepuluh seksi halaman Pengaturan', () => {
     expect(SETTINGS_SECTIONS.map((section) => section.id)).toEqual([
       'profil',
       'tema',
@@ -45,6 +45,7 @@ describe('registry seksi', () => {
       'jam-default',
       'alasan',
       'penanda-tangan',
+      'hari-luar-bulan',
       'dokumen',
       'tampilan-dev',
     ])

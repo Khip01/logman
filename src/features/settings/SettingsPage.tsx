@@ -13,6 +13,7 @@ import { useConfigStore } from '@/stores/config'
 import { MOTION_TIERS, THEMES, useUiStore } from '@/stores/ui'
 import { AlasanSection } from './AlasanSection'
 import { DokumenEksporSection } from './DokumenEksporSection'
+import { HariLuarBulanSection } from './HariLuarBulanSection'
 import { JamDefaultSection } from './JamDefaultSection'
 import { PenandaTanganSection } from './PenandaTanganSection'
 import { SettingsFlashProvider } from './SettingsFlash'
@@ -213,6 +214,7 @@ export function SettingsPage() {
         <JamDefaultSection />
         <AlasanSection />
         <PenandaTanganSection />
+        <HariLuarBulanSection />
         <DokumenEksporSection />
         <TampilanDevSection />
       </m.div>

@@ -74,6 +74,21 @@ export function displayJam(value: string | null, fallback: string): string {
   return value ?? fallback
 }
 
+/**
+ * Jam untuk baris yang tidak relevan terhadap bulan halaman (AGENTS.md bagian 11.9).
+ *
+ * Baris milik bulan lain, sebelum magang, atau setelah magang TIDAK boleh memakai jam
+ * default. Jam default hanya tebakan, dan menuliskannya membuat baris kosong terlihat
+ * seperti hari yang sudah terisi jam. Karena itu baris seperti ini memakai strip bila
+ * jamnya memang kosong.
+ *
+ * Jam yang benar-benar diketik user tetap ditampilkan, supaya menghapus mode ini tidak
+ * pernah menghilangkan data yang sudah diisi.
+ */
+export function displayJamLuarBulan(value: string | null): string {
+  return value === null || value.trim() === '' ? JAM_STRIP : value
+}
+
 export interface DayIssue {
   date: string
   /** Kode masalah, dipakai UI untuk memilih pesan. */

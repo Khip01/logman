@@ -3,6 +3,7 @@ import { buildMonthGroups } from './calendar'
 import {
   collectIncompleteDates,
   displayJam,
+  displayJamLuarBulan,
   effectiveStatus,
   isDayFilled,
   isStripStatus,
@@ -128,6 +129,26 @@ describe('displayJam', () => {
 
   it('memakai karakter strip yang bukan em dash', () => {
     expect(JAM_STRIP).toBe('-')
+  })
+})
+
+describe('displayJamLuarBulan', () => {
+  it('memakai strip saat jam kosong, bukan jam default', () => {
+    // Ini inti dari Github 11.9: jam default cuma tebakan, dan menuliskannya membuat
+    // baris kosong terlihat terisi.
+    expect(displayJamLuarBulan(null)).toBe(JAM_STRIP)
+    expect(displayJamLuarBulan('')).toBe(JAM_STRIP)
+    expect(displayJamLuarBulan('   ')).toBe(JAM_STRIP)
+  })
+
+  it('tetap menampilkan jam yang benar-benar diketik user', () => {
+    // Baris lintas bulan bisa punya data, jadi mode ini tidak boleh membuangnya.
+    expect(displayJamLuarBulan('08.00')).toBe('08.00')
+    expect(displayJamLuarBulan('21.45')).toBe('21.45')
+  })
+
+  it('tidak pernah mengembalikan fallback seperti displayJam', () => {
+    expect(displayJamLuarBulan(null)).not.toBe('08.00')
   })
 })
 

@@ -3,13 +3,18 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { sanitizeHariKerja } from '@/lib/domain/calendar'
 import { defaultJamDefault } from '@/lib/domain/schema'
 import type { DayOfWeek, JamDefault } from '@/lib/domain/types'
+import { DAY_OF_WEEK_ORDER } from '@/lib/domain/types'
 import { HARI, useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils/cn'
 import { useConfigStore } from '@/stores/config'
 import { JamInput } from './JamInput'
 import { SettingsSection } from './SettingsSection'
 
-/** Indeks hari pada tabel HARI locale, dipakai untuk label hari yang ikut bahasa aktif. */
+/**
+ * Indeks hari pada tabel HARI locale, dipakai untuk label hari yang ikut bahasa aktif.
+ *
+ * Indeks 0 adalah Minggu, sama dengan `Date.getDay()`.
+ */
 const HARI_INDEX: Record<DayOfWeek, number> = {
   senin: 1,
   selasa: 2,
@@ -17,10 +22,16 @@ const HARI_INDEX: Record<DayOfWeek, number> = {
   kamis: 4,
   jumat: 5,
   sabtu: 6,
+  minggu: 0,
 }
 
-/** Urutan tampilan Senin sampai Sabtu (AGENTS.md bagian 5.1). */
-const HARI_ORDER: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+/**
+ * Urutan tampilan Senin sampai Minggu (AGENTS.md bagian 5.1).
+ *
+ * Minggu ada di sini supaya bisa dinyalakan, karena ada magang yang kerja hari Minggu.
+ * Bawaannya mati, dan urutan baris tetap dimulai dari Senin.
+ */
+const HARI_ORDER: DayOfWeek[] = [...DAY_OF_WEEK_ORDER]
 
 /**
  * Jam default per hari (AGENTS.md bagian 5.1). Nilai ini dipakai bila jam pada form

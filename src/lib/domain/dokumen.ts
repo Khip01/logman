@@ -12,6 +12,7 @@
  * Semua fungsi MURNI dan dapat diuji tanpa React.
  */
 
+import type { HariLuarBulan } from '@/lib/domain/types'
 import type { MessageKey } from '@/lib/i18n/messages/id'
 
 export type FontDokumen = 'times' | 'arial'
@@ -39,6 +40,34 @@ export const FONT_DOKUMEN_STACK: Record<FontDokumen, string> = {
 
 export function isFontDokumen(value: unknown): value is FontDokumen {
   return value === 'times' || value === 'arial'
+}
+
+/**
+ * Perlakuan baris yang tidak relevan terhadap bulan halaman pada dokumen.
+ * Daftar ini juga menjadi sumber urutan kartu di Pengaturan.
+ */
+export const HARI_LUAR_BULAN_LIST: HariLuarBulan[] = ['samarkan', 'hapus']
+
+/**
+ * Key pesan untuk nama perlakuan. Nama ikut bahasa antarmuka, jadi disimpan sebagai key
+ * agar dapat dicari dari kotak pencarian Pengaturan (AGENTS.md bagian 21 dan 22).
+ */
+export const HARI_LUAR_BULAN_LABEL_KEY: Record<HariLuarBulan, MessageKey> = {
+  samarkan: 'settings.hariLuarBulan.samarkan',
+  hapus: 'settings.hariLuarBulan.hapus',
+}
+
+/** Benar bila nilai adalah perlakuan baris luar bulan yang dikenal. */
+export function isHariLuarBulan(value: unknown): value is HariLuarBulan {
+  return value === 'samarkan' || value === 'hapus'
+}
+
+/**
+ * Menormalkan nilai dari data yang mungkin rusak. Nilai yang tidak dikenal jatuh ke
+ * `fallback` supaya file konfigurasi yang rusak tidak membuat aplikasi gagal start.
+ */
+export function parseHariLuarBulan(value: unknown, fallback: HariLuarBulan): HariLuarBulan {
+  return isHariLuarBulan(value) ? value : fallback
 }
 
 /** Skala tampilan konten Log Book di layar. Nilai 1 berarti ukuran bawaan. */

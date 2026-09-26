@@ -3,6 +3,7 @@ import { mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { DEV_HOST, readDevPorts } from './dev-ports.mjs'
 
 /**
  * Membuat screenshot untuk README.
@@ -30,8 +31,11 @@ const root = join(here, '..')
 const OUT_DIR = join(root, 'docs', 'screenshots')
 const DATA_DIR = 'data-screenshots'
 
-const WEB = 'http://127.0.0.1:5199'
-const API = 'http://127.0.0.1:5198'
+// Port dibaca dari berkas hasil pemilihan port dev, bukan ditulis langsung, supaya
+// skrip ini tetap menemukan server yang sedang berjalan walau portnya dinaikkan.
+const devPorts = readDevPorts()
+const WEB = `http://${DEV_HOST}:${devPorts.webPort}`
+const API = `http://${DEV_HOST}:${devPorts.apiPort}`
 
 /**
  * Bulan dan minggu yang ditampilkan, dikunci agar tidak ikut tanggal hari ini.

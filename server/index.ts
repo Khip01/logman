@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { readDevPorts } from '../scripts/dev-ports.mjs'
 import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { monthIncompleteDates } from '../src/lib/domain/editor'
 import {
@@ -35,7 +36,12 @@ import {
  * - Semua operasi mencatat traceId agar bisa dilacak dari UI sampai disk.
  */
 
-const API_PORT = Number(process.env.LOGMAN_API_PORT ?? 5198)
+/*
+ * Port API dibaca dari env dulu, lalu dari berkas hasil pemilihan port, lalu bawaan.
+ * Env menang supaya caller bisa memaksa port tertentu (AGENTS.md bagian 4.1). Berkas
+ * diperlukan supaya port ini sama dengan yang dipakai Vite untuk target proxy-nya.
+ */
+const API_PORT = Number(process.env.LOGMAN_API_PORT ?? readDevPorts().apiPort)
 const HOST = process.env.LOGMAN_HOST ?? '127.0.0.1'
 
 const here = dirname(fileURLToPath(import.meta.url))

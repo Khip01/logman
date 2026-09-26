@@ -506,4 +506,44 @@
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+
+  /*
+   * Baris yang tidak relevan terhadap bulan halaman (AGENTS.md bagian 11.9).
+   *
+   * Pemilihnya naik dari spesifisitas rendah ke tinggi, mengikuti pola blok di atas.
+   * Aturan warna border `.doc-table th, .doc-table td` punya spesifisitas lebih rendah,
+   * jadi aturan di sini harus lebih tinggi agar warnanya tidak ditimpa.
+   *
+   * Miring adalah sinyal utama dan abu-abu hanya penguat, karena dokumen ini sering
+   * difotokopi. Abu-abu terang bisa hilang di salinan, sedangkan miring selalu terbaca
+   * di printer hitam-putih.
+   */
+  [data-doc-hari-luar-bulan] .doc-table tbody tr[data-disabled="true"] {
+    color: #666;
+    font-style: italic;
+  }
+
+  [data-doc-hari-luar-bulan="samarkan"] .doc-table tbody tr[data-disabled="true"] > th,
+  [data-doc-hari-luar-bulan="samarkan"] .doc-table tbody tr[data-disabled="true"] > td {
+    color: #666;
+    border-color: #a8a8a8;
+  }
+
+  /*
+   * Tanggal di dalam sel hari punya utilitas `print:text-doc-muted` sendiri, jadi perlu
+   * aturan terpisah dengan spesifisitas lebih tinggi agar warnanya ikut meredup.
+   */
+  [data-doc-hari-luar-bulan="samarkan"] .doc-table tbody tr[data-disabled="true"] > th span {
+    color: #666;
+  }
+
+  /*
+   * Mode hapus tidak mencetak barisnya. `display: none` dipakai, bukan `visibility`,
+   * supaya baris benar-benar hilang dan tidak menyisakan ruang kosong. Utilitas
+   * `print:hidden` milik Tailwind ada pada `<span>` di dalam sel, bukan pada `<tr>`,
+   * jadi tidak ada konflik spesifisitas di sini.
+   */
+  [data-doc-hari-luar-bulan="hapus"] .doc-table tbody tr[data-disabled="true"] {
+    display: none;
+  }
 }

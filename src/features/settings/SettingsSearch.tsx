@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  CalendarOff,
   Clock,
   FileText,
   Languages,
@@ -54,6 +55,7 @@ const ICONS: Record<SettingsSectionIcon, LucideIcon> = {
   clock: Clock,
   'list-checks': ListChecks,
   'pen-line': PenLine,
+  'calendar-off': CalendarOff,
   'file-text': FileText,
   wrench: Wrench,
 }

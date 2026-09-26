@@ -49,6 +49,10 @@ async function setConfig(
         tierAnimasi: 'penuh',
         contentScale: 1,
         bahasa: 'id',
+        // `bahasaDokumen` HARUS dikunci juga. Label kolom dan nama hari di tabel ikut
+        // bahasa dokumen, jadi kalau `bahasa.spec.ts` meninggalkan `en`, nama hari di
+        // label jam tidak lagi "Kamis 24 September 2026" dan test ini gagal.
+        bahasaDokumen: 'id',
         tampilkanDevUi: false,
         ...patch,
       },
@@ -157,6 +161,44 @@ test.describe('hari kerja', () => {
 
     await page.goto('/')
     await expect(page.getByTestId('editor-row-2026-09-26')).toHaveCount(1)
+  })
+
+  /*
+   * Minggu sebagai hari kerja. Ada magang yang kerja hari Minggu, jadi tombolnya harus
+   * ada, tapi BAWAANNYA MATI supaya config lama tidak ikut berubah barisnya.
+   */
+  test('Minggu bisa dinyalakan, dan bawaannya mati', async ({ page, request }) => {
+    await setConfig(request, { hariKerja: SENIN_SABTU })
+    await page.goto('/settings')
+
+    const tombolMinggu = page.getByRole('button', { name: 'Minggu', exact: true })
+    // Tombolnya ADA, jadi user bisa menyalakannya.
+    await expect(tombolMinggu).toBeVisible()
+    // Tapi bawaannya mati, sama seperti config lama yang tidak menyebut apa pun.
+    await expect(tombolMinggu).toHaveAttribute('aria-pressed', 'false')
+
+    await tombolMinggu.click()
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+    await expect(tombolMinggu).toHaveAttribute('aria-pressed', 'true')
+
+    const config = (await (await request.get(`${API}/api/config`)).json()) as {
+      config: { hariKerja: string[] }
+    }
+    // Minggu masuk paling akhir, bukan di awal.
+    expect(config.config.hariKerja).toEqual([...SENIN_SABTU, 'minggu'])
+
+    // Baris Minggu muncul di tabel, setelah Sabtu.
+    await page.goto('/')
+    await expect(page.getByTestId('editor-row-2026-09-27')).toHaveCount(1)
+  })
+
+  test('baris Minggu tidak muncul saat hari kerja hanya Senin sampai Sabtu', async ({
+    page,
+    request,
+  }) => {
+    await setConfig(request, { hariKerja: SENIN_SABTU })
+    await page.goto('/')
+    await expect(page.getByTestId('editor-row-2026-09-27')).toHaveCount(0)
   })
 })
 

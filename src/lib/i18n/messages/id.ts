@@ -78,12 +78,14 @@ export const id = {
   'logbook.aturRentang': 'Atur rentang magang di Pengaturan terlebih dahulu.',
   'logbook.gagalMemuat': 'Gagal memuat data log: {pesan}',
   'logbook.minggu': 'Minggu {label}',
+  'logbook.weekLabel': 'Minggu',
 
   // ---------------------------------------------------------------- NAMA PENANDA TANGAN
   'ttd.judul': 'Nama Penanda Tangan Minggu Ini',
   'ttd.mahasiswa': 'Mahasiswa',
   'ttd.dosen': 'Dosen Pembimbing',
   'ttd.pembimbing': 'Pembimbing Lapangan',
+  'ttd.mengetahui': 'Mengetahui',
   'ttd.namaMahasiswa': 'Nama mahasiswa',
   'ttd.namaDosen': 'Nama dosen pembimbing',
   'ttd.pilihPembimbing': 'Pilih pembimbing',
@@ -125,6 +127,9 @@ export const id = {
   'alasan.belumAdaDeskripsi': 'Tambahkan alasan agar bisa dipilih cepat saat mengisi hari kosong.',
   'alasan.misal': 'Misal Cuti Bersama',
   'alasan.kembalikan': 'Kembalikan bawaan',
+  'alasan.bulanLain': 'Bulan lain',
+  'alasan.sebelumMagang': 'Sebelum magang',
+  'alasan.setelahMagang': 'Setelah magang',
   'alasan.toggleStrip': 'Jadikan jam strip untuk {nama}',
   'alasan.toggleStripJudul': 'Tampilkan jam sebagai strip pada hari beralasan ini',
   'alasan.stripPetunjuk':
@@ -183,6 +188,18 @@ export const id = {
   'settings.belumAdaPembimbing': 'Belum ada pembimbing lapangan',
   'settings.jadikanDefault': 'Jadikan default',
   'settings.hapusPembimbing': 'Hapus pembimbing {nama}',
+  'settings.hariLuarBulan': 'Hari Luar Bulan',
+  'settings.hariLuarBulanDeskripsi':
+    'Cara dokumen menampilkan hari yang tidak relevan dengan bulan halaman, misalnya baris "Senin 29 Juni 2026" pada halaman "Juli 2026".',
+  'settings.hariLuarBulan.samarkan': 'Samarkan',
+  'settings.hariLuarBulan.samarkanKet':
+    'Tetap tercetak dengan tulisan miring dan redup, supaya jelas bukan bagian bulan ini.',
+  'settings.hariLuarBulan.hapus': 'Hapus dari tabel',
+  'settings.hariLuarBulan.hapusKet':
+    'Tidak tercetak sama sekali. Barisnya tetap ada di halaman bulan asalnya.',
+  'settings.bahasaDokumen': 'Bahasa isi dokumen',
+  'settings.bahasaDokumenDeskripsi':
+    'Bahasa untuk isi surat pada cetak dan PDF. Kop surat dan judul dokumen tetap bahasa Indonesia karena bagian identitas resmi kampus.',
   'settings.dokumenEkspor': 'Dokumen dan Ekspor',
   'settings.ukuranKertas': 'Ukuran kertas',
   'settings.fontDokumen': 'Font dokumen',

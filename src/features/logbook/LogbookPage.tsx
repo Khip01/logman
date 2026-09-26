@@ -36,6 +36,8 @@ export function LogbookPage() {
   const t = useT()
   const magang = useConfigStore((s) => s.config.magang)
   const profil = useConfigStore((s) => s.config.profil)
+  // Atribut akar cetak ini yang dipilih aturan CSS di globals.css (bagian 11.9).
+  const hariLuarBulan = useConfigStore((s) => s.config.hariLuarBulan)
   const loadingLogs = useLogsStore((s) => s.loading)
   const errorLogs = useLogsStore((s) => s.error)
   const jumlahHari = useLogsStore((s) => Object.keys(s.data.days).length)
@@ -130,13 +132,10 @@ export function LogbookPage() {
             description={t('logbook.belumAdaMingguDeskripsi')}
           />
         ) : (
-          <>
+          <div data-doc-hari-luar-bulan={hariLuarBulan} className="contents">
             <PrintLetterhead />
             {activeWeek ? (
-              <PrintDocHeading
-                monthLabel={activeMonth.label}
-                weekOfMonth={activeWeek.weekOfMonth}
-              />
+              <PrintDocHeading monthKey={activeMonth.key} weekOfMonth={activeWeek.weekOfMonth} />
             ) : null}
             {printPosition?.isFirst ? <PrintIdentity /> : null}
 
@@ -167,7 +166,7 @@ export function LogbookPage() {
             ) : null}
 
             {printPosition?.isLast && activeWeek ? <PrintSignature weekId={activeWeek.id} /> : null}
-          </>
+          </div>
         )}
       </div>
     </div>

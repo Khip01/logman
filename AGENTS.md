@@ -214,6 +214,40 @@ Aturan penempatan (jangan dilanggar):
 - Komponen atomik di `components/ui/`. Komposisi besar di `components/shared/`.
 - Satu fitur, satu folder di `features/`. Jangan campur antar fitur.
 
+### 4.1 Pemilihan port dev server
+
+Web (Vite) dan API (Hono) adalah dua proses terpisah yang dimulai bersama oleh
+`concurrently`. Kalau keduanya memilih port sendiri secara independen, ada dua kegagalan:
+port yang sama bisa dipakai dua proses, atau Vite bisa pindah port diam-diam sementara
+proxy `/api` masih menembak port API yang lama.
+
+Solusinya: `scripts/dev-ports.mjs` dipilih **sebelum** `concurrently` berjalan, lalu
+menulis hasilnya ke `.dev-ports.json` (gitignored). `vite.config.ts` dan
+`server/index.ts` membaca berkas yang sama, jadi keduanya pasti sepakat.
+
+Aturan yang wajib dijaga:
+- Env `LOGMAN_WEB_PORT` dan `LOGMAN_API_PORT` **menang** atas berkas. Ini yang dipakai
+  test untuk memaksa port tertentu.
+- API dipetakan lebih dulu, lalu web mencari sambil **melewati** port milik API, supaya
+  keduanya tidak pernah mendapat port sama.
+- Vite tetap memakai `strictPort: true` di kedua mode. Kenaikan port diputuskan oleh
+  skrip kita, bukan Vite, supaya port yang dipakai sama dengan URL yang dicetak ke
+  pengguna dan sama dengan target proxy. Kalau Vite yang menaikkan portnya, pengguna
+  akan mendapat URL yang salah.
+- Mode `auto` (bawaan interaktif): port default dipakai naik ke port kosong berikutnya,
+  lalu URL barunya dicetak ke stderr.
+- Mode `strict` (`LOGMAN_PORT_MODE=strict`): port default dipakai apa adanya dan **gagal
+  keras** kalau sedang dipakai. Dipakai Playwright (`playwright.config.ts`) dan CI,
+  karena keduanya meng-hardcode `http://127.0.0.1:5199` dan tidak boleh diam-diam
+  mengukur server lain.
+- Berkas rusak atau tidak ada tidak boleh membuat start gagal; `readDevPorts` jatuh ke
+  bawaan 5199/5198.
+- Cache `readDevPorts` dikunci per path, bukan global, supaya pemanggilan dengan `cwd`
+  berbeda tidak mengembalikan nilai milik path lain.
+- `scripts/axe-check.mjs` dan `scripts/screenshots.mjs` **wajib** membaca port dari
+  berkas, bukan menulis 5199/5198 langsung. Kalau tidak, keduanya akan gagal begitu
+  `pnpm dev` menaikkan port.
+
 ---
 
 ## 5. Model data
@@ -1080,7 +1114,9 @@ berulang-ulang sampai kena timeout tool.
 Contoh pola yang benar:
 
 ```bash
-# 1. cek
+# 1. cek. Port dev bisa BERGESER, jadi baca port yang benar-benar dipakai dari
+#    .dev-ports.json, bukan asumsikan selalu 5199. Lihat bagian 4.1.
+cat .dev-ports.json 2>/dev/null || echo "belum ada dev server berjalan"
 ss -ltnp | grep 5199 || echo "port free"
 # 2. bila perlu matikan, bertahap
 timeout 5 pkill -f "vite" || true
@@ -1089,6 +1125,11 @@ ss -ltnp | grep 5199 || echo "port free"
 # 3. hanya bila masih hidup, tahap berikutnya
 timeout 10 pkill -f "vite" || true
 ```
+
+PENTING: dev server milik agen WAJIB memakai direktori data terpisah
+(`LOGMAN_DATA_DIR=data-agent`), dan setelah selesai harus dimatikan serta
+`data-agent/` dihapus. Port yang tertinggal tidak pernah membuat data user tersentuh, tapi tetap
+menyisakan proses yang harus dimatikan di sesi berikutnya.
 
 ### 14.3 Jenis test
 
@@ -1862,6 +1903,8 @@ langsung tahu posisinya.
   - `docs/reference/extracted-metrics.md` sudah memuat metrik docx, sehingga tidak
     perlu membedah ulang docx.
   - Dev server default: web `http://127.0.0.1:5199`, API `http://127.0.0.1:5198`.
+  Bila salah satu sedang dipakai, `pnpm dev` naik ke port kosong berikutnya dan
+  mencetak URL baru. Lihat bagian 4.1.
   - Commit GPG signing aktif. Setiap commit otomatis ditandatangani.
   - Snapshot visual Playwright sudah ada untuk 3 halaman produk
     (`e2e/visual.spec.ts-snapshots/`). Perbarui baseline bila UI berubah disengaja.

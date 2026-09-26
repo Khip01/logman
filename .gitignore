@@ -36,6 +36,10 @@ blob-report/
 *.log
 pnpm-debug.log*
 
+# Hasil pemilihan port dev server. Dibuat ulang setiap `pnpm dev` dan hanya berisi
+# port lokal, jadi tidak boleh masuk repo. Lihat AGENTS.md bagian 4.1.
+.dev-ports.json
+
 # Editor / OS
 .DS_Store
 .idea/

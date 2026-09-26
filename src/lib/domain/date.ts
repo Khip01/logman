@@ -95,6 +95,11 @@ export function saturdayOf(iso: string): string {
   return addDays(mondayOf(iso), 5)
 }
 
+/** Tanggal Minggu dari minggu yang memuat tanggal tersebut. */
+export function sundayOf(iso: string): string {
+  return addDays(mondayOf(iso), 6)
+}
+
 /** Kunci bulan `YYYY-MM` dari sebuah tanggal. */
 export function monthKey(iso: string): string {
   return iso.slice(0, 7)

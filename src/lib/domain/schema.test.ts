@@ -101,20 +101,73 @@ describe('parseConfig', () => {
     expect(value.pembimbingLapanganDefault).toBeNull()
   })
 
+  describe('bahasaDokumen', () => {
+    it('default ke bahasa Indonesia', () => {
+      expect(parseConfig({}).value.bahasaDokumen).toBe('id')
+    })
+
+    it('mempertahankan nilai valid', () => {
+      expect(parseConfig({ bahasaDokumen: 'en' }).value.bahasaDokumen).toBe('en')
+      expect(parseConfig({ bahasaDokumen: 'id' }).value.bahasaDokumen).toBe('id')
+    })
+
+    it('key yang tidak ada pada config lama tetap dapat default tanpa migrasi', () => {
+      // Config lama tidak punya key ini sama sekali. Tidak boleh gagal parse.
+      const { value, issues } = parseConfig({ magang: { mulai: '2026-07-01' } })
+      expect(value.bahasaDokumen).toBe('id')
+      expect(issues).toEqual([])
+    })
+
+    it('nilai asing jatuh ke default, bukan membuat parse gagal', () => {
+      expect(parseConfig({ bahasaDokumen: 'fr' }).value.bahasaDokumen).toBe('id')
+      expect(parseConfig({ bahasaDokumen: true }).value.bahasaDokumen).toBe('id')
+      expect(parseConfig({ bahasaDokumen: null }).value.bahasaDokumen).toBe('id')
+    })
+
+    it('terpisah dari bahasa antarmuka', () => {
+      // Dua field ini tidak boleh saling memengaruhi: bahasa antarmuka Inggris tidak
+      // boleh otomatis mengubah isi dokumen.
+      const { value } = parseConfig({ bahasa: 'en' })
+      expect(value.bahasa).toBe('en')
+      expect(value.bahasaDokumen).toBe('id')
+    })
+  })
+
+  describe('hariLuarBulan', () => {
+    it('default ke samarkan', () => {
+      const { value } = parseConfig({})
+      expect(value.hariLuarBulan).toBe('samarkan')
+    })
+
+    it('mempertahankan nilai valid', () => {
+      expect(parseConfig({ hariLuarBulan: 'hapus' }).value.hariLuarBulan).toBe('hapus')
+      expect(parseConfig({ hariLuarBulan: 'samarkan' }).value.hariLuarBulan).toBe('samarkan')
+    })
+
+    it('key yang tidak ada pada config lama tetap dapat default tanpa migrasi', () => {
+      // Config lama tidak punya key ini sama sekali. Tidak boleh gagal parse.
+      const { value, issues } = parseConfig({ magang: { mulai: '2026-07-01' } })
+      expect(value.hariLuarBulan).toBe('samarkan')
+      expect(issues).toEqual([])
+    })
+
+    it('nilai asing jatuh ke default, bukan membuat parse gagal', () => {
+      expect(parseConfig({ hariLuarBulan: 'hilang' }).value.hariLuarBulan).toBe('samarkan')
+      expect(parseConfig({ hariLuarBulan: true }).value.hariLuarBulan).toBe('samarkan')
+      expect(parseConfig({ hariLuarBulan: null }).value.hariLuarBulan).toBe('samarkan')
+      expect(parseConfig({ hariLuarBulan: 1 }).value.hariLuarBulan).toBe('samarkan')
+    })
+  })
+
   /*
    * Hari kerja dan alasan. Keduanya punya bentuk config yang berubah, jadi test ini
    * mengunci bahwa config lama milik user tetap terbaca dan tidak kehilangan makna.
    */
   describe('hariKerja', () => {
-    it('bawaannya enam hari, Senin sampai Sabtu', () => {
-      expect(parseConfig({}).value.hariKerja).toEqual([
-        'senin',
-        'selasa',
-        'rabu',
-        'kamis',
-        'jumat',
-        'sabtu',
-      ])
+    const BAWAAN = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+
+    it('bawaannya enam hari, Senin sampai Sabtu, tanpa Minggu', () => {
+      expect(parseConfig({}).value.hariKerja).toEqual(BAWAAN)
     })
 
     it('mempertahankan daftar yang lebih pendek', () => {
@@ -122,24 +175,32 @@ describe('parseConfig', () => {
       expect(value.hariKerja).toEqual(['senin', 'selasa', 'rabu', 'kamis', 'jumat'])
     })
 
-    it('mengurutkan ulang sesuai urutan Senin sampai Sabtu', () => {
+    it('mengurutkan ulang sesuai urutan Senin sampai Minggu', () => {
       const { value } = parseConfig({ hariKerja: ['jumat', 'senin'] })
       expect(value.hariKerja).toEqual(['senin', 'jumat'])
     })
 
     it('membuang key yang tidak dikenal', () => {
-      const { value } = parseConfig({ hariKerja: ['senin', 'minggu', 42, 'jumat'] })
+      const { value } = parseConfig({ hariKerja: ['senin', 'rab', 42, 'jumat'] })
       expect(value.hariKerja).toEqual(['senin', 'jumat'])
     })
 
-    it('daftar kosong dikembalikan menjadi lengkap, karena tabel butuh minimal satu baris', () => {
-      expect(parseConfig({ hariKerja: [] }).value.hariKerja).toHaveLength(6)
-      expect(parseConfig({ hariKerja: ['minggu'] }).value.hariKerja).toHaveLength(6)
+    it('Minggu bisa diaktifkan dan urutannya paling akhir', () => {
+      // Ada magang yang kerja hari Minggu, jadi Minggu harus bisa dinyalakan. Bawaannya
+      // tetap mati supaya config lama tidak ikut berubah barisnya.
+      const { value } = parseConfig({ hariKerja: ['minggu', 'senin'] })
+      expect(value.hariKerja).toEqual(['senin', 'minggu'])
+      expect(parseConfig({}).value.hariKerja).not.toContain('minggu')
+    })
+
+    it('daftar kosong dikembalikan menjadi bawaan, karena tabel butuh minimal satu baris', () => {
+      expect(parseConfig({ hariKerja: [] }).value.hariKerja).toEqual(BAWAAN)
+      expect(parseConfig({ hariKerja: ['rab', 42] }).value.hariKerja).toEqual(BAWAAN)
     })
 
     it('input yang bukan array jatuh ke default', () => {
-      expect(parseConfig({ hariKerja: 'senin' }).value.hariKerja).toHaveLength(6)
-      expect(parseConfig({ hariKerja: null }).value.hariKerja).toHaveLength(6)
+      expect(parseConfig({ hariKerja: 'senin' }).value.hariKerja).toEqual(BAWAAN)
+      expect(parseConfig({ hariKerja: null }).value.hariKerja).toEqual(BAWAAN)
     })
   })
 

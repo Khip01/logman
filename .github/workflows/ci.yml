@@ -82,6 +82,10 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - name: Audit aksesibilitas semua tema
+        env:
+          # Mode strict: `audit:a11y` meng-hardcode port 5199, jadi port tidak boleh
+          # naik diam-diam. Kalau port itu terpakai, gagal dengan pesan jelas.
+          LOGMAN_PORT_MODE: strict
         run: |
           LOGMAN_DATA_DIR=data-ci pnpm dev &
           for i in $(seq 1 60); do

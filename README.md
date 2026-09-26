@@ -39,6 +39,10 @@ together. Pick the row that matches your platform:
 - Web: http://127.0.0.1:5199
 - API: http://127.0.0.1:5198
 
+If either port is already taken, the dev server moves to the next free port and
+prints the new URLs on startup. Web and API are always chosen together, so the
+proxy and the API can never drift apart.
+
 Every launcher forwards its arguments to the `pnpm` script of the same name, so a task
 works the same way on all platforms. These are equivalent:
 

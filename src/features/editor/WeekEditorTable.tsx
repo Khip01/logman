@@ -1,14 +1,17 @@
 import { WeekProgress } from '@/components/shared/WeekProgress'
 import {
+  type DisabledReason,
   disabledReasonFor,
+  disabledReasonText,
   editableWeekDates,
   formatWeekRange,
   type MagangRange,
 } from '@/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari } from '@/lib/domain/date'
 import type { DayOfWeek, WeekEntry } from '@/lib/domain/types'
-import { DEFAULT_LOCALE, useLocale, useT } from '@/lib/i18n'
+import { DEFAULT_LOCALE } from '@/lib/i18n'
 import type { MessageKey } from '@/lib/i18n/messages/id'
+import { translate } from '@/lib/i18n/translate'
 import { useConfigStore } from '@/stores/config'
 import { EditorRow } from './EditorRow'
 
@@ -36,19 +39,23 @@ interface WeekEditorTableProps {
 
 export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps) {
   const jamDefault = useConfigStore((s) => s.config.jamDefault)
-  const bahasa = useLocale()
-  const t = useT()
+  const bahasaDokumen = useConfigStore((s) => s.config.bahasaDokumen)
 
-  // Isi tabel ikut bahasa antarmuka, kecuali saat dicetak: dokumen selalu Indonesia
-  // (AGENTS.md bagian 21). Karena kelas print tidak bisa mengubah teks, teks dokumen
-  // diambil dari locale tetap `id` saat mode dokumen aktif.
-  const isiLocale = bahasa
+  /*
+   * Isi tabel memakai bahasa DOKUMEN, bukan bahasa antarmuka. Preview di browser adalah
+   * dokumen itu sendiri (AGENTS.md bagian 12), dan kelas print tidak bisa mengganti
+   * teks, jadi satu-satunya cara menjaga tampilan sama dengan hasil cetak adalah
+   * memakai bahasa dokumen sejak awal. Ini juga menutup kebocoran bahasa antarmuka ke
+   * dokumen yang dulu terjadi di sini (bagian 21).
+   */
+  const isiLocale = bahasaDokumen
+  const dok = (key: MessageKey) => translate(isiLocale, key)
 
   return (
     <div className="theme-t border border-doc-line bg-doc-surface print:border-0 print:bg-doc-paper">
       <div className="flex items-center justify-between gap-2 border-b border-doc-line px-3 py-2 no-print">
         <span className="text-[12px] font-semibold text-text-primary print:font-doc">
-          M{week.weekOfMonth} - {formatWeekRange(week.startDate)}
+          M{week.weekOfMonth} - {formatWeekRange(week.startDate, bahasaDokumen)}
         </span>
         {/*
           Penghitung hanya menerima hari yang dapat diisi pada bulan ini, bukan seluruh
@@ -59,12 +66,15 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
       </div>
 
       <table className="doc-table">
-        <caption className="sr-only">Kegiatan minggu {formatWeekRange(week.startDate)}</caption>
+        <caption className="sr-only">
+          {dok('editor.kegiatan')} {dok('logbook.weekLabel').toLowerCase()}{' '}
+          {formatWeekRange(week.startDate, bahasaDokumen)}
+        </caption>
         <thead>
           <tr>
             {KOLOM.map((key) => (
               <th key={key} scope="col" className="px-2 py-1.5 text-[12px]">
-                {t(key)}
+                {dok(key)}
               </th>
             ))}
           </tr>
@@ -77,6 +87,10 @@ export function WeekEditorTable({ week, monthKey, range }: WeekEditorTableProps)
               hariLabel={dayNameId(day.date, isiLocale)}
               tanggalLabel={formatTanggalTanpaHari(day.date, isiLocale)}
               disabled={disabledReasonFor(day.date, monthKey, range) !== null}
+              alasanLuarBulan={disabledReasonText(
+                disabledReasonFor(day.date, monthKey, range) as DisabledReason,
+                bahasaDokumen,
+              )}
               jamDefault={jamDefault[dayNameKey(day.date)]}
             />
           ))}

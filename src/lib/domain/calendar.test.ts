@@ -5,6 +5,7 @@ import {
   createEmptyDay,
   dayOfWeekKey,
   disabledReasonFor,
+  disabledReasonMessageKey,
   disabledReasonText,
   editableWeekDates,
   findMonthOfWeek,
@@ -18,10 +19,14 @@ import {
   sanitizeHariKerja,
   weekDates,
 } from './calendar'
+import { DEFAULT_HARI_KERJA } from './schema'
 import type { DayOfWeek, MonthGroup, WeekEntry } from './types'
 
 /** Daftar hari kerja umum untuk test, urut Senin sampai Sabtu. */
 const SENIN_SABTU: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+
+/** Semua hari kerja aktif, termasuk Minggu. */
+const SENIN_MINGGU: DayOfWeek[] = [...SENIN_SABTU, 'minggu']
 /** Tanpa Sabtu, yaitu magang lima hari kerja. */
 const SENIN_JUMAT: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat']
 
@@ -404,10 +409,26 @@ describe('findWeekOfDate', () => {
 })
 
 describe('disabledReasonText', () => {
-  it('memberi teks untuk setiap alasan', () => {
+  it('memberi teks untuk setiap alasan dalam bahasa Indonesia', () => {
     expect(disabledReasonText('sebelum-magang')).toBe('Sebelum magang')
     expect(disabledReasonText('setelah-magang')).toBe('Setelah magang')
     expect(disabledReasonText('bulan-lain')).toBe('Bulan lain')
+  })
+
+  /*
+   * Kalimat ini ikut tercetak di dokumen, dan dokumen punya bahasa sendiri yang bisa
+   * berbeda dari bahasa antarmuka. Karena itu lookup-nya harus menerima locale.
+   */
+  it('menghormati locale dokumen', () => {
+    expect(disabledReasonText('bulan-lain', 'en')).toBe('Another month')
+    expect(disabledReasonText('sebelum-magang', 'en')).toBe('Before the internship')
+    expect(disabledReasonText('setelah-magang', 'en')).toBe('After the internship')
+  })
+
+  it('kunci pesannya dipetakan satu per satu', () => {
+    expect(disabledReasonMessageKey('bulan-lain')).toBe('alasan.bulanLain')
+    expect(disabledReasonMessageKey('sebelum-magang')).toBe('alasan.sebelumMagang')
+    expect(disabledReasonMessageKey('setelah-magang')).toBe('alasan.setelahMagang')
   })
 })
 
@@ -416,6 +437,17 @@ describe('disabledReasonText', () => {
  * jadi perubahan di sini harus selalu terasa sampai ke PDF, bukan hanya di editor.
  */
 describe('sanitizeHariKerja', () => {
+  /*
+   * `HARI_KERJA_BAWAAN` di calendar.ts sengaja diduplikasi dari `DEFAULT_HARI_KERJA`
+   * di schema.ts untuk menghindari siklus impor. Test ini yang menjaga keduanya tetap
+   * sama. Kalau salah satu berubah dan ini gagal, config bawaan dan default parameter
+   * sudah tidaksinkron.
+   */
+  it('bawaannya sama persis dengan DEFAULT_HARI_KERJA milik schema', () => {
+    expect(sanitizeHariKerja(undefined)).toEqual([...DEFAULT_HARI_KERJA])
+    expect(DEFAULT_HARI_KERJA).not.toContain('minggu')
+  })
+
   it('bawaannya enam hari', () => {
     expect(sanitizeHariKerja(undefined)).toEqual(SENIN_SABTU)
     expect(sanitizeHariKerja(null)).toEqual(SENIN_SABTU)
@@ -430,12 +462,19 @@ describe('sanitizeHariKerja', () => {
   })
 
   it('membuang key yang tidak dikenal dan bukan string', () => {
-    expect(sanitizeHariKerja(['senin', 'minggu', 42, null, 'jumat'])).toEqual(['senin', 'jumat'])
+    expect(sanitizeHariKerja(['senin', 'rab', 42, null, 'jumat'])).toEqual(['senin', 'jumat'])
   })
 
-  it('daftar kosong menjadi lengkap, karena tabel tidak boleh tanpa baris', () => {
+  it('Minggu adalah hari kerja yang valid, dan ditambahkan paling akhir', () => {
+    // Minggu boleh diaktifkan karena ada magang yang kerja hari Minggu, tapi urutannya
+    // tetap di akhir dan tidak pernah otomatis menyala.
+    expect(sanitizeHariKerja(['minggu', 'senin'])).toEqual(['senin', 'minggu'])
+    expect(sanitizeHariKerja(['minggu'])).toEqual(['minggu'])
+  })
+
+  it('daftar kosong menjadi bawaan, karena tabel tidak boleh tanpa baris', () => {
     expect(sanitizeHariKerja([])).toEqual(SENIN_SABTU)
-    expect(sanitizeHariKerja(['minggu'])).toEqual(SENIN_SABTU)
+    expect(sanitizeHariKerja(['rab', 42, null])).toEqual(SENIN_SABTU)
   })
 
   it('mengembalikan array baru, bukan referensi argumen', () => {
@@ -516,6 +555,47 @@ describe('buildMonthGroups menghormati hari kerja', () => {
     const bulan = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_JUMAT)[0]
     const minggu = bulan?.weeks.find((w) => w.id === '2026-09-21')
     expect(minggu?.endDate).toBe('2026-09-26')
+  })
+
+  /*
+   * Minggu sebagai hari kerja. Ada magang yang kerja hari Minggu, jadi barisnya harus
+   * bisa muncul dan harus berada DI DALAM rentang minggu, bukan lagi di luarnya.
+   */
+  it('Minggu menjadi baris ketujuh dan selalu di urutan terakhir', () => {
+    const minggu = buildWeekDays('2026-09-21', SENIN_MINGGU).map((d) => d.date)
+    expect(minggu).toEqual([
+      '2026-09-21',
+      '2026-09-22',
+      '2026-09-23',
+      '2026-09-24',
+      '2026-09-25',
+      '2026-09-26',
+      '2026-09-27',
+    ])
+  })
+
+  it('Minggu tidak muncul sebagai baris saat bawaan, tanpa perlu config khusus', () => {
+    // Ini yang menjaga config lama: config yang tidak menyebut apa pun tetap enam baris.
+    expect(buildWeekDays('2026-09-21').map((d) => d.date)).not.toContain('2026-09-27')
+    expect(buildWeekDays('2026-09-21')).toHaveLength(6)
+  })
+
+  it('endDate diperpanjang ke Minggu hanya ketika Minggu dinyalakan', () => {
+    const denganMinggu = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_MINGGU)[0]
+    const minggu = denganMinggu?.weeks.find((w) => w.id === '2026-09-21')
+    expect(minggu?.endDate).toBe('2026-09-27')
+
+    const tanpaMinggu = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_SABTU)[0]
+    const mingguTanpa = tanpaMinggu?.weeks.find((w) => w.id === '2026-09-21')
+    expect(mingguTanpa?.endDate).toBe('2026-09-26')
+  })
+
+  it('hari Minggu yang diaktifkan tetap bisa ditemukan sebagai minggu berjalan', () => {
+    // `pickInitialWeekId` memakai rentang startDate..endDate. Kalau endDate tidak ikut
+    // diperpanjang, tanggal hari Minggu tidak akan pernah masuk ke minggu mana pun.
+    const bulan = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_MINGGU)[0]
+    expect(bulan).toBeDefined()
+    expect(pickInitialWeekId(bulan as MonthGroup, '2026-09-27')).toBe('2026-09-21')
   })
 
   /*

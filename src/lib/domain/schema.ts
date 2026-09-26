@@ -2,7 +2,7 @@ import { isLocale } from '@/lib/i18n/locale'
 import { sanitizeAlasan } from './alasan'
 import { sanitizeHariKerja } from './calendar'
 import { isIsoDate } from './date'
-import { isContentScale, isFontDokumen, parseContentScale } from './dokumen'
+import { isContentScale, isFontDokumen, parseContentScale, parseHariLuarBulan } from './dokumen'
 import { isJamFormat } from './jamFormat'
 import {
   resolvePembimbingDefault,
@@ -46,7 +46,22 @@ export const DAY_STATUSES: DayStatus[] = ['terisi', 'kosong', 'libur', 'sakit', 
 export const HARI_KEYS: DayOfWeek[] = [...DAY_OF_WEEK_ORDER]
 
 /** Hari kerja bawaan: Senin sampai Sabtu, mengikuti template asli kampus. */
-export const DEFAULT_HARI_KERJA: DayOfWeek[] = [...DAY_OF_WEEK_ORDER]
+/**
+ * Hari kerja bawaan: Senin sampai Sabtu, TANPA Minggu.
+ *
+ * Minggu sengaja tidak ikut dipakai sebagai bawaan walaupun ada di
+ * `DAY_OF_WEEK_ORDER`. Bawaan mengikuti magang kantor yang libur hari Minggu, dan
+ * menjadikannya bawaan akan ikut mengubah baris semua config lama. Pengguna yang
+ * memang kerja hari Minggu menyalakannya sendiri lewat Pengaturan.
+ */
+export const DEFAULT_HARI_KERJA: DayOfWeek[] = [
+  'senin',
+  'selasa',
+  'rabu',
+  'kamis',
+  'jumat',
+  'sabtu',
+]
 
 /** Format jam titik, misal "08.00". Boleh kosong hanya lewat null. */
 const JAM_PATTERN = /^([01]\d|2[0-3])\.([0-5]\d)$/
@@ -95,6 +110,9 @@ export function defaultJamDefault(): JamDefault {
     kamis: hari('08.00', '16.00'),
     jumat: hari('08.00', '16.00'),
     sabtu: hari('08.00', '16.00'),
+    // Ada supaya `JamDefault` lengkap untuk semua hari. Nilainya tidak pernah terpakai
+    // selama Minggu tetap mati sebagai hari kerja bawaan.
+    minggu: hari('08.00', '16.00'),
   }
 }
 
@@ -135,8 +153,10 @@ export function defaultConfig(): AppConfig {
     folderExport: '',
     formatJam: '24',
     fontDokumen: 'times',
+    hariLuarBulan: 'samarkan',
     contentScale: 1,
     bahasa: 'id',
+    bahasaDokumen: 'id',
     tampilkanDevUi: false,
     dosenPembimbing: '',
     pembimbingLapangan: [],
@@ -226,6 +246,8 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     ? input.contentScale
     : parseContentScale(input.contentScale, base.contentScale)
   const bahasa = isLocale(input.bahasa) ? input.bahasa : base.bahasa
+  // Key yang tidak ada pada config lama jatuh ke default, jadi tidak perlu migrasi.
+  const bahasaDokumen = isLocale(input.bahasaDokumen) ? input.bahasaDokumen : base.bahasaDokumen
 
   const pembimbingLapangan = Array.isArray(input.pembimbingLapangan)
     ? sanitizePembimbing(input.pembimbingLapangan)
@@ -252,8 +274,13 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     folderExport: asString(input.folderExport, base.folderExport),
     formatJam,
     fontDokumen,
+    // Key yang tidak dikenal jatuh ke default, jadi file konfigurasi yang rusak
+    // tidak membuat aplikasi gagal start. Key yang tidak ada sama sekali juga
+    // memakai default, jadi konfigurasi lama tidak perlu dimigrasi manual.
+    hariLuarBulan: parseHariLuarBulan(input.hariLuarBulan, base.hariLuarBulan),
     contentScale,
     bahasa,
+    bahasaDokumen,
     tampilkanDevUi: asBoolean(input.tampilkanDevUi, base.tampilkanDevUi),
     dosenPembimbing: asString(input.dosenPembimbing, base.dosenPembimbing),
     pembimbingLapangan,

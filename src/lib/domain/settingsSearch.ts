@@ -32,6 +32,7 @@ export type SettingsSectionId =
   | 'jam-default'
   | 'alasan'
   | 'penanda-tangan'
+  | 'hari-luar-bulan'
   | 'dokumen'
   | 'tampilan-dev'
 
@@ -49,6 +50,7 @@ export type SettingsSectionIcon =
   | 'clock'
   | 'list-checks'
   | 'pen-line'
+  | 'calendar-off'
   | 'file-text'
   | 'wrench'
 
@@ -160,6 +162,9 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionDef[] = [
       'alasan.tambah',
       'alasan.misal',
       'alasan.kembalikan',
+      'alasan.bulanLain',
+      'alasan.sebelumMagang',
+      'alasan.setelahMagang',
     ],
   },
   {
@@ -182,6 +187,18 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionDef[] = [
     ],
   },
   {
+    id: 'hari-luar-bulan',
+    titleKey: 'settings.hariLuarBulan',
+    icon: 'calendar-off',
+    contentKeys: [
+      'settings.hariLuarBulanDeskripsi',
+      'settings.hariLuarBulan.samarkan',
+      'settings.hariLuarBulan.samarkanKet',
+      'settings.hariLuarBulan.hapus',
+      'settings.hariLuarBulan.hapusKet',
+    ],
+  },
+  {
     id: 'dokumen',
     titleKey: 'settings.dokumenEkspor',
     icon: 'file-text',
@@ -200,6 +217,8 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionDef[] = [
       'settings.skala.normal',
       'settings.skala.besar',
       'settings.skala.sangatBesar',
+      'settings.bahasaDokumen',
+      'settings.bahasaDokumenDeskripsi',
       'settings.folderEkspor',
       'settings.folderEksporDeskripsi',
       'settings.telusuriFolder',

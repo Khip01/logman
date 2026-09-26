@@ -32,6 +32,8 @@ test.describe('settings lanjutan', () => {
       formatJam: '24',
       fontDokumen: 'times',
       contentScale: 1,
+      hariLuarBulan: 'samarkan',
+      bahasaDokumen: 'id',
       // Nama pembimbing ikut persist; kosongkan agar penambahan selalu terdeteksi
       // sebagai perubahan pada setiap run.
       dosenPembimbing: '',
@@ -103,6 +105,77 @@ test.describe('settings lanjutan', () => {
       alasan: { label: string; stripJam: boolean }[]
     }
     expect(config.alasan.map((item) => item.label)).not.toContain('Wawancara')
+  })
+
+  /*
+   * Baris yang tidak relevan terhadap bulan halaman (AGENTS.md bagian 11.9).
+   * Kartu memakai aria-pressed, bukan radio, jadi diklik lewat peran button.
+   */
+  test('perlakuan hari luar bulan berganti dan tersimpan ke config.json', async ({
+    page,
+    request,
+  }) => {
+    const dataDir = await resolveDataDir(request)
+    await page.goto('/settings')
+
+    const section = page.getByTestId('section-hari-luar-bulan')
+    const samarkan = section.getByRole('button', { name: /Samarkan/ })
+    const hapus = section.getByRole('button', { name: /Hapus dari tabel/ })
+
+    // Bawaan adalah samarkan, jadi sudah terpilih.
+    await expect(samarkan).toHaveAttribute('aria-pressed', 'true')
+    await expect(hapus).toHaveAttribute('aria-pressed', 'false')
+
+    await hapus.click()
+    await expect(hapus).toHaveAttribute('aria-pressed', 'true')
+    await expect(samarkan).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+
+    const config = JSON.parse(readFileSync(join(dataDir, 'config.json'), 'utf8')) as {
+      hariLuarBulan: string
+    }
+    expect(config.hariLuarBulan).toBe('hapus')
+
+    // Kembalikan ke default supaya run berikutnya tidak bergantung state sisa.
+    await samarkan.click()
+    await expect(samarkan).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+  })
+
+  test('kedua kartu seksi hari luar bulan bisa difokuskan lewat keyboard', async ({ page }) => {
+    await page.goto('/settings')
+    const section = page.getByTestId('section-hari-luar-bulan')
+    const samarkan = section.getByRole('button', { name: /Samarkan/ })
+
+    await samarkan.focus()
+    await expect(samarkan).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(samarkan).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('bahasa isi dokumen bertahan di config.json dan terpisah dari bahasa antarmuka', async ({
+    page,
+    request,
+  }) => {
+    const dataDir = await resolveDataDir(request)
+    await page.goto('/settings')
+
+    const section = page.getByTestId('section-dokumen')
+    // Bahasa dokumen punya kontrol sendiri di seksi Dokumen dan Ekspor, terpisah dari
+    // kontrol bahasa antarmuka.
+    await section.getByRole('radio', { name: 'English' }).click()
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
+
+    const config = JSON.parse(readFileSync(join(dataDir, 'config.json'), 'utf8')) as {
+      bahasa: string
+      bahasaDokumen: string
+    }
+    expect(config.bahasaDokumen).toBe('en')
+    // Bahasa antarmuka tidak boleh ikut berubah.
+    expect(config.bahasa).toBe('id')
+
+    await section.getByRole('radio', { name: 'Indonesia' }).click()
+    await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
   })
 
   test('ukuran kertas dan folder ekspor lewat dialog tersimpan ke config.json', async ({
