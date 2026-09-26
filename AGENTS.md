@@ -1053,8 +1053,37 @@ Aturan mengikat:
 - Sebelum skrip yang menulis dijalankan, pastikan dulu direktori datanya lewat
   `GET /api/health` dan baca `dataDir`. Bila yang terbaca berakhiran `/data`, HENTIKAN.
 - `data-agent/` ada di `.gitignore`. Boleh dihapus kapan saja.
+- `./run screenshots` juga aman: skrip itu memakai `data-screenshots/` dan memakainya
+  kembali dari nol setiap kali berjalan.
 - Bila ragu, JANGAN tulis. Lebih baik verifikasi lewat unit test atau e2e yang sudah
   hermetik daripada menulis ke data pemilik.
+
+### 14.5 Screenshot README
+
+`./run screenshots` (skrip `scripts/screenshots.mjs`) menulis tiga gambar ke
+`docs/screenshots/` untuk dipakai README. Aturan mengikat:
+
+- Data yang dipakai WAJIB FIKTIF dan tidak boleh diisi data asli siapa pun, termasuk data
+  pemilik, karena hasilnya masuk ke repo publik. Nama, NIM, perusahaan, dan nama
+  pembimbing di skrip itu semuanya karangan.
+- Skrip memakai `data-screenshots/`, bukan `data/`. Lihat bagian 14.4.
+- Bulan dan minggu yang ditampilkan dipilih EKSPLISIT lewat rail, bukan mengandalkan
+  keadaan awal. Aplikasi memilih bulan awal dari `todayIso()`, jadi tanpanya gambar akan
+  berubah hanya karena tanggal skrip dijalankan.
+- Tombol minggu di dalam popover tidak memakai `Popover.Close`, jadi popover tidak
+  menutup sendiri setelah dipilih. Skrip WAJIB menekan `Escape` sebelum mengambil
+  gambar, kalau tidak panelnya masih menutupi sidebar.
+- Cara memilih tombol minggu TIDAK boleh memakai nama aksesibel button. Nama itu menyatu
+  tanpa spasi, misalnya "M4" + "21 Sep - 26 Sep" menjadi "M421 Sep - 26 Sep", sehingga
+  tidak bisa dicocokkan dengan andal. Pakai isi span minggu persis, discope ke
+  `[data-slot="popover-content"]`.
+- Saat mengukur tinggi konten untuk viewport, pembanding WAJIB ketat (`tepi < tepiMain`).
+  `main` dan pembungkus `min-h-full` di dalamnya sama-sama menyentuh tepi bawah, jadi
+  dengan `<=` keduanya ikut terambil dan hasilnya viewport penuh.
+- Animasi dibekukan lewat CSS yang disuntikkan, sama seperti `scripts/axe-check.mjs`.
+- Gambar hasil ekspor PDF dibuat lewat `POST /api/export`, lalu halaman pertama
+  dikonversi dengan `pdftoppm`. `pdftoppm` menambah nomor halaman pada nama file, jadi
+  hasilnya WAJIB direname.
 
 ---
 
@@ -1680,8 +1709,24 @@ langsung tahu posisinya.
       154.9 KB gzip (parser buatan sendiri, tanpa dependensi baru). PDF diperiksa dengan
       `pdftotext`: penanda hilang, `2 * 3 * 4` tetap teks biasa, dan `<script>` tercetak
       sebagai teks.
+  - Fase 19 screenshot README:
+    - `scripts/screenshots.mjs` (script `./run screenshots`) menjalankan dev server sendiri
+      dengan `LOGMAN_DATA_DIR=data-screenshots`, mengisi data fiktif lewat API, lalu
+      mengambil tiga gambar ke `docs/screenshots/`: `logbook.png`, `export.png`, dan
+      `pdf-page-1.png`.
+    - Data dummy sepenuhnya fiktif dan disengaja begitu, karena hasilnya masuk ke repo
+      publik. Rincian aturannya di bagian 14.5.
+    - Gambar memakai tema `word-dark`, viewport 1440 CSS px dengan `deviceScaleFactor: 2`,
+      locale `id-ID`, dan animasi dibekukan lewat CSS yang disuntikkan.
+    - Ekspor PDF untuk gambar diambil lewat `POST /api/export`, lalu halaman pertama
+      dikonversi dengan `pdftoppm -r 150 -f 1 -l 1`.
+    - README sekarang memakai satu gambar hero dan satu bagian Screenshots berisi dua
+      gambar lain. Ketiganya total sekitar 553 KB.
+    - Dua jebakan yang ditemukan saat membuat skrip, keduanya sudah dikunci di bagian
+      14.5: popover tidak menutup sendiri setelah minggu dipilih, dan pengukuran tinggi
+      konten harus memakai pembanding ketat agar pembungkus `min-h-full` tidak terambil.
 - Sedang dikerjakan:
-  - tidak ada (fase 15, 16, 17, dan 17b tuntas; v0.1.0 sudah dirilis).
+  - tidak ada (fase 15, 16, 17, 17b, 18, dan 19 tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:
   - Pemakaian normal dan pemeliharaan. Bila ada perilaku baru, tambah sesuai
     aturan di bagian 0 dan perbarui dokumen ini pada commit yang sama.

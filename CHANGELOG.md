@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   marked-up text, so existing entries keep working and no migration is needed. The same
   parser feeds both the screen and the PDF, and all text is escaped before it becomes
   markup, so an entry such as `<script>` is printed as text.
+- Screenshots in the README, regenerated with `./run screenshots`. The command fills the
+  app with fictional sample data in a throwaway data directory, so it never touches a
+  real Log Book. Month and week are picked explicitly instead of relying on the current
+  date, which keeps the images identical whenever the command runs.
 
 ### Fixed
 

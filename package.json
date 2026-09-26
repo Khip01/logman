@@ -56,7 +56,8 @@
     "analyze": "vite build && node scripts/analyze-bundle.mjs",
     "release:notes": "node scripts/release-notes.mjs",
     "audit:motion": "node scripts/audit-motion.mjs",
-    "audit:a11y": "node scripts/axe-check.mjs"
+    "audit:a11y": "node scripts/axe-check.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
