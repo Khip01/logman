@@ -126,4 +126,28 @@ terminal.
 
 ## License
 
-Apache License 2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
+The code is licensed under the Apache License 2.0. See [LICENSE](./LICENSE) for the
+full terms and [NOTICE](./NOTICE) for the attribution requirements.
+
+Anyone who uses, copies, modifies, or redistributes this code must keep the `LICENSE`
+and `NOTICE` files, credit the original author and the source URL
+(<https://github.com/Khip01/logman>), state that the work is derived from logman, and
+mark any file they changed. Those duties come from sections 4(a) to 4(d) of the
+Apache License 2.0.
+
+### Assets that are not covered
+
+Three things in this repository are **not** covered by the license and remain the
+property of their rightsholders:
+
+- `public/letterhead-polinema.png`, the Politeknik Negeri Malang emblem. It was
+  extracted from the campus' official document template and the author does not own it.
+- The letterhead text printed into documents and PDFs, whose wording and layout follow
+  the campus' official format.
+- The name and emblem of Politeknik Negeri Malang generally.
+
+They are shipped here for the convenience of students of that campus and must not be
+redistributed as part of a derived work without permission. If you are not a student
+of that campus, replace the letterhead and emblem with your own before using this for
+official purposes.
+

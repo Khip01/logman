@@ -1,6 +1,6 @@
 {
   "name": "logman",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "logman - Internship Log Book generator. A local web app to write, edit, and export daily internship activities to a print-ready PDF.",

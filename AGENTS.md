@@ -1225,6 +1225,9 @@ Catatan CI:
 - [ ] Tidak ada `pkill` massal tanpa cek; kill proses memakai pola inkremental
       ber-timeout (bagian 14.2). Tidak ada script shell panjang yang mencampur
       pkill + audit + build.
+- [ ] Tidak ada aset milik kampus atau pihak ketiga yang masuk ke git (bagian 22).
+- [ ] `README.md`, `NOTICE`, `LICENSE`, dan `CHANGELOG.md` tetap bahasa Inggris
+      (bagian 22).
 
 ---
 
@@ -1725,6 +1728,25 @@ langsung tahu posisinya.
     - Dua jebakan yang ditemukan saat membuat skrip, keduanya sudah dikunci di bagian
       14.5: popover tidak menutup sendiri setelah minggu dipilih, dan pengukuran tinggi
       konten harus memakai pembanding ketat agar pembungkus `min-h-full` tidak terambil.
+  - Fase 20 perapian lisensi dan aset pihak ketiga:
+    - Keputusan penting: Apache 2.0 TIDAK diganti. Atribusi sudah diwajibkan oleh
+      Pasal 4(a) sampai 4(d), jadi tidak ada kebutuhan ke GPL atau AGPL. Kekhawatiran
+      "orang bebas mengedit" adalah konsekuensi normal open source, bukan cacat lisensi.
+    - `docs/reference/Log-Book-Template.docx` dikeluarkan dari git lewat `git rm --cached`
+      dan masuk `.gitignore`. Failnya tetap ada di mesin lokal. Metrik acuan sudah ada di
+      `docs/reference/extracted-metrics.md`, jadi tidak ada yang kehilangan referensi.
+    - `NOTICE` ditulis ulang dalam bahasa Inggris. Klaim "karya orisinal" yang terlalu
+      luas dihapus, dan sekarang hanya kode, sistem desain, logika domain, penguji, serta
+      dokumentasi yang diklaim. Ditambah carve-out tegas untuk lambang dan kop surat.
+    - `LICENSE` dapat bagian SCOPE OF THIS LICENSE yang menyatakan lisensi ini hanya
+      mencakup kode proyek, bukan lambang, kop surat, dan nama institusi.
+    - `README.md` dapat seksi License yang menjelaskan kewajiban atribusi dan aset yang
+      tidak tercakup, termasuk saran agar pengguna di luar kampus mengganti kop surat.
+    - Bagian 22 baru di dokumen ini, dan checklist bagian 19 dapat dua item baru.
+    - Aturan bahasa dokumen: `README.md`, `NOTICE`, `LICENSE`, dan `CHANGELOG.md` WAJIB
+      bahasa Inggris. `AGENTS.md` dan komentar kode tetap bahasa Indonesia.
+    - CATATAN untuk sesi berikutnya: lisensi hanya berlaku ke versi berikutnya. rilis
+      v0.1.0 yang sudah terbit tidak bisa ditarik kembali karena GitHub sudah menyalinnya.
 - Sedang dikerjakan:
   - tidak ada (fase 15, 16, 17, 17b, 18, dan 19 tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:
@@ -1954,3 +1976,42 @@ Pengujian:
   border tanpa isian pada tier seimbang dan minimal, tidak ada kilau sama sekali pada
   tier `mati`, elemen kilau tidak menangkap klik, ukuran seksi TIDAK berubah saat kilau
   berjalan, dan sisi bawah border tidak menyala.
+
+---
+
+## 22. Lisensi dan aset pihak ketiga
+
+Kode proyek ini berlisensi Apache License 2.0. Aturan ini mengikat.
+
+Dasar keputusan:
+- Apache 2.0 SUDAH mewajibkan atribusi lewat Pasal 4(a) sampai 4(d).(moveúng tidak perlu
+  diganti ke GPL atau AGPL demi alasan atribusi, karena hasilnya tidak lebih baik untuk
+  atribusi.
+- Kekhawatiran "orang bebas mengedit" adalah konsekuensi normal setiap lisensi open
+  source, itu memang maksudnya. Kalau kode tidak boleh dimodifikasi, berarti tidak
+  cocok dilisensi open source sama sekali.
+
+Aset yang TIDAK ikut berlisensi:
+- `public/letterhead-polinema.png` adalah lambang Politeknik Negeri Malang. Aset ini
+  diekstrak dari dokumen template resmi kampus dan tetap milik institusi.
+- Teks kop surat di `server/pdf.ts` mengikuti susunan dan tata letak format resmi
+  kampus.
+- Nama dan lambang Politeknik Negeri Malang secara umum.
+
+Aturan mengikat:
+- JANGAN pernah menaruh `docs/reference/Log-Book-Template.docx` ke git. Dokumen itu milik
+  kampus. Failnya sudah masuk `.gitignore` dan boleh tetap ada di mesin lokal.
+- JANGAN menulis "karya orisinal" untuk hal yang berasal dari kampus. `NOTICE` hanya
+  mengklaim kode, sistem desain, logika domain, penguji, dan dokumentasi.
+- JANGAN menaruh aset kampus di dalam-calon karya turunan tanpa izin pemegang hak.
+- Bila menambah aset pihak ketiga baru, carve-out WAJIB ditulis di `LICENSE` bagian
+  SCOPE dan di `NOTICE`.
+- Kop surat yang bisa diganti lewat Settings BELUM ada. Fitur ini masih terbuka, dan
+  selama belum ada, README harus terus memberi tahu pengguna di luar kampus itu
+  untuk mengganti kop surat sendiri.
+
+Bahasa dokumen GitHub:
+- `README.md`, `NOTICE`, `LICENSE`, dan `CHANGELOG.md` WAJIB bahasa Inggris. Ini yang
+  dibaca orang lain di GitHub.
+- `AGENTS.md` dan komentar kode TETAP bahasa Indonesia, sesuai konvensi proyek.
+- Jangan pakai em dash di dokumen mana pun. Pakai koma, titik, atau ubah kalimatnya.

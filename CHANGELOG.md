@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## v0.1.2 - 2026-09-26
 
 ### Added
 
@@ -36,6 +36,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "0 of 4" instead of "0 of 6".
 - The Export page summary uses the same rule, so a day is counted in exactly one month.
   It previously counted cross-month days twice and included days outside the range.
+
+### Changed
+
+- The campus document template is no longer tracked by git. The file stays available
+  locally, and the extracted metrics remain as the reference. The template belongs to
+  the campus and must not be redistributed in a public repository.
+- `NOTICE` no longer claims the whole project as original work. It now claims only the
+  application code, the design system, the domain logic, the tests, and the
+  documentation, and it adds an explicit carve-out for the campus emblem and the
+  letterhead.
+- `LICENSE` gains a "Scope of this license" section stating that the license covers
+  only the project code and not the emblem, the letterhead, or the institution's name.
+  The license choice itself is unchanged: Apache 2.0 already requires attribution, so
+  moving to GPL or AGPL would not have improved attribution.
 
 ## v0.1.0 - 2026-09-25
 
@@ -114,5 +128,6 @@ activities, and export a print-ready PDF.
 - Document content on screen uses the correct size and spacing, including the gap between
   the time value and its icon.
 
-[Unreleased]: https://github.com/Khip01/logman/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Khip01/logman/compare/v0.1.2...HEAD
+[v0.1.2]: https://github.com/Khip01/logman/compare/v0.1.0...v0.1.2
 [v0.1.0]: https://github.com/Khip01/logman/releases/tag/v0.1.0

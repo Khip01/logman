@@ -201,3 +201,28 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+   ---------------------------------------------------------------------------
+   SCOPE OF THIS LICENSE
+   ---------------------------------------------------------------------------
+
+   This license covers ONLY the original code of this project: the application
+   code, the design system, the domain logic, the tests, and the documentation.
+
+   It does NOT cover, and the author does NOT claim, the following assets, which
+   remain the property of their respective rightsholders:
+
+     * public/letterhead-polinema.png, the Politeknik Negeri Malang emblem. This
+       asset was extracted from the campus' official document template and is not
+       owned by the author.
+     * The letterhead text rendered into printed documents and exported PDFs, whose
+       wording and layout follow the campus' official format.
+
+   These assets are shipped in this repository for the convenience of students of
+   that campus and must not be redistributed as part of a derived work without
+   permission from their rightsholder. See NOTICE for the full terms.
+
+   Recipients of this code MUST reproduce this notice and must credit the original
+   author and the source URL, as required by sections 4(a) through 4(d) above and
+   described in NOTICE.
+

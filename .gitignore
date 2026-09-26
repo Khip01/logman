@@ -19,6 +19,12 @@ data-agent/
 # kali skrip berjalan, jadi tidak perlu disimpan. Lihat AGENTS.md bagian 14.4.
 data-screenshots/
 
+# Template resmi kampus. INI BUKAN KARYA MILIK PROYEK INI dan tidak boleh
+# disebar ulang di repo publik. Failnya tetap boleh ada di mesin lokal untuk
+# referensi. Acuan metriknya sudah diekstrak ke docs/reference/extracted-metrics.md.
+# Lihat AGENTS.md bagian 21.
+docs/reference/Log-Book-Template.docx
+
 # Tests
 coverage/
 playwright-report/

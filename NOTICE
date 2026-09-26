@@ -1,17 +1,69 @@
 Log Book Manager (logman)
 Copyright 2026 Akhmad Aakhif Athallah (Khip01)
 
-Proyek ini adalah karya orisinal. Sumber asli:
+Source:
 https://github.com/Khip01/logman
 
-Dilisensikan di bawah Apache License, Version 2.0.
+Licensed under the Apache License, Version 2.0.
 
-SETIAP PENGGUNAAN, SALINAN, MODIFIKASI, ATAU DISTRIBUSI, BAIK SEBAGIAN MAUPUN
-SELURUHNYA, WAJIB:
 
-1. Menyertakan berkas NOTICE ini tanpa perubahan.
-2. Mencantumkan secara jelas nama penulis asli beserta tautan sumber asli di atas,
-   pada setiap salinan, turunan, dokumentasi, maupun antarmuka yang memakai karya ini.
-3. Menyatakan secara terbuka bahwa karya tersebut diturunkan dari proyek ini.
+REQUIRED ATTRIBUTION
+====================
 
-Ketentuan ini berlaku sebagai atribusi yang diwajibkan Pasal 4(d) Apache License 2.0.
+ONLY the code of this project is licensed under the Apache License 2.0. Anyone who
+uses, copies, modifies, or redistributes that code MUST do all of the following:
+
+1. Include the LICENSE and NOTICE files without modification.
+2. Clearly state both of the following:
+     - the original author: Akhmad Aakhif Athallah (Khip01)
+     - the source URL: https://github.com/Khip01/logman
+   in every copy, derivative work, document, and user interface that uses this code.
+3. Openly state that the work is derived from logman.
+4. Mark every file that was changed, together with the date of the change.
+
+These duties come from sections 4(a) through 4(d) of the Apache License 2.0. Breaking
+them does not remove the author's copyright in the code, and that copyright can still
+be enforced.
+
+
+ASSETS THAT ARE NOT COVERED BY THIS LICENSE
+==========================================
+
+This project ships third-party assets. They are NOT licensed by the author and do NOT
+fall under the license above. They remain the property of their respective copyright
+and trademark holders:
+
+1. public/letterhead-polinema.png
+   The Politeknik Negeri Malang emblem. This asset was extracted from the campus'
+   official document template and remains the property of the institution. The author
+   does not own it.
+
+2. The letterhead text printed into documents and PDFs
+   The ministry name, Politeknik Negeri Malang, Jurusan Teknologi Informasi, the
+   address, the phone numbers, and the website, as laid out in server/pdf.ts. A name
+   and an address are factual information, but their arrangement and layout follow the
+   campus' official format.
+
+3. The name and emblem of Politeknik Negeri Malang in general.
+
+
+TERMS FOR THE ASSETS LISTED ABOVE
+=================================
+
+- The author does not claim these assets as their own work.
+- They must not be redistributed as part of a derived work without permission from
+  their rightsholder.
+- Anyone outside Politeknik Negeri Malang should replace the letterhead and the emblem
+  with their own before using this application for official purposes. The letterhead
+  cannot be changed from Settings at the moment.
+- Anyone using this application for official purposes is responsible for making sure
+  that their use of those assets is lawful.
+
+
+NOTE ON THE ORIGINAL WORK
+=========================
+
+The original work of the author consists of the application code, the design system,
+the domain logic, the tests, and the documentation. This project does not claim
+ownership of the campus' official document format, nor of the emblem referred to
+above.
