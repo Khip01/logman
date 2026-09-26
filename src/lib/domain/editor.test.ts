@@ -74,10 +74,45 @@ describe('isStripStatus dan showsJamStrip', () => {
     expect(isStripStatus('terisi')).toBe(false)
     expect(isStripStatus('kosong')).toBe(false)
   })
+})
 
-  it('menentukan strip dari isi hari', () => {
-    expect(showsJamStrip(day({ alasan: 'Sakit' }))).toBe(true)
-    expect(showsJamStrip(day({ kegiatan: 'Kerja' }))).toBe(false)
+/*
+ * Strip jam kini berasal dari tanda `stripJam` milik alasannya di daftar config,
+ * bukan dari status. Test ini mengunci sumber kebenaran yang baru itu, termasuk
+ * alasan kustom yang tidak punya status khusus.
+ */
+describe('showsJamStrip', () => {
+  const DAFTAR = [
+    { label: 'Libur Nasional', stripJam: false },
+    { label: 'Izin', stripJam: true },
+    { label: 'Sakit', stripJam: true },
+    { label: 'Sakit Gigi', stripJam: true },
+  ]
+
+  it('benar untuk alasan yang ditandai strip di daftar', () => {
+    expect(showsJamStrip(day({ alasan: 'Sakit' }), DAFTAR)).toBe(true)
+    expect(showsJamStrip(day({ alasan: 'Izin' }), DAFTAR)).toBe(true)
+  })
+
+  it('benar untuk alasan yang tidak ditandai', () => {
+    expect(showsJamStrip(day({ alasan: 'Libur Nasional' }), DAFTAR)).toBe(false)
+  })
+
+  it('alasan kustom yang ditandai strip ikut strip', () => {
+    expect(showsJamStrip(day({ alasan: 'Sakit Gigi' }), DAFTAR)).toBe(true)
+  })
+
+  it('alasan yang tidak ada di daftar memakai aturan legacy', () => {
+    expect(showsJamStrip(day({ alasan: 'Demam' }), DAFTAR)).toBe(false)
+    expect(showsJamStrip(day({ alasan: 'izin' }), [])).toBe(true)
+  })
+
+  it('tidak ada strip saat hari punya kegiatan, walau alasannya ditandai', () => {
+    expect(showsJamStrip(day({ kegiatan: 'Kerja', alasan: 'Sakit' }), DAFTAR)).toBe(false)
+  })
+
+  it('tidak ada strip untuk hari kosong tanpa alasan', () => {
+    expect(showsJamStrip(day(), DAFTAR)).toBe(false)
   })
 })
 

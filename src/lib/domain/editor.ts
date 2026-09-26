@@ -1,17 +1,24 @@
+import { stripJamFor } from './alasan'
 import { disabledReasonFor, type MagangRange } from './calendar'
 import { isWithin } from './date'
-import type { DayEntry, DayStatus, MonthGroup } from './types'
+import type { Alasan, DayEntry, DayStatus, MonthGroup } from './types'
 
 /**
  * Logika editor Log Book (AGENTS.md bagian 11.2 dan 11.3). Semua fungsi MURNI dan
  * dapat diuji tanpa React.
  */
 
-/** Status yang menampilkan jam sebagai strip, bukan angka (AGENTS.md bagian 11.3). */
-const STRIP_STATUSES: DayStatus[] = ['sakit', 'izin']
-
-/** Karakter strip untuk jam pada status Sakit dan Izin. Bukan em dash. */
+/** Karakter strip untuk jam pada alasan yang ditandai strip. Bukan em dash. */
 export const JAM_STRIP = '-'
+
+/**
+ * Status yang secara historis menampilkan jam sebagai strip.
+ *
+ * PENTING: ini BUKAN sumber kebenaran untuk strip. Strip ditentukan oleh
+ * tanda `stripJam` pada alasannya di config, lewat `showsJamStrip`. Status ini hanya
+ * disimpan di `DayEntry.status` dan dipakai untuk pengelompokan internal.
+ */
+const STRIP_STATUSES: DayStatus[] = ['sakit', 'izin']
 
 export function isStripStatus(status: DayStatus): boolean {
   return STRIP_STATUSES.includes(status)
@@ -20,8 +27,8 @@ export function isStripStatus(status: DayStatus): boolean {
 /**
  * Menentukan status dari alasan yang dipilih.
  *
- * Sakit dan Izin punya status khusus karena jamnya menjadi strip. Alasan lain
- * (Libur Nasional, Cuti Bersama, teks bebas) dianggap libur.
+ * Status TIDAK lagi menentukan strip jam; itu lewat daftar alasan di config.
+ * Status masih membedakan sakit dan izin agar klasifikasi internal tetap utuh.
  */
 export function statusFromAlasan(alasan: string): DayStatus {
   const key = alasan.trim().toLowerCase()
@@ -43,9 +50,20 @@ export function effectiveStatus(day: DayEntry): DayStatus {
   return 'kosong'
 }
 
-/** Benar bila jam hari ini harus tampil sebagai strip. */
-export function showsJamStrip(day: DayEntry): boolean {
-  return isStripStatus(effectiveStatus(day))
+/**
+ * Benar bila jam hari ini harus tampil sebagai strip.
+ *
+ * Sumber kebenaran adalah tanda `stripJam` milik alasannya di daftar alasan config,
+ * sehingga alasan kustom pun bisa membuat jam jadi strip (bagian 11.8). Alasan yang
+ * diketik bebas dan tidak ada di daftar memakai aturan lama.
+ *
+ * WAJIB menerima daftar alasan, bukan status, karena alasan kustom tidak punya status
+ * khusus. Semua pemanggil di layar dan PDF memakai fungsi ini, supaya keduanya tidak
+ * pernah berbeda.
+ */
+export function showsJamStrip(day: DayEntry, alasan: Alasan[]): boolean {
+  if (effectiveStatus(day) === 'terisi') return false
+  return stripJamFor(alasan, day.alasan)
 }
 
 /**

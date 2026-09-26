@@ -10,6 +10,8 @@ that is ready to sign.
 
 - Edit the Log Book directly in an A4 document table, one cell per day.
 - Bold, italic, and headings inside the activity cell, with `Ctrl+B` and `Ctrl+I`.
+- Choose which weekdays get a row, from Monday to Saturday down to Monday to Friday.
+- Custom reasons for empty days, each one able to strip the time columns.
 - Nine themes, a 12 or 24 hour clock, and a content scale for the document.
 - Reject export while any day is missing both an activity and a reason.
 - Export one PDF per month, complete with the campus letterhead and signature block.
@@ -22,17 +24,31 @@ that is ready to sign.
 
 ## Getting started
 
-```bash
-./run
-```
+The launcher installs dependencies when needed, then starts the web app and the API
+together. Pick the row that matches your platform:
 
-The command installs dependencies when needed, then starts the web app and the API
-together.
+| Platform | Shell | Command |
+| --- | --- | --- |
+| Linux, macOS, WSL | any | `./run` |
+| Windows | Command Prompt | `run.cmd` |
+| Windows | PowerShell | `.\run.ps1` |
+| macOS | Finder | double-click `packaging/Logman.command` |
+| Windows | Explorer | double-click `packaging/Logman.bat` |
+| Linux | desktop menu | run `packaging/install-desktop.sh` once |
 
 - Web: http://127.0.0.1:5199
 - API: http://127.0.0.1:5198
 
-Other tasks use the same entry point:
+Every launcher forwards its arguments to the `pnpm` script of the same name, so a task
+works the same way on all platforms. These are equivalent:
+
+```bash
+./run test          # Linux, macOS, WSL
+run.cmd test        # Windows Command Prompt
+.\run.ps1 test      # Windows PowerShell
+```
+
+Available tasks:
 
 ```bash
 ./run build       # typecheck + production build
@@ -55,7 +71,7 @@ Focused scripts for faster debugging:
 ```
 
 `./run <argument>` forwards to the `pnpm` script of the same name, so
-`./run test:e2e:seed` and `./run test:e2e:perf` work as well.
+`./run test:e2e:seed` and `./run test:e2e:perf` work as well, on every platform.
 
 `./run screenshots` writes the images to `docs/screenshots/`. It fills the app with
 fictional sample data in a throwaway data directory, so it never touches your own Log
@@ -67,11 +83,12 @@ Book.
   signatory names (student, supervising lecturer, field supervisor), and a content
   display scale.
 - `/settings` Settings: profile, internship period, default hours (including a 12 or
-  24 hour clock), field supervisor list, empty-day reasons, theme, paper size,
-  document font (Times New Roman or Arial), content scale, export folder via a native
-  folder dialog, motion tier, interface language, and the dev UI toggle. A search box at
-  the top matches both section names and the text inside each section, highlights the
-  matched word, and jumps to the section you pick.
+  24 hour clock), working days, field supervisor list, empty-day reasons with an
+  option to strip the time per reason, theme, paper size, document font (Times New Roman
+  or Arial), content scale, export folder via a native folder dialog, motion tier,
+  interface language, and the dev UI toggle. A search box at the top matches both section
+  names and the text inside each section, highlights the matched word, and jumps to the
+  section you pick.
 - `/export` Monthly PDF export. Export is refused while any day is incomplete, meaning
   it has neither an activity nor a reason.
 - `/dev/components`, `/dev/motion`, `/dev/perf`, `/dev/seed`: development pages for
@@ -120,9 +137,10 @@ before changing anything. Current progress is tracked in section 20 of that docu
 ## Releases
 
 Releases are cut from git tags. The workflow builds the production bundle and verifies
-the bundle budget, then publishes a GitHub Release with auto-generated notes. Desktop
-shortcuts are provided under `packaging/` for users who prefer a launcher over the
-terminal.
+the bundle budget, then publishes a GitHub Release with auto-generated notes. For users
+who prefer a launcher over the terminal, double-click `packaging/Logman.command` on macOS
+or `packaging/Logman.bat` on Windows, and run `packaging/install-desktop.sh` once on
+Linux to add a menu entry.
 
 ## License
 

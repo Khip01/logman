@@ -140,6 +140,9 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionDef[] = [
       'settings.formatJam',
       'settings.format24',
       'settings.format12',
+      'settings.hariKerja',
+      'settings.hariKerjaDeskripsi',
+      'settings.hariKerjaMinimal',
       'settings.hari',
       'settings.resetJamDefault',
     ],
@@ -150,6 +153,8 @@ export const SETTINGS_SECTIONS: readonly SettingsSectionDef[] = [
     icon: 'list-checks',
     contentKeys: [
       'alasan.deskripsiPanjang',
+      'alasan.stripPetunjuk',
+      'alasan.toggleStripJudul',
       'alasan.belumAda',
       'alasan.belumAdaDeskripsi',
       'alasan.tambah',

@@ -5,7 +5,7 @@ import { chromium } from '@playwright/test'
 import { buildMonthGroups } from '../src/lib/domain/calendar'
 import { dayNameId, formatTanggalTanpaHari, monthLabel } from '../src/lib/domain/date'
 import { FONT_DOKUMEN_STACK } from '../src/lib/domain/dokumen'
-import { displayJam, effectiveStatus, JAM_STRIP } from '../src/lib/domain/editor'
+import { displayJam, JAM_STRIP, showsJamStrip } from '../src/lib/domain/editor'
 import { PAGE_MARGIN_CM, paperSizeCss } from '../src/lib/domain/paper'
 import { type ResolvedNama, resolveNamaMinggu } from '../src/lib/domain/pembimbing'
 import { escapeHtml, richTextToHtml } from '../src/lib/domain/richTextHtml'
@@ -45,12 +45,15 @@ function renderWeekTable(
   week: WeekEntry,
   days: Record<string, DayEntry>,
   jamDefault: AppConfig['jamDefault'],
+  alasan: AppConfig['alasan'],
 ): string {
   let rows = ''
   for (const emptyDay of week.days) {
     const saved = days[emptyDay.date] ?? emptyDay
-    const status = effectiveStatus(saved)
-    const strip = status === 'sakit' || status === 'izin'
+    // Strip memakai helper yang SAMA dengan layar, jadi PDF tidak pernah berbeda dari
+    // yang dilihat user. Aturan lama yang hardcode 'sakit' dan 'izin' sudah diganti
+    // tanda `stripJam` milik alasannya (AGENTS.md bagian 11.8).
+    const strip = showsJamStrip(saved, alasan)
     const hari = dayNameId(emptyDay.date)
     const tanggal = formatTanggalTanpaHari(emptyDay.date)
     const dowKey = hari.toLowerCase() as keyof typeof jamDefault
@@ -145,7 +148,8 @@ export function buildExportHtml(options: {
   const selesai = config.magang.selesai
   if (!mulai || !selesai) throw new Error('Rentang magang belum diatur.')
 
-  const months = buildMonthGroups(mulai, selesai)
+  // Hari kerja diteruskan supaya PDF punya baris yang sama persis dengan layar.
+  const months = buildMonthGroups(mulai, selesai, 'id', config.hariKerja)
   const month = months.find((m) => m.key === monthKey)
   if (!month) throw new Error(`Bulan ${monthKey} tidak ditemukan dalam rentang magang.`)
 
@@ -173,7 +177,7 @@ export function buildExportHtml(options: {
         <h1 class="doc-title">LOG BOOK MAGANG</h1>
         <h2 class="doc-subtitle">${escapeHtml(month.label)} - Minggu ${week.weekOfMonth}</h2>
         ${i === 0 ? renderIdentity(config) : ''}
-        ${renderWeekTable(week, logs.days, config.jamDefault)}
+        ${renderWeekTable(week, logs.days, config.jamDefault, config.alasan)}
         ${isLast ? renderSignatureBlock(signatureNames) : ''}
       </div>
     `

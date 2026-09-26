@@ -15,9 +15,15 @@ import {
   mondaysInRange,
   pickInitialMonthKey,
   pickInitialWeekId,
+  sanitizeHariKerja,
   weekDates,
 } from './calendar'
-import type { MonthGroup, WeekEntry } from './types'
+import type { DayOfWeek, MonthGroup, WeekEntry } from './types'
+
+/** Daftar hari kerja umum untuk test, urut Senin sampai Sabtu. */
+const SENIN_SABTU: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+/** Tanpa Sabtu, yaitu magang lima hari kerja. */
+const SENIN_JUMAT: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat']
 
 describe('dayOfWeekKey', () => {
   it('memetakan hari kerja', () => {
@@ -402,5 +408,161 @@ describe('disabledReasonText', () => {
     expect(disabledReasonText('sebelum-magang')).toBe('Sebelum magang')
     expect(disabledReasonText('setelah-magang')).toBe('Setelah magang')
     expect(disabledReasonText('bulan-lain')).toBe('Bulan lain')
+  })
+})
+
+/*
+ * Hari kerja (AGENTS.md bagian 11.7). Jumlah baris tabel dokumen mengikuti daftar ini,
+ * jadi perubahan di sini harus selalu terasa sampai ke PDF, bukan hanya di editor.
+ */
+describe('sanitizeHariKerja', () => {
+  it('bawaannya enam hari', () => {
+    expect(sanitizeHariKerja(undefined)).toEqual(SENIN_SABTU)
+    expect(sanitizeHariKerja(null)).toEqual(SENIN_SABTU)
+  })
+
+  it('mempertahankan daftar yang valid', () => {
+    expect(sanitizeHariKerja(SENIN_JUMAT)).toEqual(SENIN_JUMAT)
+  })
+
+  it('mengurutkan ulang sesuai urutan Senin sampai Sabtu', () => {
+    expect(sanitizeHariKerja(['jumat', 'senin', 'rabu'])).toEqual(['senin', 'rabu', 'jumat'])
+  })
+
+  it('membuang key yang tidak dikenal dan bukan string', () => {
+    expect(sanitizeHariKerja(['senin', 'minggu', 42, null, 'jumat'])).toEqual(['senin', 'jumat'])
+  })
+
+  it('daftar kosong menjadi lengkap, karena tabel tidak boleh tanpa baris', () => {
+    expect(sanitizeHariKerja([])).toEqual(SENIN_SABTU)
+    expect(sanitizeHariKerja(['minggu'])).toEqual(SENIN_SABTU)
+  })
+
+  it('mengembalikan array baru, bukan referensi argumen', () => {
+    const input: DayOfWeek[] = [...SENIN_SABTU]
+    const hasil = sanitizeHariKerja(input)
+    expect(hasil).not.toBe(input)
+    expect(hasil).toEqual(input)
+  })
+})
+
+describe('dayOfWeekKey menghormati hari kerja', () => {
+  it('Sabtu tidak lagi dipetakan ketika dimatikan', () => {
+    expect(dayOfWeekKey('2026-09-26', SENIN_JUMAT)).toBeNull()
+    expect(dayOfWeekKey('2026-09-26', SENIN_SABTU)).toBe('sabtu')
+  })
+
+  it('hari kerja lain tetap dipetakan', () => {
+    expect(dayOfWeekKey('2026-09-25', SENIN_JUMAT)).toBe('jumat')
+  })
+
+  it('Minggu tetap null bagaimanapun konfigurasinya', () => {
+    expect(dayOfWeekKey('2026-09-27', SENIN_SABTU)).toBeNull()
+    expect(dayOfWeekKey('2026-09-27', SENIN_JUMAT)).toBeNull()
+  })
+})
+
+describe('buildWeekDays menghormati hari kerja', () => {
+  it('lima baris untuk Senin sampai Jumat', () => {
+    const days = buildWeekDays('2026-09-21', SENIN_JUMAT)
+    expect(days.map((d) => d.date)).toEqual([
+      '2026-09-21',
+      '2026-09-22',
+      '2026-09-23',
+      '2026-09-24',
+      '2026-09-25',
+    ])
+  })
+
+  it('enam baris untuk Senin sampai Sabtu', () => {
+    expect(buildWeekDays('2026-09-21', SENIN_SABTU)).toHaveLength(6)
+  })
+
+  it('baris tetap urut Senin lebih dulu walau daftar tidak terurut', () => {
+    const days = buildWeekDays('2026-09-21', ['jumat', 'senin'])
+    expect(days.map((d) => d.date)).toEqual(['2026-09-21', '2026-09-25'])
+  })
+
+  it('bawaannya tetap enam baris', () => {
+    expect(buildWeekDays('2026-09-21')).toHaveLength(6)
+  })
+})
+
+describe('weekDates menghormati hari kerja', () => {
+  it('lima tanggal untuk Senin sampai Jumat', () => {
+    expect(weekDates('2026-09-21', SENIN_JUMAT)).toHaveLength(5)
+    expect(weekDates('2026-09-21', SENIN_JUMAT)).not.toContain('2026-09-26')
+  })
+
+  it('enam tanggal untuk Senin sampai Sabtu', () => {
+    expect(weekDates('2026-09-21', SENIN_SABTU)).toHaveLength(6)
+  })
+})
+
+describe('buildMonthGroups menghormati hari kerja', () => {
+  it('minggu hanya punya lima baris tanpa Sabtu', () => {
+    const bulan = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_JUMAT)[0]
+    const minggu = bulan?.weeks.find((w) => w.id === '2026-09-21')
+    expect(minggu?.days).toHaveLength(5)
+    expect(minggu?.days.map((d) => d.date)).not.toContain('2026-09-26')
+  })
+
+  /*
+   * `endDate` tetap Sabtu walau Sabtu bukan hari kerja, karena itu konsep rentang
+   * kalender. Kalau ikut jadi Jumat, hari Sabtu yang tidak punya baris akan terbawa
+   * sebagai milik minggu yang salah.
+   */
+  it('endDate tetap Sabtu walau Sabtu bukan hari kerja', () => {
+    const bulan = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_JUMAT)[0]
+    const minggu = bulan?.weeks.find((w) => w.id === '2026-09-21')
+    expect(minggu?.endDate).toBe('2026-09-26')
+  })
+
+  /*
+   * Hanya menghitung baris yang benar-benar milik bulan itu. Baris minggu di tepi
+   * bulan milik bulan tetangga, jadi menghitung `days.length` mentah akan memasukkan
+   * hari dari dua bulan dan angkanya jadi tidak bisa dibandingkan.
+   */
+  it('jumlah hari milik bulan ikut turun', () => {
+    const hitung = (hariKerja: DayOfWeek[]) => {
+      const bulan = buildMonthGroups('2026-09-01', '2026-09-30', 'id', hariKerja)[0]
+      return (
+        bulan?.weeks.flatMap((w) => w.days).filter((d) => d.date.startsWith('2026-09')).length ?? 0
+      )
+    }
+    // September 2026 punya 26 hari Senin-Sabtu, jadi tanpa Sabtu jadi 22.
+    expect(hitung(SENIN_SABTU)).toBe(26)
+    expect(hitung(SENIN_JUMAT)).toBe(22)
+  })
+
+  /*
+   * 1 Agustus 2026 adalah Sabtu dan 2 Agustus Minggu. Dengan Sabtu dimatikan, tidak ada
+   * baris yang menyentuh awal Agustus, dan minggu pertama Agustus jadi 3 Agustus.
+   */
+  it('bulan tanpa hari kerja aktif tidak muncul sebagai bulan', () => {
+    const bulan = buildMonthGroups('2026-08-01', '2026-08-02', 'id', SENIN_JUMAT)
+    expect(bulan).toEqual([])
+  })
+
+  it('rentang yang sama tetap muncul begitu Sabtu dinyalakan', () => {
+    const bulan = buildMonthGroups('2026-08-01', '2026-08-02', 'id', SENIN_SABTU)
+    expect(bulan.map((m) => m.key)).toEqual(['2026-08'])
+  })
+
+  it('bawaannya tetap enam baris tanpa argumen hari kerja', () => {
+    const bulan = buildMonthGroups('2026-09-21', '2026-09-26', 'id')
+    expect(bulan[0]?.weeks[0]?.days).toHaveLength(6)
+  })
+})
+
+describe('editableWeekDates menghormati hari kerja', () => {
+  it('hanya menghitung baris yang benar-benar ada', () => {
+    const bulan = buildMonthGroups('2026-09-01', '2026-09-30', 'id', SENIN_JUMAT)[0]
+    const minggu = bulan?.weeks.find((w) => w.id === '2026-09-21') as WeekEntry
+    const editable = editableWeekDates(minggu, '2026-09', {
+      mulai: '2026-09-01',
+      selesai: '2026-09-30',
+    })
+    expect(editable).toEqual(['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25'])
   })
 })

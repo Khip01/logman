@@ -123,6 +123,10 @@ export const en: Catalog = {
   'alasan.belumAdaDeskripsi': 'Add reasons so they can be picked quickly when filling empty days.',
   'alasan.misal': 'For example Public Holiday',
   'alasan.kembalikan': 'Restore defaults',
+  'alasan.toggleStrip': 'Strip the time for {nama}',
+  'alasan.toggleStripJudul': 'Show the time as a strip on days with this reason',
+  'alasan.stripPetunjuk':
+    'A reason marked with the clock icon makes the check-in and check-out columns show a strip instead of a time. A stronger border marks the reason. This also applies to reasons typed freely in the editor.',
   'alasan.judul': 'Reasons',
   'alasan.deskripsi': 'Reasons for empty days. Pick one from the list or type your own.',
   'alasan.tambah': 'Add reason',
@@ -131,6 +135,10 @@ export const en: Catalog = {
 
   // ---------------------------------------------------------------- PENGATURAN
   'settings.hari': 'Day',
+  'settings.hariKerja': 'Working days',
+  'settings.hariKerjaMinimal': 'At least one working day must stay enabled',
+  'settings.hariKerjaDeskripsi':
+    'Enabled days get a row in the document table. A disabled day is hidden from the table and the PDF, but its content is not deleted and comes back as soon as you enable it again.',
   'settings.resetJamDefault': 'Restore 08.00 to 16.00',
   'settings.cari.label': 'Search settings',
   'settings.cari.placeholder': 'Search a section or its content',

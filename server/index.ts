@@ -261,7 +261,12 @@ app.post('/api/export', async (c) => {
 
   const config = loadConfig()
   const logs = loadLogs()
-  const months = buildMonthGroups(config.magang.mulai ?? '', config.magang.selesai ?? '')
+  const months = buildMonthGroups(
+    config.magang.mulai ?? '',
+    config.magang.selesai ?? '',
+    'id',
+    config.hariKerja,
+  )
   const month = months.find((m) => m.key === body.monthKey)
 
   if (!month) {

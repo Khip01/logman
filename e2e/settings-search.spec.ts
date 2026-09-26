@@ -44,7 +44,13 @@ test.describe('pencarian pengaturan', () => {
     await resetTier(request)
   })
 
-  test('saran lapis judul tampil saat user mengetik nama menu', async ({ page }) => {
+  /*
+   * Kueri "jam" sengaja tidak lagi hanya cocok di satu tempat. Seksi Alasan punya teks
+   * yang menyebut jam (toggle strip jam), jadi sekarang ada hit konten selain judul.
+   * Yang diuji di sini adalah LAPISANannya: hit judul selalu mendahului hit konten,
+   * bukan jumlah hasilnya.
+   */
+  test('saran lapis judul tampil dan mendahului hit konten', async ({ page }) => {
     await page.goto('/settings')
 
     const input = page.getByRole('combobox', { name: 'Cari di Pengaturan' })
@@ -52,10 +58,19 @@ test.describe('pencarian pengaturan', () => {
 
     const hasil = page.getByTestId('settings-search-results')
     await expect(hasil).toBeVisible()
-    await expect(hasil.getByRole('option')).toHaveCount(1)
-    await expect(hasil.getByRole('option').first()).toContainText('Jam Default')
-    // Kata yang cocok disorot.
-    await expect(hasil.getByTestId('settings-search-mark')).toHaveText('Jam')
+
+    const opsi = hasil.getByRole('option')
+    // Hit judul "Jam Default" selalu yang pertama.
+    await expect(opsi.first()).toContainText('Jam Default')
+    // Saran judul tidak pernah digabung dengan saran isi seksi.
+    await expect(opsi.first().getByTestId('settings-search-mark')).toHaveText('Jam')
+    // Ada hit konten tambahan di seksi Alasan, dan semuanya setelah hit judul.
+    await expect(opsi.filter({ hasText: 'Alasan' }).first()).toBeVisible()
+    const urutan = await opsi.evaluateAll((els) => els.map((el) => el.textContent ?? ''))
+    expect(urutan[0]).toContain('Jam Default')
+    for (const teks of urutan.slice(1)) {
+      expect(teks).toContain('Alasan')
+    }
   })
 
   test('saran lapis konten menampilkan judul menu dan potongan isinya', async ({ page }) => {

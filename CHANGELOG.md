@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Configurable working days. Settings now has day toggles that decide which days get a
+  row in the document table, so a five-day internship can drop Saturday from both the
+  editor and the PDF. At least one day must stay enabled, otherwise the table would have
+  no rows at all. Disabling a day only hides it: its content stays in `logs.json` and
+  comes back as soon as the day is enabled again.
+- Custom reasons can be marked to strip the time. Every reason now carries a flag, and a
+  marked reason makes the check-in and check-out columns show a strip instead of a time.
+  This is what a custom reason such as "Sakit Gigi" could never do before, because the
+  strip used to be decided by matching the reason name against "Sakit" and "Izin" only.
+  Reasons typed freely in the editor keep their previous behaviour.
+
+### Changed
+
+- Reasons are stored as an object with a label and a strip flag instead of a plain
+  string. Existing configuration files are still read and migrated on load, and a
+  reason called "Sakit" or "Izin" behaves exactly as before, so no manual migration is
+  needed.
+
 ## v0.1.2 - 2026-09-26
 
 ### Added

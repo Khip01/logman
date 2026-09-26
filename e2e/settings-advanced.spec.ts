@@ -100,9 +100,9 @@ test.describe('settings lanjutan', () => {
     await expect(page.getByTestId('save-status')).toHaveText('Tersimpan', { timeout: 10_000 })
 
     const config = JSON.parse(readFileSync(join(dataDir, 'config.json'), 'utf8')) as {
-      alasan: string[]
+      alasan: { label: string; stripJam: boolean }[]
     }
-    expect(config.alasan).not.toContain('Wawancara')
+    expect(config.alasan.map((item) => item.label)).not.toContain('Wawancara')
   })
 
   test('ukuran kertas dan folder ekspor lewat dialog tersimpan ke config.json', async ({

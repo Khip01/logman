@@ -1,5 +1,6 @@
 import { isLocale } from '@/lib/i18n/locale'
 import { sanitizeAlasan } from './alasan'
+import { sanitizeHariKerja } from './calendar'
 import { isIsoDate } from './date'
 import { isContentScale, isFontDokumen, parseContentScale } from './dokumen'
 import { isJamFormat } from './jamFormat'
@@ -10,6 +11,7 @@ import {
   sanitizePembimbing,
 } from './pembimbing'
 import type {
+  Alasan,
   AppConfig,
   DayEntry,
   DayOfWeek,
@@ -22,6 +24,7 @@ import type {
   RentangMagang,
   UkuranKertas,
 } from './types'
+import { DAY_OF_WEEK_ORDER } from './types'
 
 /**
  * Skema dan validasi data (AGENTS.md bagian 5). Semua fungsi MURNI.
@@ -40,7 +43,10 @@ export const DEFAULT_MITRA = 'PT Naraya Telematika'
 
 export const UKURAN_KERTAS: UkuranKertas[] = ['A4', 'F4', 'Letter']
 export const DAY_STATUSES: DayStatus[] = ['terisi', 'kosong', 'libur', 'sakit', 'izin']
-export const HARI_KEYS: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+export const HARI_KEYS: DayOfWeek[] = [...DAY_OF_WEEK_ORDER]
+
+/** Hari kerja bawaan: Senin sampai Sabtu, mengikuti template asli kampus. */
+export const DEFAULT_HARI_KERJA: DayOfWeek[] = [...DAY_OF_WEEK_ORDER]
 
 /** Format jam titik, misal "08.00". Boleh kosong hanya lewat null. */
 const JAM_PATTERN = /^([01]\d|2[0-3])\.([0-5]\d)$/
@@ -92,12 +98,19 @@ export function defaultJamDefault(): JamDefault {
   }
 }
 
-export const DEFAULT_ALASAN = [
-  'Libur Nasional',
-  'Cuti Bersama',
-  'Izin',
-  'Sakit',
-  'Tanpa Keterangan',
+/**
+ * Alasan hari kosong bawaan.
+ *
+ * `stripJam` menentukan apakah jam hari itu jadi strip. Hanya "Sakit" dan "Izin" yang
+ * menyala secara bawaan, sama seperti perilaku versi lama yang menentukannya dari nama.
+ * Alasan lain tetap bisa ditandai lewat Settings tanpa mengubah kode.
+ */
+export const DEFAULT_ALASAN: Alasan[] = [
+  { label: 'Libur Nasional', stripJam: false },
+  { label: 'Cuti Bersama', stripJam: false },
+  { label: 'Izin', stripJam: true },
+  { label: 'Sakit', stripJam: true },
+  { label: 'Tanpa Keterangan', stripJam: false },
 ]
 
 export function defaultProfil(): Profil {
@@ -114,7 +127,8 @@ export function defaultConfig(): AppConfig {
     profil: defaultProfil(),
     magang: { mulai: null, selesai: null },
     jamDefault: defaultJamDefault(),
-    alasan: [...DEFAULT_ALASAN],
+    hariKerja: [...DEFAULT_HARI_KERJA],
+    alasan: DEFAULT_ALASAN.map((item) => ({ ...item })),
     tema: 'hitam-pekat',
     tierAnimasi: 'penuh',
     ukuranKertas: 'A4',
@@ -226,8 +240,12 @@ export function parseConfig(input: unknown): ValidationResult<AppConfig> {
     magang: { mulai, selesai } as RentangMagang,
     jamDefault,
     // Alasan dikelola user. Daftar kosong dibiarkan kosong (user boleh menghapus
-    // semua), hanya input yang bukan array yang jatuh ke default.
+    // semua), hanya input yang bukan array yang jatuh ke default. Bentuk lama
+    // `string[]` diterima dan dimigrasi oleh `sanitizeAlasan`.
     alasan: Array.isArray(input.alasan) ? sanitizeAlasan(input.alasan) : base.alasan,
+    // Hari kerja kosong berarti tabel tanpa baris, jadi `sanitizeHariKerja`
+    // mengembalikan daftar lengkap. Key tidak dikenal dibuang.
+    hariKerja: 'hariKerja' in input ? sanitizeHariKerja(input.hariKerja) : base.hariKerja,
     tema: asString(input.tema, base.tema),
     tierAnimasi: asString(input.tierAnimasi, base.tierAnimasi),
     ukuranKertas,

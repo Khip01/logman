@@ -37,7 +37,12 @@ export function ExportPage() {
     )
   }
 
-  const months = buildMonthGroups(config.magang.mulai ?? '', config.magang.selesai ?? '', locale)
+  const months = buildMonthGroups(
+    config.magang.mulai ?? '',
+    config.magang.selesai ?? '',
+    locale,
+    config.hariKerja,
+  )
   const range: MagangRange = { mulai: config.magang.mulai, selesai: config.magang.selesai }
 
   if (months.length === 0) {

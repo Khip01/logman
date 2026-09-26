@@ -125,6 +125,10 @@ export const id = {
   'alasan.belumAdaDeskripsi': 'Tambahkan alasan agar bisa dipilih cepat saat mengisi hari kosong.',
   'alasan.misal': 'Misal Cuti Bersama',
   'alasan.kembalikan': 'Kembalikan bawaan',
+  'alasan.toggleStrip': 'Jadikan jam strip untuk {nama}',
+  'alasan.toggleStripJudul': 'Tampilkan jam sebagai strip pada hari beralasan ini',
+  'alasan.stripPetunjuk':
+    'Alasan yang ditandai ikon jam membuat kolom jam masuk dan jam pulang tampil sebagai strip, bukan angka. Warna yang lebih terang menandai alasan itu. Ini berlaku juga untuk alasan yang diketik bebas di editor.',
   'alasan.judul': 'Alasan',
   'alasan.deskripsi': 'Daftar alasan untuk hari yang kosong. Bisa dipilih atau diketik bebas.',
   'alasan.tambah': 'Tambah alasan',
@@ -133,6 +137,10 @@ export const id = {
 
   // ---------------------------------------------------------------- PENGATURAN
   'settings.hari': 'Hari',
+  'settings.hariKerja': 'Hari kerja',
+  'settings.hariKerjaMinimal': 'Minimal satu hari kerja harus menyala',
+  'settings.hariKerjaDeskripsi':
+    'Hari yang menyala punya baris di tabel dokumen. Hari yang dimatikan disembunyikan dari tabel dan PDF, tapi isinya tidak dihapus dan kembali tampil begitu dinyalakan lagi.',
   'settings.resetJamDefault': 'Kembalikan ke 08.00 sampai 16.00',
   'settings.cari.label': 'Cari di Pengaturan',
   'settings.cari.placeholder': 'Cari menu atau isi pengaturan',

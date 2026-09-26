@@ -1,7 +1,8 @@
 import { X } from 'lucide-react'
 import { m } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TimePicker } from '@/components/ui/TimePicker'
+import { alasanLabels } from '@/lib/domain/alasan'
 import {
   displayJam,
   JAM_STRIP,
@@ -62,6 +63,9 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
   const stored = useLogsStore((s) => s.data.days[date])
   const setDay = useLogsStore((s) => s.setDay)
   const alasanOptions = useConfigStore((s) => s.config.alasan)
+  // Label saja yang dibutuhkan dropdown. Turunannya dihitung ulang hanya saat daftar
+  // alasan berubah, bukan tiap ketikan.
+  const labelsAlasan = useMemo(() => alasanLabels(alasanOptions), [alasanOptions])
   const formatJam = useConfigStore((s) => s.config.formatJam)
 
   // Kilatan dan fokus dari banner validasi (AGENTS.md bagian 11.3).
@@ -70,7 +74,8 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
   const motionTier = useUiStore((s) => s.motion)
 
   const day = stored ?? emptyDay(date)
-  const strip = showsJamStrip(day)
+  // Strip memakai daftar alasan dari config, sehingga alasan kustom bisa ikut strip.
+  const strip = showsJamStrip(day, alasanOptions)
   const adaAlasan = Boolean(day.alasan && !day.kegiatan)
 
   const isFocusTarget = !disabled && focusRequest?.date === date
@@ -221,7 +226,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
             {day.kegiatan.trim() === '' ? (
               <div className="mt-1">
                 <ReasonPicker
-                  options={alasanOptions}
+                  options={labelsAlasan}
                   onCommit={(alasan) => setDay(date, patchAlasan(alasan))}
                 />
               </div>
@@ -237,7 +242,7 @@ export function EditorRow({ date, hariLabel, tanggalLabel, disabled, jamDefault 
  * Sel jam dengan format mengikuti setelan Pengaturan (24 atau 12 jam).
  *
  * Pengetikan dan pemilihan lewat `TimePicker`, yang menormalkan ke 24 jam format titik
- * sebelum dikomit. Untuk status Sakit dan Izin, jam ditampilkan sebagai strip dan tidak
+ * sebelum dikomit. Untuk alasan yang ditandai strip, jam ditampilkan sebagai strip dan tidak
  * dapat diisi (AGENTS.md bagian 11.3).
  */
 function JamCell({

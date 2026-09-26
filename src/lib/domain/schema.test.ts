@@ -87,7 +87,7 @@ describe('parseConfig', () => {
     expect(value.profil.nama).toBe('Akhmad')
     expect(value.profil.nim).toBe('2341720071')
     expect(value.magang.mulai).toBe('2026-08-01')
-    expect(value.alasan).toEqual(['Izin'])
+    expect(value.alasan).toEqual([{ label: 'Izin', stripJam: true }])
     expect(value.ukuranKertas).toBe('F4')
     expect(issues).toEqual([])
   })
@@ -99,6 +99,72 @@ describe('parseConfig', () => {
     expect(value.dosenPembimbing).toBe('')
     expect(value.pembimbingLapangan).toEqual([])
     expect(value.pembimbingLapanganDefault).toBeNull()
+  })
+
+  /*
+   * Hari kerja dan alasan. Keduanya punya bentuk config yang berubah, jadi test ini
+   * mengunci bahwa config lama milik user tetap terbaca dan tidak kehilangan makna.
+   */
+  describe('hariKerja', () => {
+    it('bawaannya enam hari, Senin sampai Sabtu', () => {
+      expect(parseConfig({}).value.hariKerja).toEqual([
+        'senin',
+        'selasa',
+        'rabu',
+        'kamis',
+        'jumat',
+        'sabtu',
+      ])
+    })
+
+    it('mempertahankan daftar yang lebih pendek', () => {
+      const { value } = parseConfig({ hariKerja: ['senin', 'selasa', 'rabu', 'kamis', 'jumat'] })
+      expect(value.hariKerja).toEqual(['senin', 'selasa', 'rabu', 'kamis', 'jumat'])
+    })
+
+    it('mengurutkan ulang sesuai urutan Senin sampai Sabtu', () => {
+      const { value } = parseConfig({ hariKerja: ['jumat', 'senin'] })
+      expect(value.hariKerja).toEqual(['senin', 'jumat'])
+    })
+
+    it('membuang key yang tidak dikenal', () => {
+      const { value } = parseConfig({ hariKerja: ['senin', 'minggu', 42, 'jumat'] })
+      expect(value.hariKerja).toEqual(['senin', 'jumat'])
+    })
+
+    it('daftar kosong dikembalikan menjadi lengkap, karena tabel butuh minimal satu baris', () => {
+      expect(parseConfig({ hariKerja: [] }).value.hariKerja).toHaveLength(6)
+      expect(parseConfig({ hariKerja: ['minggu'] }).value.hariKerja).toHaveLength(6)
+    })
+
+    it('input yang bukan array jatuh ke default', () => {
+      expect(parseConfig({ hariKerja: 'senin' }).value.hariKerja).toHaveLength(6)
+      expect(parseConfig({ hariKerja: null }).value.hariKerja).toHaveLength(6)
+    })
+  })
+
+  describe('alasan config', () => {
+    it('config lama berupa string[] tetap terbaca dan strip tidak berubah', () => {
+      const { value } = parseConfig({ alasan: ['Libur Nasional', 'Izin', 'Sakit'] })
+      expect(value.alasan).toEqual([
+        { label: 'Libur Nasional', stripJam: false },
+        { label: 'Izin', stripJam: true },
+        { label: 'Sakit', stripJam: true },
+      ])
+    })
+
+    it('bentuk baru dipakai apa adanya', () => {
+      const { value } = parseConfig({ alasan: [{ label: 'Sakit Gigi', stripJam: true }] })
+      expect(value.alasan).toEqual([{ label: 'Sakit Gigi', stripJam: true }])
+    })
+
+    it('daftar kosong dibiarkan kosong karena user boleh menghapus semua', () => {
+      expect(parseConfig({ alasan: [] }).value.alasan).toEqual([])
+    })
+
+    it('input bukan array jatuh ke default', () => {
+      expect(parseConfig({ alasan: 'Izin' }).value.alasan).toHaveLength(5)
+    })
   })
 
   it('default font dokumen times dan skala konten normal', () => {

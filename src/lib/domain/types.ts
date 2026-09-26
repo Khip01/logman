@@ -9,8 +9,34 @@ import type { JamFormat } from './jamFormat'
 
 export type DayOfWeek = 'senin' | 'selasa' | 'rabu' | 'kamis' | 'jumat' | 'sabtu'
 
+/** UrutannyaSenin sampai Sabtu, bukan urutan kalender (Minggu tidak pernah masuk). */
+export const DAY_OF_WEEK_ORDER: readonly DayOfWeek[] = [
+  'senin',
+  'selasa',
+  'rabu',
+  'kamis',
+  'jumat',
+  'sabtu',
+]
+
 /** Status pengisian sebuah hari. Lihat AGENTS.md bagian 11.3. */
 export type DayStatus = 'terisi' | 'kosong' | 'libur' | 'sakit' | 'izin'
+
+/**
+ * Satu alasan hari kosong yang bisa dikelola user di Settings.
+ *
+ * Dulu daftar alasan disimpan sebagai `string[]`. Sekarang setiap alasan membawa
+ * `stripJam`, yaitu apakah kolom jam pada hari beralasan ini ditampilkan sebagai strip.
+ * Sebelumnya perilaku itu ditentukan dari nama alasan secara hardcode, sehingga alasan
+ * kustom seperti "Sakit Gigi" tidak bisa membuat jam jadi strip. Bentuk lamanya tetap
+ * diterima saat dibaca dan dimigrasi otomatis (lihat `sanitizeAlasan`).
+ */
+export interface Alasan {
+  /** Teks alasan yang tampil di dropdown dan tercetak di dokumen. */
+  label: string
+  /** Bila true, kolom jam masuk dan jam pulang tampil sebagai strip pada hari ini. */
+  stripJam: boolean
+}
 
 export interface DayEntry {
   /** Tanggal dalam format ISO YYYY-MM-DD. Ini identitas baris. */
@@ -73,7 +99,23 @@ export interface AppConfig {
   profil: Profil
   magang: RentangMagang
   jamDefault: JamDefault
-  alasan: string[]
+  /**
+   * Hari kerja yang punya baris di tabel dokumen, urut Senin sampai Sabtu.
+   *
+   * Nilai kosong TIDAK mungkin: bila semua hari dimatikan, tabel tidak punya baris
+   * sama sekali dan Log Book tidak bisa diisi. Karena itu `sanitizeHariKerja`
+   * mengembalikan daftar lengkap saat tidak ada satu pun hari yang menyala.
+   *
+   * Hari yang dimatikan TIDAK menghapus data. Isi hari itu tetap di `logs.json`,
+   * hanya tidak tampil di tabel, dan kembali tampil begitu hari tersebut dinyalakan
+   * lagi. Lihat AGENTS.md bagian 11.7.
+   */
+  hariKerja: DayOfWeek[]
+  /**
+   * Daftar alasan hari kosong. Setiap alasan menentukan sendiri apakah jamnya
+   * menjadi strip. Lihat `Alasan`.
+   */
+  alasan: Alasan[]
   tema: string
   tierAnimasi: string
   ukuranKertas: UkuranKertas

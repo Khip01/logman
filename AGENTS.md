@@ -240,7 +240,12 @@ Aturan penempatan (jangan dilanggar):
     "jumat": { "...": "..." },
     "sabtu": { "...": "..." }
   },
-  "alasan": ["Libur Nasional", "Cuti Bersama", "Izin", "Sakit", "Tanpa Keterangan"],
+  "hariKerja": ["senin", "selasa", "rabu", "kamis", "jumat", "sabtu"],
+  "alasan": [
+    { "label": "Libur Nasional", "stripJam": false },
+    { "label": "Izin", "stripJam": true },
+    { "label": "Sakit", "stripJam": true }
+  ],
   "tema": "hitam-pekat",
   "tierAnimasi": "penuh",
   "ukuranKertas": "A4",
@@ -258,8 +263,18 @@ Aturan penempatan (jangan dilanggar):
 
 - `magang.mulai` dan `magang.selesai` WAJIB diisi sebelum daftar Log Book muncul.
   Tanpa rentang, halaman daftar hanya menampilkan arahan ke Settings.
-- `alasan` adalah daftar yang bisa dikelola user. Selain dropdown, user boleh mengetik
-  teks bebas yang tidak ada di daftar.
+- `hariKerja` adalah hari mana yang punya baris di tabel dokumen. Lihat bagian 11.7.
+- `alasan` adalah daftar yang bisa dikelola user. Setiap elemennya punya `label` dan
+  `stripJam`. Selain dropdown, user boleh mengetik teks bebas yang tidak ada di daftar.
+  Lihat bagian 11.8.
+- MIGRASI `alasan`: bentuk lamanya `string[]`, dan `parseConfig` MASIH membacanya lewat
+  `sanitizeAlasan`. `stripJam` untuk config lama diambil dari aturan lama, yaitu hanya
+  "Sakit" dan "Izin" yang menyala. Bentuk baru menang atas aturan lama, jadi pengguna
+  bisa mematikan strip pada "Izin" kalau memang diinginkan. Jangan mengubah
+  `sanitizeAlasan` hanya agar config lama error.
+- MIGRASI `hariKerja`: field ini tidak ada pada config lama, jadi ketiadaannya berarti
+  daftar lengkap enam hari. `parseConfig` hanya memanggil `sanitizeHariKerja` bila
+  key-nya benar-benar ada, supaya config lama tidak ikut di-normalisasi tanpa alasan.
 - `jamDefault` per hari. Bila user mengosongkan jam pada form, nilai default ini dipakai.
 - `formatJam` hanya memengaruhi cara jam DITAMPILKAN dan DIMASUKKAN di UI, nilainya `24`
   atau `12`. Nilai jam yang disimpan selalu 24 jam format titik (`08.00`), dan dokumen
@@ -835,6 +850,68 @@ Kolom Kegiatan mendukung tiga penanda sederhana. Aturan ini mengikat.
   `richTextShortcut.test.ts`; E2E `e2e/rich-text.spec.ts` (penanda tersembunyi, mode edit,
   kedua pintasan, dan tinggi sel yang tidak berubah).
 
+### 11.7 Hari kerja
+
+Config `hariKerja` menentukan hari mana yang punya baris di tabel dokumen. Aturan ini
+mengikat.
+
+- Nilainya adalah `DayOfWeek[]`, yaitu subset dari `DAY_OF_WEEK_ORDER` (Senin sampai
+  Sabtu). Minggu tidak pernah masuk karena template aslinya enam baris Senin sampai Sabtu.
+- Daftar yang KOSONG akan membuat tabel tanpa baris sama sekali dan Log Book tidak bisa
+  diisi. Karena itu `sanitizeHariKerja` mengembalikan daftar lengkap untuk input kosong.
+  Ini aturan domain, bukan sekadar aturan UI.
+- Key yang tidak dikenal dibuang, lalu hasil DITATA ULANG sesuai urutan Senin sampai
+  Sabtu. Urutan array tidak boleh dipercaya dan tidak boleh memengaruhi urutan baris.
+- `buildWeekDays` WAJIB mengiterasi `HARI_KERJA` yang sudah terurut, bukan `hariKerja`
+  yang diberikan. Kalau iterasi lewat `hariKerja`, urutan baris tabel ikut berubah sesuai
+  pilihan user dan dokumen tercetak tidak rapi.
+- Mematikan hari TIDAK menghapus data. Isi hari itu tetap di `logs.json`, hanya tidak
+  tampil, dan kembali tampil begitu hari dinyalakan lagi. Ini harus disampaikan lewat
+  teks di Settings, karena menghapus hari terlihat seperti kehilangan data.
+- `endDate` sebuah minggu SELALU Sabtu, bukan hari kerja terakhir. Rentang minggu adalah
+  konsep kalender yang dipakai untuk mencari minggu berjalan dan mendeteksi minggu lintas
+  bulan. Mengubahnya jadi Jumat akan membuat hari Sabtu ikut terbawa sebagai milik minggu
+  yang salah.
+- Kumpulan bulan yang dipindai saat membangun `buildMonthGroups` adalah BARIS minggu,
+  bukan tujuh hari kalender. Kalau Sabtu dimatikan, bulan yang isinya hanya hari nonaktif
+  tidak muncul sebagai bulan. Ini konsisten dengan tabel yang tidak punya baris untuk
+  hari itu.
+- Pengaturan ini berada di `JamDefaultSection`, bukan seksi terpisah, karena hari yang
+  dimatikan tidak punya jam sehingga input jamnya tidak berguna ditampilkan.
+- Hari terakhir yang menyala tidak boleh dimatikan dari UI. Tombolnya memakai
+  `disabled` BESERTA `aria-disabled` supaya tetap terbaca pembaca layar.
+- Kelompok tombol memakai `fieldset` dan `legend`, bukan `div` dengan `role="group"`.
+  Biome menolak `role="group"` dan mengarahkan ke elemen semantik yang tepat.
+- Empat pemanggil WAJIB meneruskan `config.hariKerja`: `useAppData`, `ExportPage`,
+  `server/index.ts`, dan `server/pdf.ts`. Lupa meneruskan di PDF berarti PDF punya baris
+  berbeda dari layar.
+
+### 11.8 Alasan dan strip jam
+
+Setiap alasan pada config punya `stripJam`. Bila true, kolom jam pada hari beralasan itu
+ditampilkan sebagai strip, bukan angka. Aturan ini mengikat.
+
+- Sumber kebenaran strip adalah `stripJam` milik alasannya, BUKAN `DayStatus`. Semua
+  pemanggil WAJIB memakai `showsJamStrip(day, config.alasan)`.
+- Dulu strip ditentukan dari nama alasan secara hardcode, jadi hanya "Sakit" dan "Izin"
+  yang bisa memicu. Konsekuensinya alasan kustom seperti "Sakit Gigi" tidak pernah bisa
+  membuat jam jadi strip. Itulah sebabnya fitur ini diperlukan.
+- `DayStatus` (`sakit`, `izin`, `libur`) TIDAK menentukan strip. Field itu tetap dipakai
+  untuk pengelompokan internal dan disimpan di `DayEntry.status`.
+- Alasan yang DIKETIK BEBAS di editor dan tidak ada di daftar memakai aturan legacy
+  ("sakit" dan "izin" membuat strip) sebagai fallback, supaya mengetik "sakit" tetap
+  berperilaku seperti sebelumnya walau daftar sudah diubah.
+- Alasan baru selalu mulai dengan `stripJam: false`. Tidak ada yang berubah diam-diam,
+  pengguna menandainya sendiri lewat toggle.
+- `server/pdf.ts` WAJIB memakai `showsJamStrip` yang sama dengan layar. Versi sebelumnya
+  menduplikasi logikanya secara lokal dengan memeriksa `status`, dan duplikasi itulah yang
+  membuat layar dan PDF bisa berbeda.
+- Toggle memakai `aria-pressed` supaya state terbaca pembaca layar, bukan hanya dari
+  warna. Warna yang lebih terang hanyalah penanda tambahan.
+- Pengujian: unit `calendar.test.ts` (hari kerja dan urutan baris), `alasan.test.ts`
+  (migrasi dan toggle), `schema.test.ts` (normalisasi config), `editor.test.ts` (strip
+  dari daftar); E2E `e2e/hari-kerja-alasan.spec.ts` (lima baris, toggle, config lama).
+
 ---
 
 ## 12. Render dokumen dan ekspor
@@ -1228,6 +1305,8 @@ Catatan CI:
 - [ ] Tidak ada aset milik kampus atau pihak ketiga yang masuk ke git (bagian 22).
 - [ ] `README.md`, `NOTICE`, `LICENSE`, dan `CHANGELOG.md` tetap bahasa Inggris
       (bagian 22).
+- [ ] Baris tabel dan PDF selalu berasal dari `config.hariKerja` yang sama, dan strip
+      jam selalu lewat `showsJamStrip` (bagian 11.7 dan 11.8).
 
 ---
 
@@ -1747,6 +1826,28 @@ langsung tahu posisinya.
       bahasa Inggris. `AGENTS.md` dan komentar kode tetap bahasa Indonesia.
     - CATATAN untuk sesi berikutnya: lisensi hanya berlaku ke versi berikutnya. rilis
       v0.1.0 yang sudah terbit tidak bisa ditarik kembali karena GitHub sudah menyalinnya.
+  - Fase 21 hari kerja dan strip jam untuk alasan kustom:
+    - Permintaan pemilik: dua fitur yang belum ada. Aturannya di bagian 11.7 dan 11.8.
+    - `config.hariKerja` menentukan baris tabel. Nilainya `DayOfWeek[]`, default enam
+      hari. Diatur lewat `fieldset` di `JamDefaultSection`.
+    - `config.alasan` berubah dari `string[]` menjadi `{ label, stripJam }[]`. Bentuk
+      lama tetap dibaca `sanitizeAlasan` dan dimigrasi, jadi config pemilik tidak rusak.
+    - Strip jam pindah sumber kebenaran dari `DayStatus` ke tanda `stripJam` milik alasan.
+      Semua pemanggil memakai `showsJamStrip(day, config.alasan)`, termasuk `server/pdf.ts`
+      yang sebelumnya menduplikasi logikanya secara lokal.
+    - Keempat pemanggil `buildMonthGroups` diteruskan `config.hariKerja`: `useAppData`,
+      `ExportPage`, `server/index.ts`, `server/pdf.ts`.
+    - BUG yang ditemukan saat pengujian dan sudah diperbaiki:
+      - `buildWeekDays` mengiterasi `hariKerja` sehingga urutan baris ikut berubah kalau
+        array-nya tidak urut. Sekarang selalu mengiterasi `HARI_KERJA` yang terurut.
+      - Test lama di `settings-search.spec.ts` menguji jumlah hasil pencarian secara
+        persis. Kueri "jam" kini memang cocok di dua section karena teks strip jam di
+        seksi Alasan menyebut jam. Test diubah menguji urutan lapisannya, bukan
+        jumlah hasil, karena jumlah itu memang berubah dan itu perilaku yang benar.
+    - Verifikasi: lint, typecheck, Vitest 472, Playwright 121, audit motion, audit a11y 0
+      pelanggaran, bundle 155.6 KB gzip. PDF diperiksa dengan `pdftotext`: lima baris saja
+      tanpa Sabtu, "Sakit Gigi" membuat jam strip, "Libur Nasional" tetap angka, "Izin"
+      tetap strip. Screenshot README diregenerasi dan ukurannya tetap 554 KB.
 - Sedang dikerjakan:
   - tidak ada (fase 15, 16, 17, 17b, 18, dan 19 tuntas; v0.1.0 sudah dirilis).
 - Berikutnya:
@@ -1984,7 +2085,7 @@ Pengujian:
 Kode proyek ini berlisensi Apache License 2.0. Aturan ini mengikat.
 
 Dasar keputusan:
-- Apache 2.0 SUDAH mewajibkan atribusi lewat Pasal 4(a) sampai 4(d).(moveúng tidak perlu
+- Apache 2.0 SUDAH mewajibkan atribusi lewat Pasal 4(a) sampai 4(d), jadi tidak perlu
   diganti ke GPL atau AGPL demi alasan atribusi, karena hasilnya tidak lebih baik untuk
   atribusi.
 - Kekhawatiran "orang bebas mengedit" adalah konsekuensi normal setiap lisensi open

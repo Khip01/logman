@@ -59,14 +59,22 @@ const PROFIL = {
 const DOSEN = 'Dr. Ir. Bambang Setiawan, M.T.'
 const LAPANGAN = ['Dewi Anggraini, S.T.', 'Fajar Nugroho, S.Kom.']
 
+/**
+ * Alasan dummy. Bentuknya WAJIB mengikuti config terbaru: objek dengan `label` dan
+ * `stripJam`, bukan `string[]` polos. Kalau ditulis sebagai string, server akan
+ * mem|Format ulang ke bentuk lama dan toggle strip di Settings tidak akan tampil.
+ */
 const ALASAN = [
-  'Libur Nasional',
-  'Cuti Bersama',
-  'Izin',
-  'Sakit',
-  'Presentasi Project',
-  'Magang Belum Dimulai',
+  { label: 'Libur Nasional', stripJam: false },
+  { label: 'Cuti Bersama', stripJam: false },
+  { label: 'Izin', stripJam: true },
+  { label: 'Sakit', stripJam: true },
+  { label: 'Presentasi Project', stripJam: false },
+  { label: 'Magang Belum Dimulai', stripJam: false },
 ]
+
+/** Hari kerja dummy: Senin sampai Sabtu, sama dengan bawaan aplikasi. */
+const HARI_KERJA = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
 
 const JAM_DEFAULT = {
   senin: { masuk: '08.00', pulang: '16.00' },
@@ -184,10 +192,16 @@ function tanggalTerisi(mulai, selesai) {
 }
 
 /** Status hari, mengikuti aturan yang sama dengan `statusFromAlasan` di server. */
+/**
+ * Status hari untuk entri yang beralasan.
+ *
+ * WAJIB memakai tanda `stripJam` milik alasannya, sama seperti `statusFromAlasan` di
+ * server. Kalau di sini ditulis ulang secara lokal, hasil screenshot bisa berbeda dari
+ * aplikasi, dan itu persis yang harus dihindari skrip ini.
+ */
 function statusDariAlasan(alasan) {
-  const kunci = alasan.trim().toLowerCase()
-  if (kunci === 'sakit') return 'sakit'
-  if (kunci === 'izin') return 'izin'
+  const item = ALASAN.find((a) => a.label.toLowerCase() === alasan.trim().toLowerCase())
+  if (item?.stripJam) return 'izin'
   return 'libur'
 }
 
@@ -285,6 +299,7 @@ async function isiData() {
         profil: PROFIL,
         magang: RENTANG,
         jamDefault: JAM_DEFAULT,
+        hariKerja: HARI_KERJA,
         alasan: ALASAN,
         dosenPembimbing: DOSEN,
         pembimbingLapangan: LAPANGAN,

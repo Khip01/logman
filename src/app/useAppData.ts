@@ -65,6 +65,7 @@ export function useDeriveMonths(): void {
   const mulai = useConfigStore((s) => s.config.magang.mulai)
   const selesai = useConfigStore((s) => s.config.magang.selesai)
   const bahasa = useConfigStore((s) => s.config.bahasa)
+  const hariKerja = useConfigStore((s) => s.config.hariKerja)
   const setMonths = useLogbookStore((s) => s.setMonths)
 
   useEffect(() => {
@@ -74,9 +75,9 @@ export function useDeriveMonths(): void {
       return
     }
 
-    // Nama bulan mengikuti bahasa antarmuka, jadi daftar dibangun ulang saat bahasa
-    // berubah (AGENTS.md bagian 21).
-    const months = buildMonthGroups(mulai, selesai, bahasa)
+    // Nama bulan mengikuti bahasa antarmuka, dan baris mengikuti hari kerja aktif,
+    // jadi daftar dibangun ulang saat salah satunya berubah (AGENTS.md bagian 21 dan 11.7).
+    const months = buildMonthGroups(mulai, selesai, bahasa, hariKerja)
     setMonths(months)
 
     // Pertahankan pilihan user bila masih valid, selain itu pilih default.
@@ -92,7 +93,7 @@ export function useDeriveMonths(): void {
 
     if (weekId) logbook.selectWeek(weekId, month.key)
     else logbook.setActiveMonth(month.key)
-  }, [mulai, selesai, bahasa, setMonths])
+  }, [mulai, selesai, bahasa, hariKerja, setMonths])
 }
 
 /**

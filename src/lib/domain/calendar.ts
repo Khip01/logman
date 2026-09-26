@@ -13,6 +13,7 @@ import {
   toIsoDate,
 } from './date'
 import type { DayEntry, DayOfWeek, DayStatus, MonthGroup, WeekEntry } from './types'
+import { DAY_OF_WEEK_ORDER } from './types'
 
 /**
  * Logika kalender Log Book (AGENTS.md bagian 6). SEMUA fungsi di sini MURNI dan
@@ -29,12 +30,37 @@ import type { DayEntry, DayOfWeek, DayStatus, MonthGroup, WeekEntry } from './ty
  * rentang partial di kedua ujung.
  */
 
-const HARI_KERJA: DayOfWeek[] = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu']
+const HARI_KERJA: DayOfWeek[] = [...DAY_OF_WEEK_ORDER]
 
-/** Memetakan sebuah tanggal ke nama hari kerja, atau null bila Sabtu/Minggu. */
-export function dayOfWeekKey(iso: string): DayOfWeek | null {
+/** Jumlah hari per minggu saat semua hari kerja menyala. */
+export const JUMLAH_HARI_MINGGU = HARI_KERJA.length
+
+/**
+ * Normalisasi daftar hari kerja dari config.
+ *
+ * Aturan:
+ * - Key yang tidak dikenal dibuang, lalu hasilnya diurutkan Senin sampai Sabtu.
+ * - Daftar kosong dikembalikan menjadi daftar LENGAP. Mematikan semua hari akan
+ *   membuat tabel tanpa baris sama sekali, dan Log Book jadi tidak bisa diisi, jadi
+ *   keadaan itu dianggap tidak valid dan dikembalikan ke bawaan.
+ */
+export function sanitizeHariKerja(input: unknown): DayOfWeek[] {
+  if (!Array.isArray(input)) return [...HARI_KERJA]
+  const set = new Set<string>(input.filter((v): v is string => typeof v === 'string'))
+  const hasil = HARI_KERJA.filter((hari) => set.has(hari))
+  return hasil.length > 0 ? hasil : [...HARI_KERJA]
+}
+
+/**
+ * Memetakan sebuah tanggal ke nama hari kerja, atau null bila bukan hari kerja.
+ *
+ * Menghormati daftar hari kerja dari config, sehingga Saturday yang dimatikan tidak
+ * lagi menghasilkan baris. Defaultnya enam hari, Senin sampai Sabtu.
+ */
+export function dayOfWeekKey(iso: string, hariKerja: DayOfWeek[] = HARI_KERJA): DayOfWeek | null {
   const lower = dayNameId(iso).toLowerCase()
-  return (HARI_KERJA as string[]).includes(lower) ? (lower as DayOfWeek) : null
+  if (!(hariKerja as string[]).includes(lower)) return null
+  return lower as DayOfWeek
 }
 
 /** Status default untuk sebuah hari: kosong bila belum diisi. */
@@ -47,7 +73,6 @@ export function defaultDayStatus(): DayStatus {
  * Dipakai UI untuk memberi gaya redup dan pesan.
  */
 export type DisabledReason = 'bulan-lain' | 'sebelum-magang' | 'setelah-magang'
-
 export interface MagangRange {
   mulai: string | null
   selesai: string | null
@@ -90,11 +115,23 @@ export function createEmptyDay(iso: string): DayEntry {
 }
 
 /**
- * Membangun daftar hari untuk sebuah minggu, selalu enam baris Senin sampai Sabtu.
- * Baris tetap ada walau di luar rentang; UI yang men-disable lewat `disabledReasonFor`.
+ * Membangun daftar hari untuk sebuah minggu.
+ *
+ * Baris dibuat hanya untuk hari yang menyala di `hariKerja`, jadi jumlahnya bisa
+ * kurang dari enam. Bawaannya enam baris, Senin sampai Sabtu.
+ *
+ * Baris SELALU urut Senin lebih dulu, apa pun urutan array `hariKerja` yang diberikan.
+ * Iterasi lewat `HARI_KERJA` yang sudah terurut, bukan lewat `hariKerja`, supaya
+ * urutan baris tabel tidak pernah bergantung urutan pilihan user.
+ *
+ * Jarak hari dihitung dari posisi hari itu di `HARI_KERJA`, bukan dari posisi di
+ * `hariKerja`. Jadi "jumat" selalu berarti Senin plus empat hari, tidak bergantung
+ * urutan array.
  */
-export function buildWeekDays(mondayIso: string): DayEntry[] {
-  return Array.from({ length: 6 }, (_, index) => createEmptyDay(addDays(mondayIso, index)))
+export function buildWeekDays(mondayIso: string, hariKerja: DayOfWeek[] = HARI_KERJA): DayEntry[] {
+  return HARI_KERJA.filter((hari) => hariKerja.includes(hari)).map((hari) =>
+    createEmptyDay(addDays(mondayIso, HARI_KERJA.indexOf(hari))),
+  )
 }
 
 /**
@@ -115,30 +152,40 @@ export function mondaysInRange(mulai: string, selesai: string): string[] {
 /**
  * Membangun grup bulan beserta minggu-minggunya dari rentang magang.
  *
- * Aturan: sebuah minggu dimasukkan ke SETIAP bulan yang punya minimal satu hari
+ * Aturan: sebuah minggu dimasukkan ke SETIAP bulan yang punya minimal satu baris
  * di dalam minggu itu DAN berada dalam rentang magang. Karena itu minggu lintas bulan
  * bisa muncul di dua grup (AGENTS.md bagian 6 poin 6).
  *
  * Nomor minggu dihitung berurutan di dalam grup, mulai 1. Karena minggu dalam satu
  * grup selalu berurutan, ini ekuivalen dengan "minggu pertama bulan itu adalah M1".
+ *
+ * `hariKerja` menentukan baris mana yang dibuat. Modul ini murni dan tidak membaca
+ * config; pemanggil meneruskan `config.hariKerja`.
  */
 export function buildMonthGroups(
   mulai: string,
   selesai: string,
   locale: Locale = 'id',
+  hariKerja: DayOfWeek[] = HARI_KERJA,
 ): MonthGroup[] {
   if (!isIsoDate(mulai) || !isIsoDate(selesai) || mulai > selesai) {
     return []
   }
 
   const allMondays = mondaysInRange(mulai, selesai)
+  const weeksPerMonday = allMondays.map((monday) => buildWeekDays(monday, hariKerja))
 
-  // Kumpulkan kunci bulan unik yang tersentuh rentang, terurut.
+  /*
+   * Kumpulkan kunci bulan unik yang tersentuh rentang, terurut.
+   *
+   * Yang dipindai adalah BARIS minggu, bukan tujuh hari kalender. Kalau Sabtu dimatikan,
+   * bulan yang isinya hanya hari nonaktif tidak muncul sebagai bulan.
+   * Itu konsisten dengan tabel yang memang tidak punya baris untuk hari itu.
+   */
   const keys = new Set<string>()
-  for (const monday of allMondays) {
-    for (let i = 0; i < 6; i += 1) {
-      const iso = addDays(monday, i)
-      if (isWithin(iso, mulai, selesai)) keys.add(monthKey(iso))
+  for (const days of weeksPerMonday) {
+    for (const day of days) {
+      if (isWithin(day.date, mulai, selesai)) keys.add(monthKey(day.date))
     }
   }
   const sortedKeys = [...keys].sort()
@@ -146,21 +193,28 @@ export function buildMonthGroups(
   return sortedKeys.map((key) => {
     const weeks: WeekEntry[] = []
 
-    for (const monday of allMondays) {
-      const days = buildWeekDays(monday)
+    allMondays.forEach((monday, index) => {
+      const days = weeksPerMonday[index] ?? []
       const belongs = days.some(
         (day) => monthKey(day.date) === key && isWithin(day.date, mulai, selesai),
       )
-      if (!belongs) continue
+      if (!belongs) return
 
       weeks.push({
         id: monday,
         startDate: monday,
+        /*
+         * `endDate` selalu Sabtu, bukan hari kerja terakhir. Rentang minggu adalah
+         * konsep kalender, bukan daftar baris, dan dipakai untuk menentukan minggu
+         * berjalan serta deteksi lintas bulan. Mengubahnya jadi Jumat akan membuat
+         * hari Sabtu yang bukan hari kerja ikut terbawa sebagai milik minggu yang
+         * salah.
+         */
         endDate: saturdayOf(monday),
         weekOfMonth: weeks.length + 1,
         days,
       })
-    }
+    })
 
     return {
       key,
@@ -171,9 +225,13 @@ export function buildMonthGroups(
   })
 }
 
-/** Tanggal-tanggal dalam sebuah minggu, Senin sampai Sabtu. */
-export function weekDates(mondayIso: string): string[] {
-  return Array.from({ length: 6 }, (_, index) => addDays(mondayIso, index))
+/**
+ * Tanggal-tanggal dalam sebuah minggu, mengikuti hari kerja yang aktif.
+ *
+ * Urutannya selalu Senin lebih dulu, apa pun hari kerja mana yang nonaktif.
+ */
+export function weekDates(mondayIso: string, hariKerja: DayOfWeek[] = HARI_KERJA): string[] {
+  return buildWeekDays(mondayIso, hariKerja).map((day) => day.date)
 }
 
 /**
