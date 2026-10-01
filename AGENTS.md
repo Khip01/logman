@@ -884,6 +884,30 @@ Kolom Kegiatan mendukung tiga penanda sederhana. Aturan ini mengikat.
   `richTextShortcut.test.ts`; E2E `e2e/rich-text.spec.ts` (penanda tersembunyi, mode edit,
   kedua pintasan, dan tinggi sel yang tidak berubah).
 
+### 11.6.1 Merangkum kegiatan harian (bila diminta pemilik)
+
+Aturan ini hanya berlaku saat pemilik meminta kegiatan yang sudah tertulis diringkas.
+Bukan fitur aplikasi, dan bukan alasan untuk mengubah `logs.json` sendiri.
+
+- Backup dulu `data/logs.json` ke `data/backups/` sebelum menyentuh isinya.
+- Hanya field `kegiatan` pada hari yang ditulis sendiri. Jangan ubah `status`, `alasan`,
+  jam, atau hari yang isinya hanya pilihan status (libur, sakit, izin, dan sejenisnya).
+- Jangan sentuh hari yang sudah seukuran normal. Memendekkan yang sudah pendek membuat
+  kalimat kehilangan makna.
+- Ukuran normal: judul singkat plus sekitar 2 sampai 4 poin bernomor. Tiap poin satu
+  kalimat yang masih menjelaskan apa yang dikerjakan, bukan label satu-dua kata.
+- Panjang kira-kira sama dengan entri harian yang sudah rapi di data (beberapa baris,
+  muat di sel tabel tanpa memanjang ke halaman berikutnya). Jangan jadikan hari terpendek
+  sebagai patokan, dan jangan biarkan satu hari jadi paragraf temuan berhalaman.
+- Pertahankan fakta: nama kerjaan, hasil, dan keputusan. Buang pengulangan, jejak
+  percobaan yang gagal satu per satu, angka yang tidak mengubah makna, dan kutipan
+  panjang.
+- Jangan menaruh cuplikan kegiatan asli ke dokumen proyek, commit, atau contoh di sini.
+  Isi log adalah data pribadi pemilik.
+- Setelah menulis, laporkan tanggal mana yang berubah dan tanggal mana yang dibiarkan.
+  Kalau hasilnya terlalu pendek, kembalikan dari backup, jangan menambal di atas ringkasan
+  yang sudah kehilangan isi.
+
 ### 11.7 Hari kerja
 
 Config `hariKerja` menentukan hari mana yang punya baris di tabel dokumen. Aturan ini
