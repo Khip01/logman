@@ -11,6 +11,10 @@ import { expect, test } from '@playwright/test'
 test.describe.configure({ mode: 'serial' })
 
 test.describe('navigasi bulan dan minggu', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-09-15T12:00:00+07:00') })
+  })
+
   test('menampilkan bulan dan minggu dari rentang magang', async ({ page, request }) => {
     // Set rentang lewat API agar test tidak bergantung urutan spec lain.
     // Endpoint GET mengembalikan { config }, PUT menerima { config }.

@@ -103,6 +103,7 @@ test('drawer membuka bulan aktif dan menandai minggu yang sedang dibuka', async 
     },
   })
 
+  await page.clock.install({ time: new Date('2026-09-15T12:00:00+07:00') })
   await page.goto('/')
   await page.getByTestId('sidebar-open-logo').click()
 
