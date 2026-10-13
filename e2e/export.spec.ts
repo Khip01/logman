@@ -5,7 +5,7 @@ import { type APIRequestContext, expect, test } from '@playwright/test'
  * E2E ekspor PDF (AGENTS.md bagian 11.3 dan 12).
  *
  * Ekspor memakai Playwright di sisi server, jadi test menunggu lebih lagi dari biasanya.
- * Ekspor DITOLAK selama masih ada hari yang belum lengkap, baik lewat UI maupun API.
+ * Ekspor parsial memerlukan konfirmasi eksplisit, baik lewat UI maupun API.
  */
 
 test.describe.configure({ mode: 'serial' })
@@ -92,16 +92,31 @@ test.describe('ekspor PDF', () => {
     await expect(page.getByRole('button', { name: 'Ekspor' }).first()).toBeVisible()
   })
 
-  test('POST /api/export menolak bila ada hari yang belum lengkap', async ({ request }) => {
+  test('POST /api/export meminta konfirmasi bila ada hari yang belum lengkap', async ({
+    request,
+  }) => {
     await clearLogs(request)
     const response = await request.post(`${API}/api/export`, {
       data: { monthKey: '2026-09' },
     })
     expect(response.status()).toBe(422)
     const body = (await response.json()) as { error: string; incomplete: string[] }
-    expect(body.error).toContain('belum')
+    expect(body.error).toContain('Konfirmasi')
     expect(Array.isArray(body.incomplete)).toBe(true)
     expect(body.incomplete.length).toBeGreaterThan(0)
+  })
+
+  test('POST /api/export tetap dapat mengekspor setelah konfirmasi parsial', async ({
+    request,
+  }) => {
+    await clearLogs(request)
+    const response = await request.post(`${API}/api/export`, {
+      data: { monthKey: '2026-09', weekId: '2026-09-07', confirmPartial: true },
+    })
+    expect(response.ok()).toBeTruthy()
+    const body = (await response.json()) as { ok: boolean; fileName: string; path: string }
+    expect(body.fileName).toMatch(/^LogBook_.+_September-2026_Minggu-2\.pdf$/)
+    expect(existsSync(body.path)).toBe(true)
   })
 
   test('POST /api/export membuat file PDF dengan pola nama yang benar', async ({ request }) => {
@@ -165,7 +180,7 @@ test.describe('ekspor PDF', () => {
     }
   })
 
-  test('tombol Ekspor nonaktif selama hari belum lengkap', async ({ page, request }) => {
+  test('tombol Ekspor membuka dialog saat hari belum lengkap', async ({ page, request }) => {
     await clearLogs(request)
     await page.goto('/export')
     await expect(page.getByText(/hari belum lengkap/).first()).toBeVisible()
@@ -173,9 +188,19 @@ test.describe('ekspor PDF', () => {
       .getByRole('main')
       .getByRole('button', { name: /September 2026/ })
       .click()
-    await expect(
-      page.getByRole('main').getByRole('button', { name: 'Ekspor' }).first(),
-    ).toBeDisabled()
+    const exportButton = page.getByRole('main').getByRole('button', { name: 'Ekspor' }).first()
+    await expect(exportButton).toBeEnabled()
+    await exportButton.click()
+    await expect(page.getByRole('dialog')).toContainText('hari yang belum selesai')
+    await expect(page.getByRole('dialog')).toContainText('September 2026')
+    await page.getByRole('dialog').getByRole('button', { name: 'Batal' }).click()
+    await expect(page.getByRole('dialog')).toBeHidden()
+
+    const downloadPromise = page.waitForEvent('download', { timeout: 60_000 })
+    await exportButton.click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Tetap Ekspor' }).click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toMatch(/^LogBook_.+_September-2026_Minggu-1\.pdf$/)
   })
 
   test('tombol Ekspor di UI mengunduh PDF setelah bulan lengkap', async ({ page, request }) => {

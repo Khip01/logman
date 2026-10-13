@@ -26,6 +26,7 @@ export const id = {
   'common.pilihAtauKetik': 'Pilih atau ketik',
   'common.gunakan': 'Gunakan "{nilai}"',
   'common.kosong': 'Kosong',
+  'common.tetapEkspor': 'Tetap Ekspor',
 
   // ---------------------------------------------------------------- NAVIGASI
   'nav.logbook': 'Log Book',
@@ -268,6 +269,9 @@ export const id = {
   'ekspor.gagalServer': 'Gagal menghubungi server ekspor.',
   'ekspor.minggu': '{n} minggu',
   'ekspor.mingguKe': 'Minggu {n}',
+  'ekspor.dialogJudul': 'Hari belum lengkap',
+  'ekspor.dialogDeskripsi':
+    'Minggu ini masih memiliki {n} hari yang belum selesai: {tanggal}. Tetap ekspor?',
   'ekspor.hariTerisi': '{hari} hari, {terisi} terisi',
   'ekspor.belumLengkap': '{n} hari belum lengkap',
   'editor.tutup': 'Tutup',

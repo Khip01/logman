@@ -24,6 +24,7 @@ export const en: Catalog = {
   'common.pilihAtauKetik': 'Pick or type',
   'common.gunakan': 'Use "{nilai}"',
   'common.kosong': 'Empty',
+  'common.tetapEkspor': 'Export Anyway',
 
   // ---------------------------------------------------------------- NAVIGASI
   'nav.logbook': 'Log Book',
@@ -266,6 +267,8 @@ export const en: Catalog = {
   'ekspor.gagalServer': 'Failed to reach the export server.',
   'ekspor.minggu': '{n} weeks',
   'ekspor.mingguKe': 'Week {n}',
+  'ekspor.dialogJudul': 'Incomplete days',
+  'ekspor.dialogDeskripsi': 'This week still has {n} incomplete days: {tanggal}. Export anyway?',
   'ekspor.hariTerisi': '{hari} days, {terisi} filled',
   'ekspor.belumLengkap': '{n} days are incomplete',
   'editor.tutup': 'Close',

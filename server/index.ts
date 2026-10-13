@@ -265,6 +265,7 @@ app.post('/api/export', async (c) => {
   const body = (await c.req.json().catch(() => null)) as {
     monthKey?: string
     weekId?: string
+    confirmPartial?: boolean
   } | null
   if (!body?.monthKey) return c.json({ error: 'Field monthKey wajib diisi.' }, 400)
 
@@ -295,7 +296,7 @@ app.post('/api/export', async (c) => {
   const range = { mulai: config.magang.mulai, selesai: config.magang.selesai }
   const validationMonth = week ? { ...month, weeks: [week] } : month
   const incomplete = monthIncompleteDates(validationMonth, logs.days, range)
-  if (incomplete.length > 0) {
+  if (incomplete.length > 0 && !body.confirmPartial) {
     log.warn('export.pdf', 'Ekspor ditolak karena hari belum lengkap.', {
       traceId,
       data: {
@@ -307,7 +308,7 @@ app.post('/api/export', async (c) => {
     })
     return c.json(
       {
-        error: `${incomplete.length} hari belum punya kegiatan atau alasan. Lengkapi dulu sebelum ekspor.`,
+        error: `${incomplete.length} hari belum punya kegiatan atau alasan. Konfirmasi ekspor untuk tetap melanjutkan.`,
         incomplete,
       },
       422,
