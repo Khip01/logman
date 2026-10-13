@@ -86,6 +86,9 @@ test.describe('ekspor PDF', () => {
     await page.goto('/export')
     await expect(page.getByRole('heading', { name: 'Ekspor PDF' })).toBeVisible()
     await expect(page.getByText('September 2026')).toBeVisible()
+    const monthButton = page.getByRole('main').getByRole('button', { name: /September 2026/ })
+    await expect(monthButton).toBeVisible()
+    await monthButton.click()
     await expect(page.getByRole('button', { name: 'Ekspor' }).first()).toBeVisible()
   })
 
@@ -118,6 +121,17 @@ test.describe('ekspor PDF', () => {
 
     const head = readFileSync(body.path).subarray(0, 5).toString('utf8')
     expect(head).toBe('%PDF-')
+  })
+
+  test('POST /api/export dapat membuat PDF satu minggu', async ({ request }) => {
+    await fillSeptember(request)
+    const response = await request.post(`${API}/api/export`, {
+      data: { monthKey: '2026-09', weekId: '2026-09-07' },
+    })
+    expect(response.ok()).toBeTruthy()
+    const body = (await response.json()) as { ok: boolean; fileName: string; path: string }
+    expect(body.fileName).toMatch(/^LogBook_.+_September-2026_Minggu-2\.pdf$/)
+    expect(existsSync(body.path)).toBe(true)
   })
 
   test('POST /api/export menolak bulan di luar rentang', async ({ request }) => {
@@ -155,16 +169,28 @@ test.describe('ekspor PDF', () => {
     await clearLogs(request)
     await page.goto('/export')
     await expect(page.getByText(/hari belum lengkap/).first()).toBeVisible()
-    await expect(page.getByRole('main').getByRole('button', { name: 'Ekspor' })).toBeDisabled()
+    await page
+      .getByRole('main')
+      .getByRole('button', { name: /September 2026/ })
+      .click()
+    await expect(
+      page.getByRole('main').getByRole('button', { name: 'Ekspor' }).first(),
+    ).toBeDisabled()
   })
 
   test('tombol Ekspor di UI mengunduh PDF setelah bulan lengkap', async ({ page, request }) => {
     await fillSeptember(request)
     await page.goto('/export')
-    await expect(page.getByRole('main').getByRole('button', { name: 'Ekspor' })).toBeEnabled()
+    await page
+      .getByRole('main')
+      .getByRole('button', { name: /September 2026/ })
+      .click()
+    await expect(
+      page.getByRole('main').getByRole('button', { name: 'Ekspor' }).first(),
+    ).toBeEnabled()
     const downloadPromise = page.waitForEvent('download', { timeout: 60_000 })
-    await page.getByRole('main').getByRole('button', { name: 'Ekspor' }).click()
+    await page.getByRole('main').getByRole('button', { name: 'Ekspor' }).first().click()
     const download = await downloadPromise
-    expect(download.suggestedFilename()).toMatch(/^LogBook_.+\.pdf$/)
+    expect(download.suggestedFilename()).toMatch(/^LogBook_.+_September-2026_Minggu-1\.pdf$/)
   })
 })

@@ -165,7 +165,7 @@ export function LogbookPage() {
               <WeekEditorTable week={activeWeek} monthKey={activeMonth.key} range={range} />
             ) : null}
 
-            {printPosition?.isLast && activeWeek ? <PrintSignature weekId={activeWeek.id} /> : null}
+            {activeWeek ? <PrintSignature weekId={activeWeek.id} /> : null}
           </div>
         )}
       </div>

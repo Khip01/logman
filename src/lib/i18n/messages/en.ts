@@ -243,7 +243,7 @@ export const en: Catalog = {
   // ---------------------------------------------------------------- HALAMAN EKSPOR
   'ekspor.judul': 'Export PDF',
   'ekspor.deskripsi':
-    'Download the Log Book month by month as a PDF. File names follow the pattern {pola}.',
+    'Open a month to choose which week to export. File names follow the pattern {pola}.',
   'ekspor.pilihBulan': 'Select month',
   'ekspor.ekspor': 'Export',
   'ekspor.mengekspor': 'Exporting',
@@ -265,6 +265,7 @@ export const en: Catalog = {
   'ekspor.gagalEkspor': 'Failed to export the PDF.',
   'ekspor.gagalServer': 'Failed to reach the export server.',
   'ekspor.minggu': '{n} weeks',
+  'ekspor.mingguKe': 'Week {n}',
   'ekspor.hariTerisi': '{hari} days, {terisi} filled',
   'ekspor.belumLengkap': '{n} days are incomplete',
   'editor.tutup': 'Close',

@@ -201,6 +201,8 @@ export interface ExportOptions {
   logs: LogData
   /** Kunci bulan YYYY-MM yang diekspor. */
   monthKey: string
+  /** ID minggu (tanggal Senin) bila hanya satu minggu yang diekspor. */
+  weekId?: string
   /** Path absolut atau relatif tempat PDF disimpan. */
   outputPath: string
 }
@@ -216,9 +218,10 @@ export function buildExportHtml(options: {
   config: AppConfig
   logs: LogData
   monthKey: string
+  weekId?: string
   letterheadUri: string
 }): string {
-  const { config, logs, monthKey, letterheadUri } = options
+  const { config, logs, monthKey, weekId, letterheadUri } = options
   const mulai = config.magang.mulai
   const selesai = config.magang.selesai
   if (!mulai || !selesai) throw new Error('Rentang magang belum diatur.')
@@ -234,6 +237,10 @@ export function buildExportHtml(options: {
   const months = buildMonthGroups(mulai, selesai, locale, config.hariKerja)
   const month = months.find((m) => m.key === monthKey)
   if (!month) throw new Error(`Bulan ${monthKey} tidak ditemukan dalam rentang magang.`)
+  const selectedWeeks = weekId ? month.weeks.filter((week) => week.id === weekId) : month.weeks
+  if (weekId && selectedWeeks.length === 0) {
+    throw new Error(`Minggu ${weekId} tidak ditemukan dalam bulan ${monthKey}.`)
+  }
 
   const pageSize = paperSizeCss(config.ukuranKertas)
   const fontDokumen = FONT_DOKUMEN_STACK[config.fontDokumen]
@@ -248,21 +255,15 @@ export function buildExportHtml(options: {
     locale,
   }
 
-  const lastWeek = month.weeks[month.weeks.length - 1]
-  const signatureNames = resolveNamaMinggu(
-    lastWeek ? logs.namaPenandaTangan[lastWeek.id] : undefined,
-    {
+  let pagesHtml = ''
+  for (let i = 0; i < selectedWeeks.length; i++) {
+    const week = selectedWeeks[i]
+    if (!week) continue
+    const signatureNames = resolveNamaMinggu(logs.namaPenandaTangan[week.id], {
       mahasiswa: config.profil.nama,
       dosen: config.dosenPembimbing,
       pembimbing: config.pembimbingLapanganDefault ?? '',
-    },
-  )
-
-  let pagesHtml = ''
-  for (let i = 0; i < month.weeks.length; i++) {
-    const week = month.weeks[i]
-    if (!week) continue
-    const isLast = i === month.weeks.length - 1
+    })
     pagesHtml += `
       <div class="print-page">
         ${renderLetterhead().replace('LETTERHEAD_SRC', letterheadUri)}
@@ -270,7 +271,7 @@ export function buildExportHtml(options: {
         <h2 class="doc-subtitle">${escapeHtml(month.label)} - ${escapeHtml(translate(locale, 'logbook.weekLabel'))} ${week.weekOfMonth}</h2>
         ${i === 0 ? renderIdentity(config, locale) : ''}
         ${renderWeekTable(week, logs.days, config.jamDefault, config.alasan, tableOptions)}
-        ${isLast ? renderSignatureBlock(signatureNames, locale) : ''}
+        ${renderSignatureBlock(signatureNames, locale)}
       </div>
     `
   }
@@ -380,12 +381,13 @@ ${pagesHtml}
  * memakai tata letak yang sama.
  */
 export async function exportMonthToPdf(options: ExportOptions): Promise<void> {
-  const { config, logs, monthKey, outputPath } = options
+  const { config, logs, monthKey, weekId, outputPath } = options
 
   const html = buildExportHtml({
     config,
     logs,
     monthKey,
+    weekId,
     letterheadUri: letterheadDataUri(),
   })
 
@@ -406,8 +408,9 @@ export async function exportMonthToPdf(options: ExportOptions): Promise<void> {
 }
 
 /** Membuat nama file PDF sesuai pola AGENTS.md bagian 12. */
-export function buildExportFileName(nim: string, monthKey: string): string {
+export function buildExportFileName(nim: string, monthKey: string, weekOfMonth?: number): string {
   const label = monthLabel(monthKey).replace(' ', '-')
   const safeNim = nim.trim() || 'NIM'
-  return `LogBook_${safeNim}_${label}.pdf`
+  const suffix = weekOfMonth === undefined ? '' : `_Minggu-${weekOfMonth}`
+  return `LogBook_${safeNim}_${label}${suffix}.pdf`
 }

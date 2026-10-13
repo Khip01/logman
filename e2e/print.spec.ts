@@ -65,16 +65,14 @@ test.describe('preview cetak dokumen', () => {
     await expect(page.getByTestId('sidebar-rail')).toBeHidden()
   })
 
-  test('identitas tampil di minggu pertama dan tanda tangan di minggu terakhir', async ({
-    page,
-  }) => {
+  test('identitas tampil di minggu pertama dan tanda tangan di setiap minggu', async ({ page }) => {
     await page.goto('/')
 
-    // Minggu pertama M1: identitas tampil, tanda tangan belum.
+    // Minggu pertama M1: identitas dan tanda tangan tampil.
     await page.getByRole('tab').first().click()
     await page.emulateMedia({ media: 'print' })
     await expect(page.getByTestId('print-identity')).toBeVisible()
-    await expect(page.getByTestId('print-signature')).toBeHidden()
+    await expect(page.getByTestId('print-signature')).toBeVisible()
 
     // Minggu terakhir M5 (28 Sep - 3 Okt): tanda tangan tampil, identitas tidak.
     await page.emulateMedia({ media: 'screen' })

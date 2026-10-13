@@ -112,7 +112,7 @@ export function PrintIdentity() {
 }
 
 /**
- * Blok tanda tangan, hanya pada minggu terakhir (seperti PDF).
+ * Blok tanda tangan pada setiap minggu, seperti PDF.
  *
  * Nama diambil dari resolver yang sama dengan PDF: override minggu bila ada, jika tidak
  * default dari Pengaturan. Nama kosong ditampilkan sebagai titik-titik, siap diisi tangan.
@@ -162,7 +162,7 @@ export function PrintSignature({ weekId }: { weekId: string }) {
   )
 }
 
-/** Penentu minggu pertama dan terakhir, dipakai LogbookPage untuk identitas/tanda tangan. */
+/** Penentu minggu pertama dan terakhir, dipakai LogbookPage untuk identitas. */
 export function weekPosition(
   month: MonthGroup,
   week: WeekEntry | undefined,

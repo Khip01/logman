@@ -244,7 +244,8 @@ export const id = {
 
   // ---------------------------------------------------------------- HALAMAN EKSPOR
   'ekspor.judul': 'Ekspor PDF',
-  'ekspor.deskripsi': 'Unduh Log Book per bulan sebagai PDF. Nama file mengikuti pola {pola}.',
+  'ekspor.deskripsi':
+    'Buka bulan untuk memilih minggu yang akan diekspor. Nama file mengikuti pola {pola}.',
   'ekspor.pilihBulan': 'Pilih bulan',
   'ekspor.ekspor': 'Ekspor',
   'ekspor.mengekspor': 'Mengekspor',
@@ -266,6 +267,7 @@ export const id = {
   'ekspor.gagalEkspor': 'Gagal mengekspor PDF.',
   'ekspor.gagalServer': 'Gagal menghubungi server ekspor.',
   'ekspor.minggu': '{n} minggu',
+  'ekspor.mingguKe': 'Minggu {n}',
   'ekspor.hariTerisi': '{hari} hari, {terisi} terisi',
   'ekspor.belumLengkap': '{n} hari belum lengkap',
   'editor.tutup': 'Tutup',

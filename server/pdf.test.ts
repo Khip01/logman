@@ -40,6 +40,12 @@ describe('buildExportFileName', () => {
   it('memakai NIM placeholder bila kosong', () => {
     expect(buildExportFileName('  ', '2026-08')).toBe('LogBook_NIM_Agustus-2026.pdf')
   })
+
+  it('menambahkan nomor minggu saat ekspor satu minggu', () => {
+    expect(buildExportFileName('2341760001', '2026-09', 2)).toBe(
+      'LogBook_2341760001_September-2026_Minggu-2.pdf',
+    )
+  })
 })
 
 describe('buildExportHtml', () => {
@@ -99,6 +105,31 @@ describe('buildExportHtml', () => {
     const pages = html.match(/class="print-page"/g)?.length ?? 0
     // 2026-09-01 sampai 2026-09-30: minggu 31 Agu (1-5 Sep), 7-12, 14-19, 21-26, 28 Sep-3 Okt.
     expect(pages).toBeGreaterThanOrEqual(4)
+  })
+
+  it('menampilkan tanda tangan pada setiap halaman minggu', () => {
+    const html = buildExportHtml({
+      config: makeConfig(),
+      logs: makeLogs(),
+      monthKey: '2026-09',
+      letterheadUri,
+    })
+    const pages = html.match(/class="print-page"/g)?.length ?? 0
+    const signatures = html.match(/class="signature-block"/g)?.length ?? 0
+    expect(signatures).toBe(pages)
+  })
+
+  it('dapat membatasi HTML ke satu minggu', () => {
+    const html = buildExportHtml({
+      config: makeConfig(),
+      logs: makeLogs(),
+      monthKey: '2026-09',
+      weekId: '2026-09-07',
+      letterheadUri,
+    })
+    expect(html.match(/class="print-page"/g)?.length).toBe(1)
+    expect(html).toContain('Minggu 2')
+    expect(html).toContain('Mengetahui,')
   })
 
   it('menampilkan strip untuk hari Sakit dan default jam untuk hari kosong', () => {

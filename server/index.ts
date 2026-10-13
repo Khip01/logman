@@ -262,7 +262,10 @@ app.get('/api/logs/recent', (c) => {
 
 app.post('/api/export', async (c) => {
   const traceId = log.newTrace()
-  const body = (await c.req.json().catch(() => null)) as { monthKey?: string } | null
+  const body = (await c.req.json().catch(() => null)) as {
+    monthKey?: string
+    weekId?: string
+  } | null
   if (!body?.monthKey) return c.json({ error: 'Field monthKey wajib diisi.' }, 400)
 
   const config = loadConfig()
@@ -279,14 +282,28 @@ app.post('/api/export', async (c) => {
     return c.json({ error: `Bulan ${body.monthKey} tidak ditemukan dalam rentang magang.` }, 404)
   }
 
+  const week = body.weekId ? month.weeks.find((item) => item.id === body.weekId) : undefined
+  if (body.weekId && !week) {
+    return c.json(
+      { error: `Minggu ${body.weekId} tidak ditemukan dalam bulan ${body.monthKey}.` },
+      404,
+    )
+  }
+
   // Validasi ekspor (AGENTS.md bagian 11.3): setiap hari yang kosong wajib punya
   // alasan sebelum ekspor. Server menolak dengan daftar tanggalnya.
   const range = { mulai: config.magang.mulai, selesai: config.magang.selesai }
-  const incomplete = monthIncompleteDates(month, logs.days, range)
+  const validationMonth = week ? { ...month, weeks: [week] } : month
+  const incomplete = monthIncompleteDates(validationMonth, logs.days, range)
   if (incomplete.length > 0) {
     log.warn('export.pdf', 'Ekspor ditolak karena hari belum lengkap.', {
       traceId,
-      data: { monthKey: body.monthKey, jumlah: incomplete.length, contoh: incomplete.slice(0, 5) },
+      data: {
+        monthKey: body.monthKey,
+        weekId: body.weekId,
+        jumlah: incomplete.length,
+        contoh: incomplete.slice(0, 5),
+      },
     })
     return c.json(
       {
@@ -299,7 +316,7 @@ app.post('/api/export', async (c) => {
 
   const exportDir = config.folderExport || paths.exportsDir
   mkdirSync(exportDir, { recursive: true })
-  const fileName = buildExportFileName(config.profil.nim, body.monthKey)
+  const fileName = buildExportFileName(config.profil.nim, body.monthKey, week?.weekOfMonth)
   const outputPath = join(exportDir, fileName)
 
   try {
@@ -307,11 +324,12 @@ app.post('/api/export', async (c) => {
       config,
       logs,
       monthKey: body.monthKey,
+      weekId: week?.id,
       outputPath,
     })
-    log.info('export.pdf', 'PDF bulan diekspor.', {
+    log.info('export.pdf', week ? 'PDF minggu diekspor.' : 'PDF bulan diekspor.', {
       traceId,
-      data: { monthKey: body.monthKey, file: fileName },
+      data: { monthKey: body.monthKey, weekId: week?.id, file: fileName },
     })
     return c.json({ ok: true, fileName, path: outputPath })
   } catch (error) {
