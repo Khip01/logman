@@ -1003,6 +1003,27 @@ ditampilkan sebagai strip, bukan angka. Aturan ini mengikat.
   default, sehingga tidak pernah membuka home atau root tanpa alasan. Bila dialog native
   tidak tersedia, server menjawab `unsupported` dan UI berubah menjadi mode isi manual.
 - Data mentah tetap tersimpan sebagai JSON walau tidak diekspor.
+- Halaman Ekspor menyediakan workspace preview PDF di panel kanan. Klik item minggu
+  membuka preview PDF inline memakai renderer yang sama dengan file ekspor, sehingga preview
+  bukan renderer tabel kedua. Panel langsung terbuka dengan skeleton saat PDF sedang dibuat.
+- Panel preview hanya hidup di route `/export`. Satu panel dapat memiliki banyak tab minggu,
+  tab dapat dipilih atau ditutup satu per satu, dan panel dapat ditutup tanpa menghapus tab.
+  Riwayat tab serta tab aktif disimpan di `localStorage` khusus browser.
+- Preview tetap dapat dibuka untuk minggu yang belum lengkap. Validasi hari kosong hanya
+  berlaku saat user menekan Ekspor, bukan saat membuka preview.
+- Setiap tab menyimpan fingerprint konfigurasi dan log yang membentuk PDF. Bila data berubah,
+  tab diberi status preview usang dan tombol Muat ulang membuat PDF baru. Tab yang belum usang
+  tidak dirender ulang saat dipilih kembali.
+- PDF preview memakai viewer native browser melalui iframe agar teks dapat diseleksi, dokumen
+  dapat digulir, dan kontrol zoom native tetap tersedia. Area panel, tab, status, dan skeleton
+  mengikuti token tema aplikasi, sedangkan halaman PDF tetap putih seperti dokumen resmi.
+- Panel preview berada sticky pada tinggi viewport area aplikasi dan memiliki scroll PDF sendiri;
+  panel tidak memanjang mengikuti daftar ekspor. Lebarnya dipilih dari tiga mode tetap, yaitu
+  1/3, 2/3, dan Full, lalu mode terakhir disimpan di `localStorage`.
+- Memilih tab preview membuka bulan induknya, menyorot item minggu, lalu menggulir daftar ke
+  item tersebut. Perilaku scroll mengikuti tier motion: tier `mati` langsung, tier lain smooth.
+  Area item minggu, tombol Ekspor, tab, tombol tutup, refresh, dan pilihan ukuran memiliki
+  affordance pointer serta hover masing-masing agar target klik tidak rancu.
 
 ---
 

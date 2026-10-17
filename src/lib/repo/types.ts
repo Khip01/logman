@@ -68,6 +68,10 @@ export interface EnvRepository {
   pickFolder(current?: string): Promise<PickFolderResult>
 }
 
+export interface ExportRepository {
+  preview(monthKey: string, weekId: string): Promise<Blob>
+}
+
 export class RepositoryError extends Error {
   readonly status: number
 

@@ -14,7 +14,7 @@ import {
 } from '../src/lib/domain/schema'
 import type { AppConfig, DayEntry, LogData } from '../src/lib/domain/types'
 import { createServerLogger, readRecentLogs } from './logger'
-import { buildExportFileName, exportMonthToPdf } from './pdf'
+import { buildExportFileName, exportMonthToPdf, renderPdf } from './pdf'
 import { pickFolder, resolveStartDir } from './pickFolder'
 import {
   backupBeforeWrite,
@@ -337,6 +337,33 @@ app.post('/api/export', async (c) => {
     const message = error instanceof Error ? error.message : 'Gagal mengekspor PDF.'
     log.error('export.pdf', message, { traceId })
     return c.json({ error: message }, 500)
+  }
+})
+
+/** Membuat preview PDF inline. Preview boleh dibuka walau masih ada hari kosong. */
+app.get('/api/export/preview', async (c) => {
+  const traceId = log.newTrace()
+  const monthKey = c.req.query('monthKey')
+  const weekId = c.req.query('weekId')
+  if (!monthKey) return c.json({ error: 'Parameter monthKey wajib diisi.' }, 400)
+
+  const config = loadConfig()
+  const logs = loadLogs()
+  try {
+    const pdf = await renderPdf({ config, logs, monthKey, weekId: weekId || undefined })
+    log.info('export.preview', 'Preview PDF dibuat.', {
+      traceId,
+      data: { monthKey, weekId: weekId || null },
+    })
+    return c.body(new Uint8Array(pdf), 200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'no-store',
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Gagal membuat preview PDF.'
+    log.error('export.preview', message, { traceId })
+    return c.json({ error: message }, 404)
   }
 })
 

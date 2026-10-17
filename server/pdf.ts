@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
@@ -381,8 +381,15 @@ ${pagesHtml}
  * memakai tata letak yang sama.
  */
 export async function exportMonthToPdf(options: ExportOptions): Promise<void> {
-  const { config, logs, monthKey, weekId, outputPath } = options
+  const { outputPath } = options
+  const pdf = await renderPdf(options)
+  mkdirSync(dirname(outputPath), { recursive: true })
+  writeFileSync(outputPath, pdf)
+}
 
+/** Merender PDF ke buffer untuk preview inline tanpa membuat file hasil ekspor. */
+export async function renderPdf(options: Omit<ExportOptions, 'outputPath'>): Promise<Buffer> {
+  const { config, logs, monthKey, weekId } = options
   const html = buildExportHtml({
     config,
     logs,
@@ -390,15 +397,11 @@ export async function exportMonthToPdf(options: ExportOptions): Promise<void> {
     weekId,
     letterheadUri: letterheadDataUri(),
   })
-
   const browser = await chromium.launch()
   try {
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'load' })
-    const dir = dirname(outputPath)
-    mkdirSync(dir, { recursive: true })
-    await page.pdf({
-      path: outputPath,
+    return await page.pdf({
       printBackground: true,
       preferCSSPageSize: true,
     })

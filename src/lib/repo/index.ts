@@ -2,6 +2,7 @@ import {
   HttpBackupRepository,
   HttpConfigRepository,
   HttpEnvRepository,
+  HttpExportRepository,
   HttpLogRepository,
 } from './http'
 
@@ -17,6 +18,7 @@ export interface Repositories {
   logs: HttpLogRepository
   backups: HttpBackupRepository
   env: HttpEnvRepository
+  export: HttpExportRepository
 }
 
 let current: Repositories = {
@@ -24,6 +26,7 @@ let current: Repositories = {
   logs: new HttpLogRepository(),
   backups: new HttpBackupRepository(),
   env: new HttpEnvRepository(),
+  export: new HttpExportRepository(),
 }
 
 export function getRepositories(): Repositories {
@@ -39,6 +42,7 @@ export {
   HttpBackupRepository,
   HttpConfigRepository,
   HttpEnvRepository,
+  HttpExportRepository,
   HttpLogRepository,
 } from './http'
 export * from './types'

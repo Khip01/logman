@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils/cn'
  */
 export const buttonVariants = cva(
   cn(
-    'theme-t inline-flex select-none items-center justify-center gap-2 border',
+    'theme-t inline-flex cursor-pointer select-none items-center justify-center gap-2 border',
     'font-medium whitespace-nowrap',
-    'disabled:pointer-events-none disabled:opacity-45',
+    'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45',
     '[&_svg]:pointer-events-none [&_svg]:shrink-0',
   ),
   {

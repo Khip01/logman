@@ -6,6 +6,7 @@ import type {
   ConfigRepository,
   EnvInfo,
   EnvRepository,
+  ExportRepository,
   LogRepository,
   PickFolderResult,
   SaveResult,
@@ -124,5 +125,33 @@ export class HttpEnvRepository implements EnvRepository {
       method: 'POST',
       body: JSON.stringify({ current }),
     })
+  }
+}
+
+export class HttpExportRepository implements ExportRepository {
+  constructor(private readonly baseUrl = '') {}
+
+  async preview(monthKey: string, weekId: string): Promise<Blob> {
+    const params = new URLSearchParams({ monthKey, weekId })
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/api/export/preview?${params.toString()}`)
+    } catch (error) {
+      throw new RepositoryError(
+        `Tidak bisa menghubungi server: ${error instanceof Error ? error.message : 'penyebab tidak diketahui'}`,
+        0,
+      )
+    }
+    if (!response.ok) {
+      let detail = `${response.status} ${response.statusText}`
+      try {
+        const body = (await response.json()) as { error?: string }
+        if (body.error) detail = body.error
+      } catch {
+        // Pertahankan detail status bila badan bukan JSON.
+      }
+      throw new RepositoryError(detail, response.status)
+    }
+    return response.blob()
   }
 }
